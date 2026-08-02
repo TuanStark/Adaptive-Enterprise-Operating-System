@@ -5,6 +5,7 @@ import { PrismaNotificationRepository } from './infrastructure/persistence/prism
 import { CreateNotificationHandler } from './application/commands/create-notification/create-notification.handler';
 import { MarkAsReadHandler } from './application/commands/mark-as-read/mark-as-read.handler';
 import { MarkAllAsReadHandler } from './application/commands/mark-all-as-read/mark-all-as-read.handler';
+import { GenericDomainEventListener } from './application/listeners/generic-domain-event.listener';
 import { NotificationController } from './presentation/controllers/notification.controller';
 
 @Module({
@@ -15,6 +16,7 @@ import { NotificationController } from './presentation/controllers/notification.
     CreateNotificationHandler,
     MarkAsReadHandler,
     MarkAllAsReadHandler,
+    GenericDomainEventListener,
   ],
   exports: [NOTIFICATION_REPOSITORY, CreateNotificationHandler],
 })

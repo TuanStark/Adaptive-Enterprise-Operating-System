@@ -7,8 +7,10 @@ import { ChangeTaskStatusHandler } from './application/commands/change-task-stat
 import { AssignTaskHandler } from './application/commands/assign-task/assign-task.handler';
 import { MoveTaskToSprintHandler } from './application/commands/move-task-to-sprint/move-task-to-sprint.handler';
 import { TaskController } from './presentation/controllers/task.controller';
+import { EventsModule } from '../../common/events/events.module';
 
 @Module({
+  imports: [EventsModule],
   controllers: [TaskController],
   providers: [
     PrismaService,

@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
+import { OutboxService } from '../../../../common/events/outbox.service';
 import { TaskRepository, TaskFilters } from '../../domain/repositories/task.repository';
 import { Task, TaskStatus, TaskPriority, TaskProps } from '../../domain/aggregates/task.aggregate';
 
 @Injectable()
 export class PrismaTaskRepository implements TaskRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(task: Task): Promise<void> {
-    await this.prisma.task.upsert({
+    const domainEvents = task.pullDomainEvents();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.task.upsert({
       where: { id: task.id },
       create: {
         id: task.id,
@@ -38,7 +45,18 @@ export class PrismaTaskRepository implements TaskRepository {
         version: { increment: 1 },
       },
     });
-  }
+
+    for (const event of domainEvents) {
+      await this.outboxService.saveEvent(tx, {
+        tenantId: task.tenantId,
+        aggregateType: 'Task',
+        aggregateId: task.id,
+        eventType: event.eventType,
+        payload: event.toPayload(),
+      });
+    }
+  });
+}
 
   async findById(id: string): Promise<Task | null> {
     const record = await this.prisma.task.findUnique({ where: { id, deletedAt: null } });

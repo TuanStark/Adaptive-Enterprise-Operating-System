@@ -156,6 +156,14 @@ export class Task extends AggregateRoot<string> {
     return Result.ok(undefined);
   }
 
+  assignTo(userId: string): void {
+    if (this._assigneeId !== userId) {
+      this._assigneeId = userId;
+      this.touch();
+      this.addDomainEvent(new TaskAssignedEvent(this.id, userId));
+    }
+  }
+
   unassign(): void {
     this._assigneeId = null;
     this.touch();
