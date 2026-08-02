@@ -18,7 +18,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+  const isSidebarOpen = useAppStore((state) => state.isLocalSidebarOpen);
 
   return (
     <motion.aside

@@ -8,6 +8,8 @@ interface AppState {
   setLocalSidebarOpen: (isOpen: boolean) => void;
   activeWorkspaceId: string | null;
   setActiveWorkspaceId: (id: string | null) => void;
+  isCommandPaletteOpen: boolean;
+  setCommandPaletteOpen: (isOpen: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -18,4 +20,6 @@ export const useAppStore = create<AppState>((set) => ({
   setLocalSidebarOpen: (isOpen) => set({ isLocalSidebarOpen: isOpen }),
   activeWorkspaceId: null,
   setActiveWorkspaceId: (id) => set({ activeWorkspaceId: id }),
+  isCommandPaletteOpen: false,
+  setCommandPaletteOpen: (isOpen) => set({ isCommandPaletteOpen: isOpen }),
 }));

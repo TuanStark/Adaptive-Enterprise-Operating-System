@@ -1,8 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,15 +23,15 @@ function TasksSidebar() {
         </div>
         <div className="space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Views</p>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
+          <Link href="/tasks" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
             <Columns className="w-4 h-4 text-primary" /> Active Sprint
-          </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
+          </Link>
+          <Link href="/tasks?view=backlog" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
             <ListTodo className="w-4 h-4" /> Backlog
-          </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
+          </Link>
+          <Link href="/tasks?view=roadmap" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
             <Calendar className="w-4 h-4" /> Roadmap
-          </div>
+          </Link>
         </div>
         <div className="mt-6 space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Filters</p>
@@ -55,9 +57,9 @@ function DocsSidebar() {
       <div className="p-3 overflow-y-auto flex-1">
         <div className="space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Favorites</p>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
+          <Link href="/docs/architecture" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
             <FileText className="w-4 h-4 text-emerald-500" /> Architecture Guide
-          </div>
+          </Link>
         </div>
         <div className="mt-6 space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Folders</p>
@@ -87,16 +89,16 @@ function ChatSidebar() {
       </div>
       <div className="p-3 overflow-y-auto flex-1">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
+          <Link href="/chat" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
             <Hash className="w-4 h-4 text-gray-500" /> general
-          </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer font-medium">
+          </Link>
+          <Link href="/chat/engineering-alerts" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer font-medium">
             <Hash className="w-4 h-4 text-gray-500" /> engineering-alerts
             <span className="ml-auto bg-destructive text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">3</span>
-          </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
+          </Link>
+          <Link href="/chat/random" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
             <Hash className="w-4 h-4 text-gray-500" /> random
-          </div>
+          </Link>
         </div>
         <div className="mt-6 space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Direct Messages</p>

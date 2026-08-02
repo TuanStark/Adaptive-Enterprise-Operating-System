@@ -25,26 +25,29 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 
+import { useAppStore } from "@/store/useAppStore";
+
 export function CommandPalette() {
-  const [open, setOpen] = React.useState(false);
+  const open = useAppStore((state) => state.isCommandPaletteOpen);
+  const setOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const router = useRouter();
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen(!open);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [open, setOpen]);
 
   const runCommand = React.useCallback((command: () => void) => {
     setOpen(false);
     command();
-  }, []);
+  }, [setOpen]);
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>

@@ -1,9 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, CheckSquare, Folder, FileText, Settings, Users, MessageSquare } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Folder, FileText, Settings, Users, MessageSquare, Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const globalNavItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -59,7 +67,23 @@ export function GlobalSidebar() {
       </div>
       
       <div className="mt-auto px-2 w-full flex justify-center pb-2">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 border-2 border-gray-800 cursor-pointer hover:opacity-90 transition-opacity"></div>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<button className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 border-2 border-gray-800 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"></button>} />
+          <DropdownMenuContent align="end" side="right" className="w-56 ml-2">
+            <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="font-medium bg-gray-100">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div> AEOS Platform
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <div className="w-2 h-2 rounded-full bg-gray-300 mr-2"></div> Internal Tools
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Plus className="mr-2 h-4 w-4" /> Create Workspace
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );
