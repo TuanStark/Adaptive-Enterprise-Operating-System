@@ -25,9 +25,8 @@ async function bootstrap() {
   // ── Security ──
   app.use(helmet());
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production'
-      ? ['https://app.aeos.com']
-      : ['http://localhost:3001'],
+    origin:
+      process.env.NODE_ENV === 'production' ? ['https://app.aeos.com'] : ['http://localhost:3001'],
     credentials: true,
   });
 
@@ -37,9 +36,9 @@ async function bootstrap() {
   // ── Global Pipes ──
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // Strip unknown properties
+      whitelist: true, // Strip unknown properties
       forbidNonWhitelisted: true, // Throw if unknown properties
-      transform: true,            // Auto-transform payloads to DTO instances
+      transform: true, // Auto-transform payloads to DTO instances
       transformOptions: {
         enableImplicitConversion: true,
       },
@@ -47,10 +46,7 @@ async function bootstrap() {
   );
 
   // ── Global Interceptors ──
-  app.useGlobalInterceptors(
-    new RequestLoggingInterceptor(),
-    new ResponseTransformInterceptor(),
-  );
+  app.useGlobalInterceptors(new RequestLoggingInterceptor(), new ResponseTransformInterceptor());
 
   // ── Global Exception Filter ──
   app.useGlobalFilters(new GlobalExceptionFilter());

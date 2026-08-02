@@ -17,6 +17,7 @@
     "test:e2e": "pnpm --filter @aeos/api test:e2e",
     "lint": "pnpm --filter @aeos/api lint",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "db:generate": "pnpm --filter @aeos/database db:generate",
     "db:migrate": "pnpm --filter @aeos/database db:migrate",
     "db:seed": "pnpm --filter @aeos/database db:seed",
     "db:studio": "pnpm --filter @aeos/database db:studio",
@@ -30,8 +31,12 @@
     "lint-staged": "^15.2.0"
   },
   "lint-staged": {
-    "*.{ts,js}": ["prettier --write"],
-    "*.{json,md,yaml}": ["prettier --write"]
+    "*.{ts,js}": [
+      "prettier --write"
+    ],
+    "*.{json,md,yaml}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=20.0.0",

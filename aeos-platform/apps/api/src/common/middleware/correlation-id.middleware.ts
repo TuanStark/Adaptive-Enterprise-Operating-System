@@ -10,8 +10,7 @@ import { correlationStorage } from '@aeos/logger';
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
-    const correlationId =
-      (req.headers['x-correlation-id'] as string) || `req-${randomUUID()}`;
+    const correlationId = (req.headers['x-correlation-id'] as string) || `req-${randomUUID()}`;
 
     // Set header cho cả request lẫn response
     req.headers['x-correlation-id'] = correlationId;

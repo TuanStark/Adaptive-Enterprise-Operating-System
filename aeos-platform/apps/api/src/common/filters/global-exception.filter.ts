@@ -58,9 +58,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     const stack = exception instanceof Error ? exception.stack : String(exception);
-    this.logger.error(
-      `[${correlationId}] UNHANDLED: ${stack} | ${request.method} ${request.url}`,
-    );
+    this.logger.error(`[${correlationId}] UNHANDLED: ${stack} | ${request.method} ${request.url}`);
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,

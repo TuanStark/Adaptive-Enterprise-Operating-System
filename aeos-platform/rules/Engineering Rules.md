@@ -190,7 +190,7 @@ Không tạo Entity chỉ để chứa dữ liệu.
 Sai:
 
 ```ts
-workspace.status = "ACTIVE";
+workspace.status = 'ACTIVE';
 ```
 
 Đúng:
@@ -355,7 +355,7 @@ Không log:
 Không đọc trực tiếp:
 
 ```ts
-process.env
+process.env;
 ```
 
 Mọi cấu hình phải đi qua Configuration Module.

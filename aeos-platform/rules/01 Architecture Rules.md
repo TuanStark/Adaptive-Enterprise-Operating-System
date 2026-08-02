@@ -40,7 +40,6 @@ Domain
 
 Infrastructure
 
-
 Quy tắc:
 
 - Domain không biết Application.
@@ -51,7 +50,6 @@ Quy tắc:
 ---
 
 # 3. Layer Responsibilities
-
 
 ## Presentation Layer
 
@@ -68,7 +66,6 @@ Không được chứa:
 - Business Logic.
 - Database Access.
 - Transaction Logic.
-
 
 ---
 
@@ -88,7 +85,6 @@ Không được chứa:
 - SQL Query.
 - Framework Logic.
 
-
 ---
 
 ## Domain Layer
@@ -104,7 +100,6 @@ Bao gồm:
 - Domain Event.
 - Repository Interface.
 
-
 Domain không được import:
 
 - NestJS.
@@ -112,7 +107,6 @@ Domain không được import:
 - Redis.
 - Kafka.
 - External API.
-
 
 ---
 
@@ -126,13 +120,11 @@ Chịu trách nhiệm:
 - External Service.
 - File Storage.
 
-
 Infrastructure triển khai:
 
 - Repository Implementation.
 - Adapter.
 - Provider.
-
 
 ---
 
@@ -179,7 +171,6 @@ workspace/
 └── presentation
 ```
 
-
 ---
 
 # 5. Business Logic Rule
@@ -191,7 +182,6 @@ Business Rule chỉ được phép nằm trong:
 - Domain Service.
 - Specification.
 
-
 Không được viết Business Logic trong:
 
 - Controller.
@@ -199,22 +189,19 @@ Không được viết Business Logic trong:
 - Repository.
 - Prisma Model.
 
-
 Ví dụ:
 
 Sai:
 
 ```typescript
-workspace.status = "ARCHIVED";
+workspace.status = 'ARCHIVED';
 ```
-
 
 Đúng:
 
 ```typescript
 workspace.archive();
 ```
-
 
 ---
 
@@ -223,7 +210,6 @@ workspace.archive();
 Database không quyết định Domain.
 
 Domain quyết định Database.
-
 
 Sai:
 
@@ -239,7 +225,6 @@ Entity
 Business
 ```
 
-
 Đúng:
 
 ```
@@ -254,13 +239,11 @@ Domain Model
 Persistence Model
 ```
 
-
 ---
 
 # 7. ORM Rule
 
 ORM chỉ tồn tại trong Infrastructure.
-
 
 Không được:
 
@@ -270,7 +253,6 @@ Domain
 import Prisma
 ```
 
-
 Không được:
 
 ```
@@ -278,7 +260,6 @@ Application
 
 query database trực tiếp
 ```
-
 
 ---
 
@@ -290,39 +271,27 @@ Interface:
 Domain Layer
 ```
 
-
 Implementation:
 
 ```
 Infrastructure Layer
 ```
 
-
 Ví dụ:
-
 
 Domain:
 
 ```typescript
 interface WorkspaceRepository {
-
- save(
-   workspace: Workspace
- ): Promise<void>;
-
+  save(workspace: Workspace): Promise<void>;
 }
 ```
-
 
 Infrastructure:
 
 ```typescript
-class PrismaWorkspaceRepository
-implements WorkspaceRepository {
-
-}
+class PrismaWorkspaceRepository implements WorkspaceRepository {}
 ```
-
 
 ---
 
@@ -333,9 +302,7 @@ DTO chỉ tồn tại ở:
 - Presentation.
 - Application.
 
-
 Domain không nhận DTO.
-
 
 Sai:
 
@@ -344,7 +311,6 @@ Domain
 
 WorkspaceCreateDTO
 ```
-
 
 Đúng:
 
@@ -360,25 +326,20 @@ Command
 Domain Entity
 ```
 
-
 ---
 
 # 10. Cross Module Communication Rule
 
-
 Thứ tự ưu tiên:
-
 
 ## Level 1
 
 Interface Call
 
-
 Dùng khi:
 
 - Query dữ liệu.
 - Logic đồng bộ.
-
 
 ---
 
@@ -386,11 +347,9 @@ Dùng khi:
 
 Domain Event
 
-
 Dùng khi:
 
 - Có business state change.
-
 
 Ví dụ:
 
@@ -398,34 +357,28 @@ Ví dụ:
 WorkspaceCreated
 ```
 
-
 ---
 
 ## Level 3
 
 Integration Event
 
-
 Dùng khi:
 
 - Giao tiếp giữa service.
 - Chuẩn bị Microservice.
 
-
 ---
 
 # 11. Transaction Rule
 
-
 Transaction thuộc Application Layer.
-
 
 Một transaction nên bao phủ:
 
 ```
 One Use Case
 ```
-
 
 Không:
 
@@ -442,14 +395,11 @@ Create Permission
 
 trong một transaction.
 
-
 ---
 
 # 12. Exception Rule
 
-
 Luồng Error:
-
 
 ```
 Domain Exception
@@ -467,25 +417,21 @@ HTTP Exception
 API Response
 ```
 
-
 Domain không được throw:
 
 ```typescript
-HttpException
+HttpException;
 ```
-
 
 ---
 
 # 13. Configuration Rule
 
-
 Không sử dụng trực tiếp:
 
 ```typescript
-process.env
+process.env;
 ```
-
 
 Mọi config phải đi qua:
 
@@ -493,11 +439,9 @@ Mọi config phải đi qua:
 Config Module
 ```
 
-
 ---
 
 # 14. Logging Rule
-
 
 Mọi request phải có:
 
@@ -506,7 +450,6 @@ Mọi request phải có:
 - userId.
 - tenantId.
 
-
 Không log:
 
 - Password.
@@ -514,14 +457,11 @@ Không log:
 - Secret.
 - Sensitive Data.
 
-
 ---
 
 # 15. Testing Rule
 
-
 Mỗi module phải có:
-
 
 ## Domain Test
 
@@ -530,13 +470,11 @@ Kiểm tra:
 - Business Rule.
 - Aggregate.
 
-
 ## Application Test
 
 Kiểm tra:
 
 - Use Case.
-
 
 ## Integration Test
 
@@ -545,21 +483,17 @@ Kiểm tra:
 - Database.
 - External Dependency.
 
-
 ## E2E Test
 
 Kiểm tra:
 
 - Business Flow.
 
-
 ---
 
 # 16. Code Review Rule
 
-
 Pull Request bị reject nếu:
-
 
 - Sai Dependency Rule.
 - Business Logic sai Layer.
@@ -567,17 +501,13 @@ Pull Request bị reject nếu:
 - Không có Documentation.
 - Vi phạm Module Boundary.
 
-
 ---
 
 # 17. ADR Rule
 
-
 Mọi thay đổi kiến trúc phải tạo ADR.
 
-
 Ví dụ:
-
 
 ```
 docs/adr/
@@ -589,11 +519,9 @@ ADR-002-multi-tenancy.md
 ADR-003-use-kafka.md
 ```
 
-
 ---
 
 # 18. Golden Rules
-
 
 1. Domain là trung tâm.
 
@@ -610,5 +538,7 @@ ADR-003-use-kafka.md
 7. Mọi quyết định lớn phải được ghi lại.
 
 8. Code phải phục vụ Architecture.
+
+```
 
 ```

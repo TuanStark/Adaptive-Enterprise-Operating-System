@@ -1,32 +1,34 @@
-// apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
+import { IdentityModule } from './modules/identity/identity.module';
 
 @Module({
   imports: [
-    // ── Rate Limiting (Global) ──
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 1000,    // 1 giây
-        limit: 3,     // 3 requests/giây (cho login, sensitive endpoints)
+        ttl: 1000,
+        limit: 3,
       },
       {
         name: 'medium',
-        ttl: 10000,   // 10 giây
-        limit: 20,    // 20 requests/10 giây (cho API thông thường)
+        ttl: 10000,
+        limit: 20,
       },
       {
         name: 'long',
-        ttl: 60000,   // 1 phút
-        limit: 100,   // 100 requests/phút (hard limit)
+        ttl: 60000,
+        limit: 100,
       },
     ]),
 
     // ── Health Check ──
     HealthModule,
+
+    // ── Business Modules ──
+    IdentityModule,
 
     // ── Business Modules (sẽ thêm dần theo Phase) ──
     // IdentityModule,
@@ -39,7 +41,6 @@ import { HealthModule } from './health/health.module';
     // AuditModule,
   ],
   providers: [
-    // Rate limiting guard áp dụng cho toàn bộ API
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
