@@ -3,6 +3,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { OrganizationModule } from './modules/organization/organization.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
 
 @Module({
   imports: [
@@ -24,21 +26,10 @@ import { IdentityModule } from './modules/identity/identity.module';
       },
     ]),
 
-    // ── Health Check ──
     HealthModule,
-
-    // ── Business Modules ──
     IdentityModule,
-
-    // ── Business Modules (sẽ thêm dần theo Phase) ──
-    // IdentityModule,
-    // OrganizationModule,
-    // WorkspaceModule,
-    // ProjectModule,
-    // TaskModule,
-    // KnowledgeModule,
-    // NotificationModule,
-    // AuditModule,
+    OrganizationModule,
+    WorkspaceModule,
   ],
   providers: [
     {
