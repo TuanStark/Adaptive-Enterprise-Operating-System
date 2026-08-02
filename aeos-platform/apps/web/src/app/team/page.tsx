@@ -1,11 +1,19 @@
-"use client";
+import { TeamList } from "@/features/team/components/TeamList";
+import { InviteMemberButton } from "@/features/team/components/InviteMemberButton";
+import { TeamMember } from "@/features/team/types";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+async function getTeamMembers(): Promise<TeamMember[]> {
+  return [
+    { id: "1", name: "Tony Stark", email: "[EMAIL_ADDRESS]", role: "Admin", avatarUrl: "https://i.pravatar.cc/150?u=1" },
+    { id: "2", name: "Peter Parker", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=2" },
+    { id: "3", name: "Bruce Banner", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=3" },
+    { id: "4", name: "Natasha Romanoff", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=4" },
+  ];
+}
 
-export default function TeamPage() {
+export default async function TeamPage() {
+  const members = await getTeamMembers();
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -13,33 +21,10 @@ export default function TeamPage() {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Team</h1>
           <p className="text-gray-500">Manage members and permissions.</p>
         </div>
-        <Button className="rounded-full bg-primary hover:bg-primary/90">Invite Member</Button>
+        <InviteMemberButton />
       </div>
 
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg text-gray-800">Members (4)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {['Tony Stark', 'Peter Parker', 'Bruce Banner', 'Natasha Romanoff'].map((name, i) => (
-              <div key={i} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src={`https://i.pravatar.cc/150?u=${i}`} />
-                    <AvatarFallback>{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">{name}</p>
-                    <p className="text-xs text-gray-500">{i === 0 ? 'Admin' : 'Member'}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="text-gray-500">Edit</Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <TeamList members={members} />
     </div>
   );
 }
