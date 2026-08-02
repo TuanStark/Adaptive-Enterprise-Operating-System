@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/features/core/providers/providers";
-import { AppLayout } from "@/features/core/components/AppLayout";
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,9 +27,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Providers>
-          <AppLayout>
-            {children}
-          </AppLayout>
+          {children}
         </Providers>
       </body>
     </html>
