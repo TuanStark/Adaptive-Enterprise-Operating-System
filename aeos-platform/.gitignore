@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+dist/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test
+coverage/
+
+# Build
+*.tsbuildinfo
+
+# Prisma
+packages/database/prisma/*.db

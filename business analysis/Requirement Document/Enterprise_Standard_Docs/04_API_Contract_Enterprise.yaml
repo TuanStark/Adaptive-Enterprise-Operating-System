@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: AEOS Enterprise OS API
+  description: API Contracts chuẩn DDD cho AEOS. Bao gồm Public REST API và Internal Event Contracts (dùng cho Message Broker như Kafka/RabbitMQ). Tuân thủ RFC 7807 (Problem Details).
+  version: 2.0.0
+servers:
+  - url: https://api.aeos.com/v1
+    description: Production API Gateway
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ==========================================
+    # PUBLIC REST API SCHEMAS
+    # ==========================================
+    ProblemDetails:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: KNOWLEDGE_DOCUMENT_PUBLISHED_IMMUTABLE
+            message:
+              type: string
+              example: "Không thể chỉnh sửa Document đã Publish. Vui lòng tạo Version Draft mới."
+            traceId:
+              type: string
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440000"
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        version:
+          type: string
+          example: "v1.0"
+        status:
+          type: string
+          enum: [DRAFT, IN_REVIEW, PUBLISHED, ARCHIVED]
+
+    # ==========================================
+    # INTERNAL EVENT SCHEMAS (For Message Broker)
+    # ==========================================
+    DocumentPublishedEvent:
+      type: object
+      description: Domain Event được Knowledge Context bắn ra khi một tài liệu chuyển trạng thái thành PUBLISHED. (Async)
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        aggregateId:
+          type: string
+          format: uuid
+          description: ID của Document
+        eventType:
+          type: string
+          example: "DocumentPublishedEvent"
+        occurredOn:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          properties:
+            title:
+              type: string
+            version:
+              type: string
+            authorId:
+              type: string
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ==========================================
+  # KNOWLEDGE CONTEXT ENDPOINTS
+  # ==========================================
+  /knowledge/documents/{documentId}/publish:
+    post:
+      summary: Publish một Document
+      description: Chỉ cho phép chuyển Document từ DRAFT/IN_REVIEW sang PUBLISHED.
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công. Event `DocumentPublishedEvent` đã được bắn.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '403':
+          description: Lỗi phân quyền hoặc vi phạm Business Rule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  # ==========================================
+  # AI ASSISTANT CONTEXT ENDPOINTS
+  # ==========================================
+  /ai/ask:
+    post:
+      summary: Hỏi AI (Permission-Aware)
+      description: AI sẽ chỉ trả lời dựa trên những Document mà User có quyền truy cập.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  example: "Tóm tắt chính sách nghỉ phép năm 2026."
+      responses:
+        '200':
+          description: Trả về câu trả lời streaming hoặc text.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                      description: Trả về ID các tài liệu được dùng để gen câu trả lời.

@@ -1,0 +1,40 @@
+{
+  "name": "aeos-platform",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Atlas Enterprise Operating System — Monorepo",
+  "license": "UNLICENSED",
+  "scripts": {
+    "setup": "cp -n .env.example .env && pnpm install",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "dev": "pnpm --filter @aeos/api dev",
+    "build": "pnpm --filter @aeos/api build",
+    "start:prod": "pnpm --filter @aeos/api start:prod",
+    "test": "pnpm --filter @aeos/api test",
+    "test:unit": "pnpm --filter @aeos/api test:unit",
+    "test:e2e": "pnpm --filter @aeos/api test:e2e",
+    "lint": "pnpm --filter @aeos/api lint",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "db:migrate": "pnpm --filter @aeos/database db:migrate",
+    "db:seed": "pnpm --filter @aeos/database db:seed",
+    "db:studio": "pnpm --filter @aeos/database db:studio",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0",
+    "husky": "^9.1.0",
+    "prettier": "^3.3.0",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": ["prettier --write"],
+    "*.{json,md,yaml}": ["prettier --write"]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

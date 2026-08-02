@@ -1,0 +1,1084 @@
+//////////////////////////////////////////////////////
+// AEOS - Enterprise Operation System
+// Phase 2.5.2
+// Full Production Database Schema V2
+// PostgreSQL + Multi Tenant + Optimistic Locking
+//////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////
+// ENUM
+//////////////////////////////////////////////////////
+
+Enum user_status {
+  PENDING
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+
+Enum tenant_status {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+
+Enum workspace_status {
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+}
+
+
+Enum project_status {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+
+Enum task_status {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+
+Enum priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+
+Enum event_status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+
+
+//////////////////////////////////////////////////////
+// TENANT
+//////////////////////////////////////////////////////
+
+Table tenants {
+
+  id uuid [pk]
+
+  name varchar(255)
+
+  slug varchar(255) [unique]
+
+  status tenant_status
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+  updated_at timestamp
+
+
+  deleted_at timestamp
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// IDENTITY
+//////////////////////////////////////////////////////
+
+Table users {
+
+  id uuid [pk]
+
+
+  tenant_id uuid [not null]
+
+
+  email varchar(255) [unique]
+
+  password_hash varchar(255)
+
+
+  first_name varchar(100)
+
+  last_name varchar(100)
+
+  avatar_url text
+
+
+  status user_status
+
+
+  email_verified boolean
+
+
+  last_login_at timestamp
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+  updated_at timestamp
+
+
+  created_by uuid
+
+  updated_by uuid
+
+
+  deleted_at timestamp
+
+
+  indexes {
+
+    tenant_id
+
+    email
+
+  }
+
+}
+
+
+
+Table sessions {
+
+  id uuid [pk]
+
+
+  user_id uuid
+
+
+  refresh_token text
+
+
+  expires_at timestamp
+
+
+  revoked boolean
+
+
+  created_at timestamp
+
+}
+
+
+
+Table oauth_accounts {
+
+  id uuid [pk]
+
+
+  user_id uuid
+
+
+  provider varchar(50)
+
+
+  provider_account_id varchar(255)
+
+
+  created_at timestamp
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// ORGANIZATION
+//////////////////////////////////////////////////////
+
+Table organizations {
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  name varchar(255)
+
+
+  owner_id uuid
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+
+  updated_at timestamp
+
+
+  created_by uuid
+
+
+  updated_by uuid
+
+
+  deleted_at timestamp
+
+
+  indexes {
+
+    tenant_id
+
+  }
+
+}
+
+
+
+Table organization_members {
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  organization_id uuid
+
+
+  user_id uuid
+
+
+  role varchar(50)
+
+
+  joined_at timestamp
+
+
+
+  indexes {
+
+    (organization_id,user_id) [unique]
+
+  }
+
+}
+
+
+
+Table invitations {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  organization_id uuid
+
+
+  email varchar(255)
+
+
+  token varchar(255)
+
+
+  status varchar(30)
+
+
+  expires_at timestamp
+
+
+  created_at timestamp
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// WORKSPACE
+//////////////////////////////////////////////////////
+
+Table workspaces {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  organization_id uuid
+
+
+  name varchar(255)
+
+
+  description text
+
+
+  owner_id uuid
+
+
+  status workspace_status
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+
+  updated_at timestamp
+
+
+  created_by uuid
+
+
+  updated_by uuid
+
+
+  deleted_at timestamp
+
+
+
+  indexes {
+
+
+    tenant_id
+
+
+    (organization_id,name) [unique]
+
+
+  }
+
+}
+
+
+
+Table workspace_members {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  workspace_id uuid
+
+
+  user_id uuid
+
+
+  role_id uuid
+
+
+  joined_at timestamp
+
+
+
+  indexes {
+
+
+    (workspace_id,user_id) [unique]
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// RBAC
+//////////////////////////////////////////////////////
+
+Table roles {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  workspace_id uuid
+
+
+  name varchar(100)
+
+
+  description text
+
+
+  created_at timestamp
+
+}
+
+
+
+Table permissions {
+
+
+  id uuid [pk]
+
+
+  resource varchar(100)
+
+
+  action varchar(100)
+
+
+
+  indexes {
+
+
+    (resource,action) [unique]
+
+
+  }
+
+}
+
+
+
+Table role_permissions {
+
+
+  role_id uuid
+
+
+  permission_id uuid
+
+
+
+  indexes {
+
+
+    (role_id,permission_id) [pk]
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// PROJECT
+//////////////////////////////////////////////////////
+
+Table projects {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  workspace_id uuid
+
+
+  name varchar(255)
+
+
+  description text
+
+
+  owner_id uuid
+
+
+  status project_status
+
+
+  priority priority
+
+
+  start_date date
+
+
+  end_date date
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+
+  updated_at timestamp
+
+
+  created_by uuid
+
+
+  updated_by uuid
+
+
+  deleted_at timestamp
+
+
+
+  indexes {
+
+
+    tenant_id
+
+
+    workspace_id
+
+
+    (workspace_id,status)
+
+
+  }
+
+}
+
+
+
+Table project_members {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  project_id uuid
+
+
+  user_id uuid
+
+
+  role varchar(50)
+
+
+  joined_at timestamp
+
+
+
+  indexes {
+
+
+    (project_id,user_id) [unique]
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// TASK MANAGEMENT
+//////////////////////////////////////////////////////
+
+Table tasks {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  project_id uuid
+
+
+  parent_task_id uuid
+
+
+  title varchar(255)
+
+
+  description text
+
+
+  creator_id uuid
+
+
+  assignee_id uuid
+
+
+  status task_status
+
+
+  priority priority
+
+
+  due_date timestamp
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+
+  updated_at timestamp
+
+
+  created_by uuid
+
+
+  updated_by uuid
+
+
+  deleted_at timestamp
+
+
+
+  indexes {
+
+
+    tenant_id
+
+
+    project_id
+
+
+    (project_id,status)
+
+
+    (assignee_id,status)
+
+
+  }
+
+}
+
+
+
+Table task_comments {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  task_id uuid
+
+
+  user_id uuid
+
+
+  content text
+
+
+  created_at timestamp
+
+}
+
+
+
+Table task_attachments {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  task_id uuid
+
+
+  file_id uuid
+
+
+  created_at timestamp
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// DOCUMENT MANAGEMENT
+//////////////////////////////////////////////////////
+
+Table files {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  storage_provider varchar(50)
+
+
+  storage_key text
+
+
+  file_name varchar(255)
+
+
+  mime_type varchar(100)
+
+
+  size bigint
+
+
+  uploaded_by uuid
+
+
+  created_at timestamp
+
+}
+
+
+
+Table documents {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  workspace_id uuid
+
+
+  name varchar(255)
+
+
+  owner_id uuid
+
+
+  visibility varchar(30)
+
+
+  version int [default:1]
+
+
+  created_at timestamp
+
+
+  updated_at timestamp
+
+
+  deleted_at timestamp
+
+}
+
+
+
+Table document_versions {
+
+
+  id uuid [pk]
+
+
+  document_id uuid
+
+
+  version_number int
+
+
+  file_id uuid
+
+
+  created_at timestamp
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// AUDIT
+//////////////////////////////////////////////////////
+
+Table audit_logs {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  actor_id uuid
+
+
+  action varchar(100)
+
+
+  entity_type varchar(100)
+
+
+  entity_id uuid
+
+
+  old_data json
+
+
+  new_data json
+
+
+  ip_address varchar(50)
+
+
+  created_at timestamp
+
+
+
+  indexes {
+
+
+    tenant_id
+
+
+    (entity_type,entity_id)
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// EVENT OUTBOX
+//////////////////////////////////////////////////////
+
+Table outbox_events {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  aggregate_type varchar(100)
+
+
+  aggregate_id uuid
+
+
+  event_type varchar(100)
+
+
+  payload json
+
+
+  status event_status
+
+
+  retry_count int
+
+
+  processed_at timestamp
+
+
+  created_at timestamp
+
+
+
+  indexes {
+
+
+    status
+
+
+    created_at
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// IDEMPOTENCY
+//////////////////////////////////////////////////////
+
+Table idempotency_keys {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  key varchar(255)
+
+
+  request_hash varchar(255)
+
+
+  response json
+
+
+  expires_at timestamp
+
+
+  created_at timestamp
+
+
+
+  indexes {
+
+
+    (tenant_id,key) [unique]
+
+
+  }
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// WORKFLOW ENGINE
+//////////////////////////////////////////////////////
+
+Table workflows {
+
+
+  id uuid [pk]
+
+
+  tenant_id uuid
+
+
+  workspace_id uuid
+
+
+  name varchar(255)
+
+
+  status varchar(30)
+
+
+  created_at timestamp
+
+}
+
+
+
+Table workflow_rules {
+
+
+  id uuid [pk]
+
+
+  workflow_id uuid
+
+
+  trigger_event varchar(100)
+
+
+  action_type varchar(100)
+
+
+  configuration json
+
+}
+
+
+
+//////////////////////////////////////////////////////
+// RELATIONSHIPS
+//////////////////////////////////////////////////////
+
+Ref: users.tenant_id > tenants.id
+
+Ref: sessions.user_id > users.id
+
+Ref: oauth_accounts.user_id > users.id
+
+
+Ref: organizations.tenant_id > tenants.id
+
+Ref: organizations.owner_id > users.id
+
+
+Ref: organization_members.organization_id > organizations.id
+
+Ref: organization_members.user_id > users.id
+
+
+Ref: workspaces.organization_id > organizations.id
+
+Ref: workspaces.owner_id > users.id
+
+
+Ref: workspace_members.workspace_id > workspaces.id
+
+Ref: workspace_members.user_id > users.id
+
+Ref: workspace_members.role_id > roles.id
+
+
+Ref: roles.workspace_id > workspaces.id
+
+
+Ref: role_permissions.role_id > roles.id
+
+Ref: role_permissions.permission_id > permissions.id
+
+
+Ref: projects.workspace_id > workspaces.id
+
+Ref: projects.owner_id > users.id
+
+
+Ref: project_members.project_id > projects.id
+
+Ref: project_members.user_id > users.id
+
+
+Ref: tasks.project_id > projects.id
+
+Ref: tasks.parent_task_id > tasks.id
+
+Ref: tasks.creator_id > users.id
+
+Ref: tasks.assignee_id > users.id
+
+
+Ref: task_comments.task_id > tasks.id
+
+Ref: task_comments.user_id > users.id
+
+
+Ref: task_attachments.task_id > tasks.id
+
+Ref: task_attachments.file_id > files.id
+
+
+Ref: documents.workspace_id > workspaces.id
+
+Ref: documents.owner_id > users.id
+
+Ref: document_versions.document_id > documents.id
+
+Ref: audit_logs.actor_id > users.id
+
+
+Ref: workflow_rules.workflow_id > workflows.id
