@@ -54,6 +54,14 @@ enum Priority {
   URGENT
 }
 
+enum TaskType {
+  EPIC
+  STORY
+  TASK
+  BUG
+  SUBTASK
+}
+
 enum EventStatus {
   PENDING
   PROCESSING
@@ -99,6 +107,7 @@ model Tenant {
   meetings            Meeting[]
   approvalRequests    ApprovalRequest[]
   dynamicForms        DynamicForm[]
+  channels            Channel[]
 
   @@map("tenants")
 }
@@ -143,6 +152,8 @@ model User {
   notifications       Notification[]
   organizedMeetings   Meeting[]            @relation("MeetingOrganizer")
   meetingParticipations MeetingParticipant[]
+  channelMemberships    ChannelMember[]
+  chatMessages          ChatMessage[]
 
   @@index([tenantId])
   @@index([email])
@@ -409,14 +420,17 @@ model Task {
   id           String      @id @default(uuid()) @db.Uuid
   tenantId     String?     @map("tenant_id") @db.Uuid
   projectId    String?     @map("project_id") @db.Uuid
+  key          String      @unique @db.VarChar(50)
   sprintId     String?     @map("sprint_id") @db.Uuid
   parentTaskId String?     @map("parent_task_id") @db.Uuid
   title        String?     @db.VarChar(255)
   description  String?
+  type         TaskType    @default(TASK)
   creatorId    String?     @map("creator_id") @db.Uuid
   assigneeId   String?     @map("assignee_id") @db.Uuid
   status       TaskStatus?
   priority     Priority?
+  storyPoints  Int?        @map("story_points")
   dueDate      DateTime?   @map("due_date")
   version      Int         @default(1)
   createdAt    DateTime    @default(now()) @map("created_at")
@@ -759,4 +773,93 @@ model FormSubmission {
 
   @@index([formId])
   @@map("form_submissions")
+}
+
+// ----------------------------------------------------
+// MESSAGING / CHAT
+// ----------------------------------------------------
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+enum ChannelMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Channel {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
+  name        String      @db.VarChar(100)
+  type        ChannelType @default(PUBLIC)
+  description String?
+  topic       String?     @db.VarChar(250)
+  isArchived  Boolean     @default(false) @map("is_archived")
+  version     Int         @default(1)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  members  ChannelMember[]
+  messages ChatMessage[]
+
+  @@index([tenantId])
+  @@map("channels")
+}
+
+model ChannelMember {
+  id        String            @id @default(uuid()) @db.Uuid
+  channelId String            @map("channel_id") @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  role      ChannelMemberRole @default(MEMBER)
+  joinedAt  DateTime          @default(now()) @map("joined_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([channelId])
+  @@index([userId])
+  @@map("channel_members")
+}
+
+model ChatMessage {
+  id              String    @id @default(uuid()) @db.Uuid
+  channelId       String    @map("channel_id") @db.Uuid
+  senderId        String    @map("sender_id") @db.Uuid
+  content         String
+  parentMessageId String?   @map("parent_message_id") @db.Uuid
+  isPinned        Boolean   @default(false) @map("is_pinned")
+  isEdited        Boolean   @default(false) @map("is_edited")
+  editedAt        DateTime? @map("edited_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  channel       Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender        User             @relation(fields: [senderId], references: [id])
+  parentMessage ChatMessage?     @relation("ThreadReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies       ChatMessage[]    @relation("ThreadReplies")
+  reactions     MessageReaction[]
+
+  @@index([channelId, createdAt])
+  @@index([parentMessageId])
+  @@map("chat_messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String   @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
 }

@@ -15,6 +15,7 @@ import { MeetingModule } from './modules/meeting/meeting.module';
 import { ApprovalModule } from './modules/approval/approval.module';
 import { FormModule } from './modules/form/form.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { MessageModule } from './modules/message/message.module';
 import { EventsModule } from './common/events/events.module';
 import { SearchModule } from './common/search/search.module';
 
@@ -52,6 +53,7 @@ import { SearchModule } from './common/search/search.module';
     ApprovalModule,
     FormModule,
     AnalyticsModule,
+    MessageModule,
     EventsModule,
     SearchModule,
   ],

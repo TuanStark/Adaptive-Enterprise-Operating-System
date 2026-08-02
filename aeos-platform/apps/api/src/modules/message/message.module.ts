@@ -9,6 +9,7 @@ import { SendMessageHandler } from './application/commands/send-message/send-mes
 import { JoinChannelHandler } from './application/commands/join-channel/join-channel.handler';
 import { ReactToMessageHandler } from './application/commands/react-to-message/react-to-message.handler';
 import { ChannelController } from './presentation/controllers/channel.controller';
+import { ChatGateway } from './presentation/gateways/chat.gateway';
 
 @Module({
   controllers: [ChannelController],
@@ -20,6 +21,7 @@ import { ChannelController } from './presentation/controllers/channel.controller
     SendMessageHandler,
     JoinChannelHandler,
     ReactToMessageHandler,
+    ChatGateway,
   ],
   exports: [CHANNEL_REPOSITORY, MESSAGE_REPOSITORY],
 })

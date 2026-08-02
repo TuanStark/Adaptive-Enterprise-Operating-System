@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
 import { OutboxService } from '../../../../common/events/outbox.service';
 import { TaskRepository, TaskFilters } from '../../domain/repositories/task.repository';
-import { Task, TaskStatus, TaskPriority, TaskProps } from '../../domain/aggregates/task.aggregate';
+import { Task, TaskStatus, TaskPriority, TaskType, TaskProps } from '../../domain/aggregates/task.aggregate';
 
 @Injectable()
 export class PrismaTaskRepository implements TaskRepository {
@@ -21,14 +21,17 @@ export class PrismaTaskRepository implements TaskRepository {
         id: task.id,
         tenantId: task.tenantId,
         projectId: task.projectId,
+        key: task.key,
         sprintId: task.sprintId,
         parentTaskId: task.parentTaskId,
         title: task.title,
         description: task.description,
+        type: task.type as any,
         creatorId: task.creatorId,
         assigneeId: task.assigneeId,
         status: task.status as any,
         priority: task.priority as any,
+        storyPoints: task.storyPoints,
         dueDate: task.dueDate,
         version: task.version,
       },
@@ -37,9 +40,11 @@ export class PrismaTaskRepository implements TaskRepository {
         parentTaskId: task.parentTaskId,
         title: task.title,
         description: task.description,
+        type: task.type as any,
         assigneeId: task.assigneeId,
         status: task.status as any,
         priority: task.priority as any,
+        storyPoints: task.storyPoints,
         dueDate: task.dueDate,
         deletedAt: task.deletedAt,
         version: { increment: 1 },
@@ -90,14 +95,17 @@ export class PrismaTaskRepository implements TaskRepository {
       id: record.id,
       tenantId: record.tenantId ?? '',
       projectId: record.projectId ?? '',
+      key: record.key ?? '',
       sprintId: record.sprintId,
       parentTaskId: record.parentTaskId,
       title: record.title ?? '',
       description: record.description,
+      type: (record.type as TaskType) ?? TaskType.TASK,
       creatorId: record.creatorId ?? '',
       assigneeId: record.assigneeId,
       status: (record.status as TaskStatus) ?? TaskStatus.BACKLOG,
       priority: (record.priority as TaskPriority) ?? TaskPriority.MEDIUM,
+      storyPoints: record.storyPoints ?? null,
       dueDate: record.dueDate,
       version: record.version,
       createdAt: record.createdAt,
