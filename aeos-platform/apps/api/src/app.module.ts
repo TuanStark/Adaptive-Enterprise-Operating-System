@@ -12,6 +12,9 @@ import { CommentModule } from './modules/comment/comment.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { DocumentModule } from './modules/document/document.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
+import { ApprovalModule } from './modules/approval/approval.module';
+import { FormModule } from './modules/form/form.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { MeetingModule } from './modules/meeting/meeting.module';
     NotificationModule,
     DocumentModule,
     MeetingModule,
+    ApprovalModule,
+    FormModule,
+    AnalyticsModule,
   ],
   providers: [
     {

@@ -97,6 +97,8 @@ model Tenant {
   workflows           Workflow[]
   notifications       Notification[]
   meetings            Meeting[]
+  approvalRequests    ApprovalRequest[]
+  dynamicForms        DynamicForm[]
 
   @@map("tenants")
 }
@@ -256,6 +258,8 @@ model Workspace {
   documents    Document[]
   workflows    Workflow[]
   meetings     Meeting[]
+  approvalRequests ApprovalRequest[]
+  dynamicForms DynamicForm[]
 
   @@unique([organizationId, name])
   @@index([tenantId])
@@ -679,4 +683,80 @@ model WorkflowRule {
   workflow Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@map("workflow_rules")
+}
+
+// ----------------------------------------------------
+// APPROVAL WORKFLOW
+// ----------------------------------------------------
+
+model ApprovalRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  requesterId String?  @map("requester_id") @db.Uuid
+  title       String?  @db.VarChar(255)
+  status      String?  @db.VarChar(30) // PENDING, APPROVED, REJECTED, CANCELLED
+  entityType  String?  @map("entity_type") @db.VarChar(50)
+  entityId    String?  @map("entity_id") @db.Uuid
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  steps     ApprovalStep[]
+
+  @@index([tenantId])
+  @@map("approval_requests")
+}
+
+model ApprovalStep {
+  id                String   @id @default(uuid()) @db.Uuid
+  approvalRequestId String?  @map("approval_request_id") @db.Uuid
+  reviewerId        String?  @map("reviewer_id") @db.Uuid
+  status            String?  @db.VarChar(30) // PENDING, APPROVED, REJECTED
+  comment           String?
+  stepOrder         Int      @map("step_order") @default(1)
+  actedAt           DateTime? @map("acted_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  approvalRequest ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+
+  @@map("approval_steps")
+}
+
+// ----------------------------------------------------
+// FORM BUILDER
+// ----------------------------------------------------
+
+model DynamicForm {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  name        String?  @db.VarChar(255)
+  description String?
+  schema      Json?    // JSON Schema describing the form fields
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace   Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  submissions FormSubmission[]
+
+  @@index([tenantId])
+  @@map("dynamic_forms")
+}
+
+model FormSubmission {
+  id          String   @id @default(uuid()) @db.Uuid
+  formId      String?  @map("form_id") @db.Uuid
+  submitterId String?  @map("submitter_id") @db.Uuid
+  data        Json?    // The submitted data matching the schema
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  form DynamicForm? @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("form_submissions")
 }
