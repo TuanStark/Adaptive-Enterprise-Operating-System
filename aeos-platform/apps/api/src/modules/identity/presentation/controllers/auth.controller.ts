@@ -4,11 +4,17 @@ import { Request } from 'express';
 import { Public } from '../guards/public.decorator';
 import { RegisterRequestDto } from '../dto/register.request.dto';
 import { LoginRequestDto } from '../dto/login.request.dto';
+import { RefreshTokenRequestDto } from '../dto/refresh-token.request.dto';
+import { LogoutRequestDto } from '../dto/logout.request.dto';
 
 import { RegisterUserCommand } from '../../application/commands/register-user/register-user.command';
 import { RegisterUserHandler } from '../../application/commands/register-user/register-user.handler';
 import { LoginCommand } from '../../application/commands/login/login.command';
 import { LoginHandler } from '../../application/commands/login/login.handler';
+import { RefreshTokenCommand } from '../../application/commands/refresh-token/refresh-token.command';
+import { RefreshTokenHandler } from '../../application/commands/refresh-token/refresh-token.handler';
+import { LogoutCommand } from '../../application/commands/logout/logout.command';
+import { LogoutHandler } from '../../application/commands/logout/logout.handler';
 import { GetCurrentUserQuery } from '../../application/queries/get-current-user/get-current-user.query';
 import { GetCurrentUserHandler } from '../../application/queries/get-current-user/get-current-user.handler';
 import { DomainError } from '@aeos/errors';
@@ -18,6 +24,8 @@ export class AuthController {
   constructor(
     private readonly registerHandler: RegisterUserHandler,
     private readonly loginHandler: LoginHandler,
+    private readonly refreshTokenHandler: RefreshTokenHandler,
+    private readonly logoutHandler: LogoutHandler,
     private readonly getCurrentUserHandler: GetCurrentUserHandler,
   ) {}
 
@@ -55,6 +63,35 @@ export class AuthController {
     }
 
     return result.value;
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() dto: RefreshTokenRequestDto) {
+    const command = new RefreshTokenCommand(dto.refreshToken);
+
+    const result = await this.refreshTokenHandler.execute(command);
+
+    if (result.isFail) {
+      throw result.error as DomainError;
+    }
+
+    return result.value;
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Body() dto: LogoutRequestDto) {
+    const command = new LogoutCommand(dto.refreshToken);
+
+    const result = await this.logoutHandler.execute(command);
+
+    if (result.isFail) {
+      throw result.error as DomainError;
+    }
+
+    return { message: 'Logged out successfully.' };
   }
 
   @Get('me')

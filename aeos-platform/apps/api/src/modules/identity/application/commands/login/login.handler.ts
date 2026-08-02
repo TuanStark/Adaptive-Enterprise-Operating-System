@@ -1,15 +1,20 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
+import { generateId } from '@aeos/common';
 
-import { Email, InvalidEmailError } from '../../../domain/value-objects/email.vo';
+import { Email } from '../../../domain/value-objects/email.vo';
 import { UserRepository, USER_REPOSITORY } from '../../../domain/repositories/user.repository';
+import { SessionRepository, SESSION_REPOSITORY } from '../../../domain/repositories/session.repository';
 import {
   PasswordHasher,
   PASSWORD_HASHER,
 } from '../../../domain/services/password-hasher.interface';
 import { InvalidCredentialsError } from '../../../domain/errors/identity.errors';
+import { Session } from '../../../domain/entities/session.entity';
 import { LoginCommand } from './login.command';
 import { JWT_TOKEN_SERVICE, JwtTokenService } from '../../../infrastructure/auth/jwt-token.service';
+
+const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface LoginResult {
   accessToken: string;
@@ -22,6 +27,8 @@ export class LoginHandler {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
+    @Inject(SESSION_REPOSITORY)
+    private readonly sessionRepository: SessionRepository,
     @Inject(PASSWORD_HASHER)
     private readonly passwordHasher: PasswordHasher,
     @Inject(JWT_TOKEN_SERVICE)
@@ -30,8 +37,7 @@ export class LoginHandler {
 
   async execute(
     command: LoginCommand,
-  ): Promise<Result<LoginResult, DomainError | InvalidEmailError>> {
-    // 1. Validate Email
+  ): Promise<Result<LoginResult, DomainError>> {
     const emailResult = Email.create(command.email);
     if (emailResult.isFail) {
       return Result.fail(new InvalidCredentialsError());
@@ -58,19 +64,18 @@ export class LoginHandler {
 
     await this.userRepository.save(user);
 
+    const session = Session.create(generateId(), user.id, REFRESH_TOKEN_EXPIRY_MS);
+    await this.sessionRepository.save(session);
+
     const accessToken = await this.jwtService.generateAccessToken({
       userId: user.id,
       email: user.email.value,
       tenantId: user.tenantId,
     });
 
-    const refreshToken = await this.jwtService.generateRefreshToken({
-      userId: user.id,
-    });
-
     return Result.ok({
       accessToken,
-      refreshToken,
+      refreshToken: session.refreshToken,
       userId: user.id,
       email: user.email.value,
     });

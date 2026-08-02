@@ -5,6 +5,10 @@ import { HealthModule } from './health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
+import { ProjectModule } from './modules/project/project.module';
+import { SprintModule } from './modules/sprint/sprint.module';
+import { TaskModule } from './modules/task/task.module';
+import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
   imports: [
@@ -30,6 +34,10 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
     IdentityModule,
     OrganizationModule,
     WorkspaceModule,
+    ProjectModule,
+    SprintModule,
+    TaskModule,
+    CommentModule,
   ],
   providers: [
     {

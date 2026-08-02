@@ -90,6 +90,7 @@ model Tenant {
   taskAttachments     TaskAttachment[]
   files               File[]
   documents           Document[]
+  sprints             Sprint[]
   auditLogs           AuditLog[]
   outboxEvents        OutboxEvent[]
   idempotencyKeys     IdempotencyKey[]
@@ -340,6 +341,7 @@ model Project {
   workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner     User?           @relation("ProjectOwner", fields: [ownerId], references: [id])
   members   ProjectMember[]
+  sprints   Sprint[]
   tasks     Task[]
 
   @@index([tenantId])
@@ -365,6 +367,31 @@ model ProjectMember {
 }
 
 // ----------------------------------------------------
+// SPRINT
+// ----------------------------------------------------
+
+model Sprint {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String?   @map("tenant_id") @db.Uuid
+  projectId String?   @map("project_id") @db.Uuid
+  name      String?   @db.VarChar(255)
+  goal      String?
+  status    String?   @db.VarChar(30)
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  version   Int       @default(1)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  tenant  Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId])
+  @@map("sprints")
+}
+
+// ----------------------------------------------------
 // TASK MANAGEMENT
 // ----------------------------------------------------
 
@@ -372,6 +399,7 @@ model Task {
   id           String      @id @default(uuid()) @db.Uuid
   tenantId     String?     @map("tenant_id") @db.Uuid
   projectId    String?     @map("project_id") @db.Uuid
+  sprintId     String?     @map("sprint_id") @db.Uuid
   parentTaskId String?     @map("parent_task_id") @db.Uuid
   title        String?     @db.VarChar(255)
   description  String?
@@ -389,6 +417,7 @@ model Task {
 
   tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   project     Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint      Sprint?          @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   parentTask  Task?            @relation("SubTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subTasks    Task[]           @relation("SubTasks")
   creator     User?            @relation("TaskCreator", fields: [creatorId], references: [id])
@@ -398,6 +427,7 @@ model Task {
 
   @@index([tenantId])
   @@index([projectId])
+  @@index([sprintId])
   @@index([projectId, status])
   @@index([assigneeId, status])
   @@map("tasks")
