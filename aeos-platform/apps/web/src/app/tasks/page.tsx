@@ -1,139 +1,135 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/data-table";
+import React, { useState } from "react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DataTable } from "@/components/ui/data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { TaskDetailPanel } from "@/components/layout/TaskDetailPanel";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export type Task = {
   id: string;
   title: string;
-  status: "BACKLOG" | "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "DONE";
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   assignee: { name: string; avatar?: string };
 };
 
-export const columns: ColumnDef<Task>[] = [
-  {
-    accessorKey: "title",
-    header: "Task Title",
-    cell: ({ row }) => <div className="font-medium text-gray-900">{row.getValue("title")}</div>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      const getStatusColor = (s: string) => {
-        switch (s) {
-          case "DONE": return "bg-emerald-100 text-emerald-700 hover:bg-emerald-200";
-          case "IN_PROGRESS": return "bg-blue-100 text-blue-700 hover:bg-blue-200";
-          case "IN_REVIEW": return "bg-purple-100 text-purple-700 hover:bg-purple-200";
-          default: return "bg-gray-100 text-gray-700 hover:bg-gray-200";
-        }
-      };
-      return <Badge variant="secondary" className={`rounded-md font-medium ${getStatusColor(status)}`}>{status.replace('_', ' ')}</Badge>;
-    },
-  },
-  {
-    accessorKey: "priority",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="-ml-4 hover:bg-gray-100"
-        >
-          Priority
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const p = row.getValue("priority") as string;
-      const getColor = (p: string) => {
-        if (p === 'URGENT') return 'text-red-600 bg-red-50';
-        if (p === 'HIGH') return 'text-orange-600 bg-orange-50';
-        if (p === 'MEDIUM') return 'text-blue-600 bg-blue-50';
-        return 'text-gray-600 bg-gray-50';
-      }
-      return <Badge variant="outline" className={`border-0 ${getColor(p)}`}>{p}</Badge>;
-    },
-  },
-  {
-    accessorKey: "assignee",
-    header: "Assignee",
-    cell: ({ row }) => {
-      const assignee = row.original.assignee;
-      return (
-        <div className="flex items-center gap-2">
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={assignee.avatar} />
-            <AvatarFallback className="text-xs bg-primary/10 text-primary">{assignee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <span className="text-sm text-gray-600">{assignee.name}</span>
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const task = row.original;
-      return (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 outline-none">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4 text-gray-500" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px] rounded-xl">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(task.id)}>
-                Copy Task ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>View details</DropdownMenuItem>
-              <DropdownMenuItem>Assign to me</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
-  },
-];
+const initialData: Record<string, Task[]> = {
+  "TODO": [
+    { id: "AEOS-14", title: "Write Documentation", status: "TODO", priority: "MEDIUM", assignee: { name: "Natasha Romanoff", avatar: "https://i.pravatar.cc/150?u=4" } },
+    { id: "AEOS-15", title: "Setup Notification Service", status: "TODO", priority: "HIGH", assignee: { name: "Tony Stark" } },
+  ],
+  "IN_PROGRESS": [
+    { id: "AEOS-12", title: "Implement CQRS Pattern", status: "IN_PROGRESS", priority: "URGENT", assignee: { name: "Peter Parker", avatar: "https://i.pravatar.cc/150?u=2" } },
+  ],
+  "DONE": [
+    { id: "AEOS-1", title: "Design System Architecture", status: "DONE", priority: "HIGH", assignee: { name: "Tony Stark", avatar: "https://github.com/shadcn.png" } },
+  ],
+};
 
-const mockData: Task[] = [
-  { id: "1", title: "Design System Architecture", status: "DONE", priority: "URGENT", assignee: { name: "Tony Stark", avatar: "https://github.com/shadcn.png" } },
-  { id: "2", title: "Implement CQRS Pattern", status: "IN_PROGRESS", priority: "HIGH", assignee: { name: "Peter Parker" } },
-  { id: "3", title: "Setup Next.js Frontend", status: "IN_REVIEW", priority: "HIGH", assignee: { name: "Bruce Banner" } },
-  { id: "4", title: "Write Documentation", status: "TODO", priority: "MEDIUM", assignee: { name: "Natasha Romanoff" } },
-  { id: "5", title: "Docker Containerization", status: "BACKLOG", priority: "LOW", assignee: { name: "Clint Barton" } },
-  { id: "6", title: "Deploy to Kubernetes", status: "BACKLOG", priority: "HIGH", assignee: { name: "Thor Odinson" } },
+const columnsConfig: ColumnDef<Task>[] = [
+  { accessorKey: "id", header: "ID" },
+  { accessorKey: "title", header: "Title", cell: ({ row }) => <div className="font-medium text-gray-900">{row.getValue("title")}</div> },
+  { accessorKey: "status", header: "Status" },
+  { accessorKey: "priority", header: "Priority" },
 ];
 
 export default function TasksPage() {
+  const [columns, setColumns] = useState(initialData);
+  const [view, setView] = useState<"board" | "list">("board");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
+
+    if (source.droppableId !== destination.droppableId) {
+      const sourceCol = [...columns[source.droppableId]];
+      const destCol = [...columns[destination.droppableId]];
+      const [removed] = sourceCol.splice(source.index, 1);
+      removed.status = destination.droppableId as Task["status"];
+      destCol.splice(destination.index, 0, removed);
+      setColumns({ ...columns, [source.droppableId]: sourceCol, [destination.droppableId]: destCol });
+    } else {
+      const column = [...columns[source.droppableId]];
+      const [removed] = column.splice(source.index, 1);
+      column.splice(destination.index, 0, removed);
+      setColumns({ ...columns, [source.droppableId]: column });
+    }
+  };
+
+  const allTasks = Object.values(columns).flat();
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="h-full flex flex-col space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Tasks</h1>
-          <p className="text-gray-500">Manage and track all project tasks in your workspace.</p>
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <span>Projects</span><span className="mx-2">/</span><span>AEOS-CORE</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Active Sprint</h1>
         </div>
-        <Button className="rounded-full bg-primary hover:bg-primary/90">Create Task</Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="h-9">Complete Sprint</Button>
+        </div>
       </div>
 
-      <DataTable columns={columns} data={mockData} />
+      <div className="flex items-center justify-between">
+        <div className="flex bg-gray-100/80 p-1 rounded-lg">
+          <div onClick={() => setView("board")} className={`px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors ${view === "board" ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-900"}`}>Board</div>
+          <div onClick={() => setView("list")} className={`px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors ${view === "list" ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-900"}`}>List</div>
+        </div>
+      </div>
+
+      {view === "list" ? (
+        <div className="flex-1 overflow-auto"><DataTable columns={columnsConfig} data={allTasks} /></div>
+      ) : (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex h-full gap-4 min-w-max pb-4">
+              {Object.entries(columns).map(([colId, items]) => (
+                <div key={colId} className="w-[320px] flex flex-col bg-gray-50/50 rounded-xl border border-gray-100">
+                  <div className="p-3 font-semibold text-gray-500 text-sm uppercase tracking-wide flex justify-between items-center">
+                    <span>{colId.replace('_', ' ')} <span className="ml-2 bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">{items.length}</span></span>
+                  </div>
+                  <Droppable droppableId={colId}>
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[150px]">
+                        {items.map((task, index) => (
+                          <Draggable key={task.id} draggableId={task.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} onClick={() => setSelectedTaskId(task.id)} style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.8 : 1 }}>
+                                <Card className="shadow-sm border-gray-200 hover:border-primary/50 transition-colors">
+                                  <CardContent className="p-3">
+                                    <p className={`text-sm font-medium ${task.status === 'DONE' ? 'line-through text-gray-500' : 'text-gray-900'}`}>{task.title}</p>
+                                    <div className="flex items-center justify-between mt-4">
+                                      <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50">{task.id}</Badge>
+                                      <Avatar className="h-6 w-6"><AvatarImage src={task.assignee.avatar} /><AvatarFallback>{task.assignee.name.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
+            </div>
+          </DragDropContext>
+        </div>
+      )}
+
+      <TaskDetailPanel taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </div>
   );
 }
