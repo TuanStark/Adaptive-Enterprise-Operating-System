@@ -14,7 +14,9 @@ class CreateTaskRequestDto {
   @IsString() projectId!: string;
   @IsString() @MinLength(1) @MaxLength(255) title!: string;
   @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() type?: string;
   @IsOptional() @IsString() priority?: string;
+  @IsOptional() storyPoints?: number;
 }
 
 class ChangeStatusRequestDto {
@@ -47,6 +49,7 @@ export class TaskController {
     const command = new CreateTaskCommand(
       dto.tenantId, dto.projectId, dto.title,
       dto.description ?? null, user.userId, dto.priority ?? 'MEDIUM',
+      dto.type ?? 'TASK',
     );
     const result = await this.createHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -70,7 +73,8 @@ export class TaskController {
     );
     return {
       data: data.map((t) => ({
-        id: t.id, title: t.title, status: t.status, priority: t.priority,
+        id: t.id, key: t.key, title: t.title, status: t.status, type: t.type,
+        priority: t.priority, storyPoints: t.storyPoints,
         assigneeId: t.assigneeId, sprintId: t.sprintId, dueDate: t.dueDate, createdAt: t.createdAt,
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },

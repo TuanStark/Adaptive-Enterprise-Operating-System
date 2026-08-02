@@ -3,33 +3,29 @@ import { ProjectList } from "@/features/projects/components/ProjectList";
 import { CreateProjectButton } from "@/features/projects/components/CreateProjectButton";
 
 async function getProjects(): Promise<Project[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: "1",
-          name: "Project Alpha 1",
-          description: "A revolutionary new product for enterprise.",
-          updatedAt: "2 days ago",
-          status: "Active",
-        },
-        {
-          id: "2",
-          name: "Project Alpha 2",
-          description: "A revolutionary new product for enterprise.",
-          updatedAt: "2 days ago",
-          status: "Active",
-        },
-        {
-          id: "3",
-          name: "Project Alpha 3",
-          description: "A revolutionary new product for enterprise.",
-          updatedAt: "2 days ago",
-          status: "Active",
-        },
-      ]);
-    }, 100);
-  });
+  return [
+    {
+      id: "proj-1", tenantId: "tenant-1", workspaceId: "ws-1",
+      name: "Project Alpha", description: "A revolutionary new product for enterprise.",
+      ownerId: "user-1", status: "ACTIVE", priority: "HIGH",
+      startDate: "2026-07-01T00:00:00Z", endDate: "2026-12-31T00:00:00Z",
+      members: [], createdAt: "2026-07-01T00:00:00Z", updatedAt: "2026-08-01T00:00:00Z",
+    },
+    {
+      id: "proj-2", tenantId: "tenant-1", workspaceId: "ws-1",
+      name: "Project Beta", description: "Internal tooling and automation.",
+      ownerId: "user-1", status: "ACTIVE", priority: "MEDIUM",
+      startDate: "2026-08-01T00:00:00Z", endDate: null,
+      members: [], createdAt: "2026-08-01T00:00:00Z", updatedAt: "2026-08-01T00:00:00Z",
+    },
+    {
+      id: "proj-3", tenantId: "tenant-1", workspaceId: "ws-1",
+      name: "Project Gamma", description: "Research and development initiative.",
+      ownerId: "user-2", status: "DRAFT", priority: "LOW",
+      startDate: null, endDate: null,
+      members: [], createdAt: "2026-07-20T00:00:00Z", updatedAt: "2026-07-28T00:00:00Z",
+    },
+  ];
 }
 
 export default async function ProjectsPage() {

@@ -20,8 +20,8 @@ export function ProfileSettingsForm({ initialSettings }: ProfileSettingsFormProp
       <CardContent className="space-y-6">
         <div className="flex items-center gap-6">
           <Avatar className="h-20 w-20 border-2 border-gray-100 shadow-sm">
-            <AvatarImage src={initialSettings.avatarUrl} alt="Avatar" />
-            <AvatarFallback className="text-2xl">{initialSettings.firstName[0]}{initialSettings.lastName[0]}</AvatarFallback>
+            <AvatarImage src={initialSettings.avatarUrl ?? undefined} alt="Avatar" />
+            <AvatarFallback className="text-2xl">{(initialSettings.firstName ?? "?")[0]}{(initialSettings.lastName ?? "?")[0]}</AvatarFallback>
           </Avatar>
           <div className="space-y-2">
             <Button variant="outline" size="sm">Change Avatar</Button>
@@ -32,11 +32,11 @@ export function ProfileSettingsForm({ initialSettings }: ProfileSettingsFormProp
         <div className="grid grid-cols-2 gap-4 max-w-2xl">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">First Name</label>
-            <Input defaultValue={initialSettings.firstName} />
+            <Input defaultValue={initialSettings.firstName ?? ""} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">Last Name</label>
-            <Input defaultValue={initialSettings.lastName} />
+            <Input defaultValue={initialSettings.lastName ?? ""} />
           </div>
         </div>
         

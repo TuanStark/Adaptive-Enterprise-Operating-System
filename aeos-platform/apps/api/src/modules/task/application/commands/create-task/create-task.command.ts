@@ -6,5 +6,6 @@ export class CreateTaskCommand {
     public readonly description: string | null,
     public readonly creatorId: string,
     public readonly priority: string,
+    public readonly type: string = 'TASK',
   ) {}
 }

@@ -50,7 +50,7 @@ export function MessageList({ messages, users }: MessageListProps) {
                 {msg.content}
               </div>
 
-              {msg.threadCount && msg.threadCount > 0 && (
+              {msg.reactions && msg.reactions.length > 0 && (
                 <div className="mt-2 flex items-center gap-2 cursor-pointer group/thread w-fit">
                   <div className="flex -space-x-1">
                     <Avatar className="w-5 h-5 border border-white">
@@ -58,9 +58,8 @@ export function MessageList({ messages, users }: MessageListProps) {
                     </Avatar>
                   </div>
                   <span className="text-sm font-semibold text-blue-600 group-hover/thread:underline">
-                    {msg.threadCount} replies
+                    {msg.reactions.length} reactions
                   </span>
-                  <span className="text-xs text-gray-500">Last reply today at 12:05 PM</span>
                 </div>
               )}
             </div>

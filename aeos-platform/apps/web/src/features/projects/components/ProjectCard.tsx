@@ -18,8 +18,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <CardContent>
         <p className="text-sm text-gray-500">{project.description}</p>
         <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
-          <span>Updated {project.updatedAt}</span>
-          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md">{project.status}</span>
+          <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
+          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md">{project.status.charAt(0) + project.status.slice(1).toLowerCase()}</span>
         </div>
       </CardContent>
     </Card>

@@ -3,11 +3,13 @@ import { ProfileSettings } from "@/features/settings/types";
 
 async function getProfileSettings(): Promise<ProfileSettings> {
   return {
+    id: "user-1",
     firstName: "Tony",
     lastName: "Stark",
     email: "tony@starkindustries.com",
     avatarUrl: "https://github.com/shadcn.png",
-    bio: "Genius, billionaire, playboy, philanthropist."
+    bio: "Genius, billionaire, playboy, philanthropist.",
+    status: "ACTIVE",
   };
 }
 

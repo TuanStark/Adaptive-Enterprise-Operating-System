@@ -24,8 +24,8 @@ export function BacklogView({ initialTasks }: BacklogViewProps) {
   const allTasks = Object.values(initialTasks).flat();
   
   // Group tasks by sprint
-  const sprint0Tasks = allTasks.filter(t => t.sprint === "SCRUM Sprint 1"); // We mapped them to Sprint 1 in mock
-  const backlogTasks = allTasks.filter(t => t.sprint === "Backlog" || !t.sprint);
+  const sprint0Tasks = allTasks.filter(t => t.sprintId === "sprint-1");
+  const backlogTasks = allTasks.filter(t => !t.sprintId);
 
   return (
     <div className="flex flex-col h-full bg-white overflow-y-auto pb-10">
@@ -94,7 +94,7 @@ export function BacklogView({ initialTasks }: BacklogViewProps) {
                     <CalendarIcon className="w-3.5 h-3.5" /> Aug 12
                   </div>
                   <div className="w-6 text-center text-gray-500 font-semibold text-sm bg-gray-100 rounded-full px-1">{task.storyPoints || "-"}</div>
-                  <Avatar className="w-6 h-6"><AvatarImage src={task.assignee.avatar} /><AvatarFallback>{task.assignee.name.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                  <Avatar className="w-6 h-6"><AvatarFallback>{task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??"}</AvatarFallback></Avatar>
                 </div>
               </div>
             ))}
@@ -172,7 +172,7 @@ export function BacklogView({ initialTasks }: BacklogViewProps) {
                     To Do <ChevronDown className="w-3 h-3" />
                   </div>
                   <div className="w-6 text-center text-gray-500 font-semibold text-sm bg-gray-100 rounded-full px-1">{task.storyPoints || "-"}</div>
-                  <Avatar className="w-6 h-6"><AvatarImage src={task.assignee.avatar} /><AvatarFallback>{task.assignee.name.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                  <Avatar className="w-6 h-6"><AvatarFallback>{task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??"}</AvatarFallback></Avatar>
                 </div>
               </div>
             )) : (

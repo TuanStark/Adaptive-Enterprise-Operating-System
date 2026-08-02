@@ -52,7 +52,7 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
       const taskIndex = sourceCol.findIndex(t => t.id === draggableId);
       if (taskIndex === -1) return;
       const [removed] = sourceCol.splice(taskIndex, 1);
-      removed.status = destination.droppableId;
+      removed.status = destination.droppableId as Task['status'];
       
       let realDestIndex = destination.index;
       if (searchQuery || selectedAvatar) {
@@ -83,12 +83,18 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
       return;
     }
     const newTask: Task = {
-      id: `AEOS-${Math.floor(Math.random() * 1000) + 100}`,
+      id: `temp-${Math.floor(Math.random() * 1000) + 100}`,
+      key: `AEOS-${Math.floor(Math.random() * 1000) + 100}`,
       title: newTaskTitle,
-      status: colId,
+      status: colId as Task['status'],
       type: "TASK",
       priority: "MEDIUM",
-      assignee: { name: "Tony Stark", avatar: "https://github.com/shadcn.png" }
+      storyPoints: null,
+      assigneeId: null,
+      sprintId: null,
+      projectId: "proj-1",
+      dueDate: null,
+      createdAt: new Date().toISOString(),
     };
     setColumns({
       ...columns,
@@ -113,7 +119,7 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
   const filteredColumns = Object.entries(columns).reduce((acc, [colId, items]) => {
     acc[colId] = items.filter(task => {
       const matchSearch = !searchQuery || task.title.toLowerCase().includes(searchQuery.toLowerCase()) || task.id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchAvatar = !selectedAvatar || task.assignee.name === selectedAvatar;
+      const matchAvatar = !selectedAvatar || task.assigneeId === selectedAvatar;
       return matchSearch && matchAvatar;
     });
     return acc;
@@ -152,8 +158,8 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
                                   <p className={`text-sm font-medium leading-snug ${task.status === 'DONE' ? 'line-through text-gray-500' : 'text-gray-900'}`}>{task.title}</p>
                                 </div>
                                 <div className="flex items-center justify-between mt-3">
-                                  <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50 font-normal">{task.id}</Badge>
-                                  <Avatar className="h-6 w-6"><AvatarImage src={task.assignee.avatar} /><AvatarFallback>{task.assignee.name.substring(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                                  <Badge variant="outline" className="text-gray-500 border-gray-200 bg-gray-50 font-normal">{task.key}</Badge>
+                                  <Avatar className="h-6 w-6"><AvatarFallback>{task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??"}</AvatarFallback></Avatar>
                                 </div>
                               </CardContent>
                             </Card>

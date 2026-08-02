@@ -19,7 +19,7 @@ export function TeamList({ members }: TeamListProps) {
             <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
               <div className="flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src={member.avatarUrl} />
+                  <AvatarImage src={member.avatarUrl ?? undefined} />
                   <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>

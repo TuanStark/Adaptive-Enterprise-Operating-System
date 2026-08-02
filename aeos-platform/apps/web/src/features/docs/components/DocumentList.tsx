@@ -17,8 +17,8 @@ export function DocumentList({ documents }: DocumentListProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <CardTitle className="text-base font-medium text-gray-800 mb-1">{doc.title}</CardTitle>
-            <p className="text-xs text-gray-500 line-clamp-2">{doc.summary}</p>
+            <CardTitle className="text-base font-medium text-gray-800 mb-1">{doc.name}</CardTitle>
+            <p className="text-xs text-gray-500 line-clamp-2">{doc.versionCount} version(s) · {doc.visibility.toLowerCase()}</p>
           </CardContent>
         </Card>
       ))}

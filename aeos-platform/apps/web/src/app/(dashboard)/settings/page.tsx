@@ -3,8 +3,11 @@ import { WorkspaceSettings } from "@/features/settings/types";
 
 async function getWorkspaceSettings(): Promise<WorkspaceSettings> {
   return {
+    id: "ws-1",
+    tenantId: "tenant-1",
     name: "Stark Industries",
     domain: "stark.aeos.io",
+    createdAt: "2026-06-01T00:00:00Z",
   };
 }
 

@@ -4,10 +4,10 @@ import { TeamMember } from "@/features/team/types";
 
 async function getTeamMembers(): Promise<TeamMember[]> {
   return [
-    { id: "1", name: "Tony Stark", email: "[EMAIL_ADDRESS]", role: "Admin", avatarUrl: "https://i.pravatar.cc/150?u=1" },
-    { id: "2", name: "Peter Parker", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=2" },
-    { id: "3", name: "Bruce Banner", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=3" },
-    { id: "4", name: "Natasha Romanoff", email: "[EMAIL_ADDRESS]", role: "Member", avatarUrl: "https://i.pravatar.cc/150?u=4" },
+    { id: "m1", userId: "user-1", name: "Tony Stark", email: "tony@aeos.io", role: "ADMIN", avatarUrl: "https://i.pravatar.cc/150?u=1", joinedAt: "2026-07-01T00:00:00Z" },
+    { id: "m2", userId: "user-2", name: "Peter Parker", email: "peter@aeos.io", role: "MEMBER", avatarUrl: "https://i.pravatar.cc/150?u=2", joinedAt: "2026-07-05T00:00:00Z" },
+    { id: "m3", userId: "user-3", name: "Bruce Banner", email: "bruce@aeos.io", role: "MEMBER", avatarUrl: "https://i.pravatar.cc/150?u=3", joinedAt: "2026-07-10T00:00:00Z" },
+    { id: "m4", userId: "user-4", name: "Natasha Romanoff", email: "natasha@aeos.io", role: "MEMBER", avatarUrl: "https://i.pravatar.cc/150?u=4", joinedAt: "2026-07-15T00:00:00Z" },
   ];
 }
 
