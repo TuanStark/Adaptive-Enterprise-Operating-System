@@ -1,0 +1,583 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ----------------------------------------------------
+// TENANT
+// ----------------------------------------------------
+
+model Tenant {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String?       @db.VarChar(255)
+  slug      String        @unique @db.VarChar(255)
+  status    TenantStatus?
+  version   Int           @default(1)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+
+  // Relations
+  users               User[]
+  organizations       Organization[]
+  organizationMembers OrganizationMember[]
+  invitations         Invitation[]
+  workspaces          Workspace[]
+  workspaceMembers    WorkspaceMember[]
+  roles               Role[]
+  projects            Project[]
+  projectMembers      ProjectMember[]
+  tasks               Task[]
+  taskComments        TaskComment[]
+  taskAttachments     TaskAttachment[]
+  files               File[]
+  documents           Document[]
+  auditLogs           AuditLog[]
+  outboxEvents        OutboxEvent[]
+  idempotencyKeys     IdempotencyKey[]
+  workflows           Workflow[]
+
+  @@map("tenants")
+}
+
+// ----------------------------------------------------
+// IDENTITY
+// ----------------------------------------------------
+
+model User {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  email         String      @unique @db.VarChar(255)
+  passwordHash  String?     @map("password_hash") @db.VarChar(255)
+  firstName     String?     @map("first_name") @db.VarChar(100)
+  lastName      String?     @map("last_name") @db.VarChar(100)
+  avatarUrl     String?     @map("avatar_url")
+  status        UserStatus?
+  emailVerified Boolean?    @default(false) @map("email_verified")
+  lastLoginAt   DateTime?   @map("last_login_at")
+  version       Int         @default(1)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  createdBy     String?     @map("created_by") @db.Uuid
+  updatedBy     String?     @map("updated_by") @db.Uuid
+  deletedAt     DateTime?   @map("deleted_at")
+
+  // Relations
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions            Session[]
+  oauthAccounts       OauthAccount[]
+  ownedOrganizations  Organization[]       @relation("OrganizationOwner")
+  organizationMembers OrganizationMember[]
+  ownedWorkspaces     Workspace[]          @relation("WorkspaceOwner")
+  workspaceMembers    WorkspaceMember[]
+  ownedProjects       Project[]            @relation("ProjectOwner")
+  projectMembers      ProjectMember[]
+  createdTasks        Task[]               @relation("TaskCreator")
+  assignedTasks       Task[]               @relation("TaskAssignee")
+  taskComments        TaskComment[]
+  ownedDocuments      Document[]           @relation("DocumentOwner")
+  auditLogs           AuditLog[]           @relation("Actor")
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  refreshToken String?   @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  revoked      Boolean?  @default(false)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model OauthAccount {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String?  @map("user_id") @db.Uuid
+  provider          String?  @db.VarChar(50)
+  providerAccountId String?  @map("provider_account_id") @db.VarChar(255)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_accounts")
+}
+
+// ----------------------------------------------------
+// ORGANIZATION
+// ----------------------------------------------------
+
+model Organization {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String?   @map("tenant_id") @db.Uuid
+  name      String?   @db.VarChar(255)
+  ownerId   String?   @map("owner_id") @db.Uuid
+  version   Int       @default(1)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant     Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner      User?                @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  members    OrganizationMember[]
+  workspaces Workspace[]
+
+  @@index([tenantId])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String?   @map("tenant_id") @db.Uuid
+  organizationId String?   @map("organization_id") @db.Uuid
+  userId         String?   @map("user_id") @db.Uuid
+  role           String?   @db.VarChar(50)
+  joinedAt       DateTime? @map("joined_at")
+
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model Invitation {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String?   @map("tenant_id") @db.Uuid
+  organizationId String?   @map("organization_id") @db.Uuid
+  email          String?   @db.VarChar(255)
+  token          String?   @db.VarChar(255)
+  status         String?   @db.VarChar(30)
+  expiresAt      DateTime? @map("expires_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+// ----------------------------------------------------
+// WORKSPACE
+// ----------------------------------------------------
+
+model Workspace {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String?          @map("tenant_id") @db.Uuid
+  organizationId String?          @map("organization_id") @db.Uuid
+  name           String?          @db.VarChar(255)
+  description    String?
+  ownerId        String?          @map("owner_id") @db.Uuid
+  status         WorkspaceStatus?
+  version        Int              @default(1)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  createdBy      String?          @map("created_by") @db.Uuid
+  updatedBy      String?          @map("updated_by") @db.Uuid
+  deletedAt      DateTime?        @map("deleted_at")
+
+  tenant       Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organization Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User?             @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members      WorkspaceMember[]
+  roles        Role[]
+  projects     Project[]
+  documents    Document[]
+  workflows    Workflow[]
+
+  @@unique([organizationId, name])
+  @@index([tenantId])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  workspaceId String?   @map("workspace_id") @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  roleId      String?   @map("role_id") @db.Uuid
+  joinedAt    DateTime? @map("joined_at")
+
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role?      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+// ----------------------------------------------------
+// RBAC
+// ----------------------------------------------------
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  name        String?  @db.VarChar(100)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant           Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace        Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceMembers WorkspaceMember[]
+  permissions      RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(uuid()) @db.Uuid
+  resource String @db.VarChar(100)
+  action   String @db.VarChar(100)
+
+  roles RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ----------------------------------------------------
+// PROJECT
+// ----------------------------------------------------
+
+model Project {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String?        @map("tenant_id") @db.Uuid
+  workspaceId String?        @map("workspace_id") @db.Uuid
+  name        String?        @db.VarChar(255)
+  description String?
+  ownerId     String?        @map("owner_id") @db.Uuid
+  status      ProjectStatus?
+  priority    Priority?
+  startDate   DateTime?      @map("start_date") @db.Date
+  endDate     DateTime?      @map("end_date") @db.Date
+  version     Int            @default(1)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  createdBy   String?        @map("created_by") @db.Uuid
+  updatedBy   String?        @map("updated_by") @db.Uuid
+  deletedAt   DateTime?      @map("deleted_at")
+
+  tenant    Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner     User?           @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members   ProjectMember[]
+  tasks     Task[]
+
+  @@index([tenantId])
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String?   @map("tenant_id") @db.Uuid
+  projectId String?   @map("project_id") @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  role      String?   @db.VarChar(50)
+  joinedAt  DateTime? @map("joined_at")
+
+  tenant  Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// ----------------------------------------------------
+// TASK MANAGEMENT
+// ----------------------------------------------------
+
+model Task {
+  id           String      @id @default(uuid()) @db.Uuid
+  tenantId     String?     @map("tenant_id") @db.Uuid
+  projectId    String?     @map("project_id") @db.Uuid
+  parentTaskId String?     @map("parent_task_id") @db.Uuid
+  title        String?     @db.VarChar(255)
+  description  String?
+  creatorId    String?     @map("creator_id") @db.Uuid
+  assigneeId   String?     @map("assignee_id") @db.Uuid
+  status       TaskStatus?
+  priority     Priority?
+  dueDate      DateTime?   @map("due_date")
+  version      Int         @default(1)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  createdBy    String?     @map("created_by") @db.Uuid
+  updatedBy    String?     @map("updated_by") @db.Uuid
+  deletedAt    DateTime?   @map("deleted_at")
+
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project     Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentTask  Task?            @relation("SubTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subTasks    Task[]           @relation("SubTasks")
+  creator     User?            @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  comments    TaskComment[]
+  attachments TaskAttachment[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([projectId, status])
+  @@index([assigneeId, status])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  taskId    String?  @map("task_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  content   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("task_comments")
+}
+
+model TaskAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  taskId    String?  @map("task_id") @db.Uuid
+  fileId    String?  @map("file_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  file   File?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("task_attachments")
+}
+
+// ----------------------------------------------------
+// DOCUMENT MANAGEMENT
+// ----------------------------------------------------
+
+model File {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String?  @map("tenant_id") @db.Uuid
+  storageProvider String?  @map("storage_provider") @db.VarChar(50)
+  storageKey      String?  @map("storage_key")
+  fileName        String?  @map("file_name") @db.VarChar(255)
+  mimeType        String?  @map("mime_type") @db.VarChar(100)
+  size            BigInt?
+  uploadedBy      String?  @map("uploaded_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  taskAttachments TaskAttachment[]
+
+  @@map("files")
+}
+
+model Document {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  workspaceId String?   @map("workspace_id") @db.Uuid
+  name        String?   @db.VarChar(255)
+  ownerId     String?   @map("owner_id") @db.Uuid
+  visibility  String?   @db.VarChar(30)
+  version     Int       @default(1)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  tenant    Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner     User?             @relation("DocumentOwner", fields: [ownerId], references: [id])
+  versions  DocumentVersion[]
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  documentId    String?  @map("document_id") @db.Uuid
+  versionNumber Int?     @map("version_number")
+  fileId        String?  @map("file_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  document Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_versions")
+}
+
+// ----------------------------------------------------
+// AUDIT
+// ----------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String?  @map("tenant_id") @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String?  @db.VarChar(100)
+  entityType String?  @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id") @db.Uuid
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?   @relation("Actor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ----------------------------------------------------
+// EVENT OUTBOX
+// ----------------------------------------------------
+
+model OutboxEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String?      @map("tenant_id") @db.Uuid
+  aggregateType String?      @map("aggregate_type") @db.VarChar(100)
+  aggregateId   String?      @map("aggregate_id") @db.Uuid
+  eventType     String?      @map("event_type") @db.VarChar(100)
+  payload       Json?
+  status        EventStatus?
+  retryCount    Int?         @default(0) @map("retry_count")
+  processedAt   DateTime?    @map("processed_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("outbox_events")
+}
+
+// ----------------------------------------------------
+// IDEMPOTENCY
+// ----------------------------------------------------
+
+model IdempotencyKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  key         String?   @db.VarChar(255)
+  requestHash String?   @map("request_hash") @db.VarChar(255)
+  response    Json?
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@map("idempotency_keys")
+}
+
+// ----------------------------------------------------
+// WORKFLOW ENGINE
+// ----------------------------------------------------
+
+model Workflow {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  name        String?  @db.VarChar(255)
+  status      String?  @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rules     WorkflowRule[]
+
+  @@map("workflows")
+}
+
+model WorkflowRule {
+  id            String  @id @default(uuid()) @db.Uuid
+  workflowId    String? @map("workflow_id") @db.Uuid
+  triggerEvent  String? @map("trigger_event") @db.VarChar(100)
+  actionType    String? @map("action_type") @db.VarChar(100)
+  configuration Json?
+
+  workflow Workflow? @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_rules")
+}
