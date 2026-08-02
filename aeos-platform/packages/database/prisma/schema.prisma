@@ -95,6 +95,8 @@ model Tenant {
   outboxEvents        OutboxEvent[]
   idempotencyKeys     IdempotencyKey[]
   workflows           Workflow[]
+  notifications       Notification[]
+  meetings            Meeting[]
 
   @@map("tenants")
 }
@@ -136,6 +138,9 @@ model User {
   taskComments        TaskComment[]
   ownedDocuments      Document[]           @relation("DocumentOwner")
   auditLogs           AuditLog[]           @relation("Actor")
+  notifications       Notification[]
+  organizedMeetings   Meeting[]            @relation("MeetingOrganizer")
+  meetingParticipations MeetingParticipant[]
 
   @@index([tenantId])
   @@index([email])
@@ -250,6 +255,7 @@ model Workspace {
   projects     Project[]
   documents    Document[]
   workflows    Workflow[]
+  meetings     Meeting[]
 
   @@unique([organizationId, name])
   @@index([tenantId])
@@ -503,6 +509,46 @@ model Document {
   @@map("documents")
 }
 
+// ----------------------------------------------------
+// MEETING & CALENDAR
+// ----------------------------------------------------
+
+model Meeting {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  workspaceId String?   @map("workspace_id") @db.Uuid
+  title       String?   @db.VarChar(255)
+  description String?
+  startTime   DateTime? @map("start_time")
+  endTime     DateTime? @map("end_time")
+  meetingUrl  String?   @map("meeting_url")
+  organizerId String?   @map("organizer_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant      Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace   Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  organizer   User?                @relation("MeetingOrganizer", fields: [organizerId], references: [id])
+  participants MeetingParticipant[]
+
+  @@index([tenantId])
+  @@index([workspaceId])
+  @@map("meetings")
+}
+
+model MeetingParticipant {
+  id        String   @id @default(uuid()) @db.Uuid
+  meetingId String?  @map("meeting_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  status    String?  @db.VarChar(30) // PENDING, ACCEPTED, DECLINED
+  createdAt DateTime @default(now()) @map("created_at")
+
+  meeting Meeting? @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@map("meeting_participants")
+}
+
 model DocumentVersion {
   id            String   @id @default(uuid()) @db.Uuid
   documentId    String?  @map("document_id") @db.Uuid
@@ -513,6 +559,29 @@ model DocumentVersion {
   document Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("document_versions")
+}
+
+// ----------------------------------------------------
+// NOTIFICATION
+// ----------------------------------------------------
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  type      String?  @db.VarChar(100)
+  title     String?  @db.VarChar(255)
+  content   String?
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId, read])
+  @@map("notifications")
 }
 
 // ----------------------------------------------------

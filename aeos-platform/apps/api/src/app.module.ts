@@ -9,6 +9,9 @@ import { ProjectModule } from './modules/project/project.module';
 import { SprintModule } from './modules/sprint/sprint.module';
 import { TaskModule } from './modules/task/task.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { DocumentModule } from './modules/document/document.module';
+import { MeetingModule } from './modules/meeting/meeting.module';
 
 @Module({
   imports: [
@@ -38,6 +41,9 @@ import { CommentModule } from './modules/comment/comment.module';
     SprintModule,
     TaskModule,
     CommentModule,
+    NotificationModule,
+    DocumentModule,
+    MeetingModule,
   ],
   providers: [
     {
