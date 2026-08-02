@@ -1,15 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash } from "lucide-react";
+import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 function TasksSidebar() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentView = searchParams.get("view") || "sprint";
+  const currentFilter = searchParams.get("filter");
+
+  const handleFilter = (filterName: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get("filter") === filterName) {
+      params.delete("filter");
+    } else {
+      params.set("filter", filterName);
+    }
+    router.push(`?${params.toString()}`);
+  };
+
+  const isActiveSprint = currentView === "sprint";
+  const isBacklog = currentView === "backlog";
+  const isRoadmap = currentView === "roadmap";
+
+  const isAssignedToMe = currentFilter === "me";
+  const isUrgent = currentFilter === "urgent";
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -23,23 +45,25 @@ function TasksSidebar() {
         </div>
         <div className="space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Views</p>
-          <Link href="/tasks" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
-            <Columns className="w-4 h-4 text-primary" /> Active Sprint
+          <Link href="/tasks" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isActiveSprint ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Columns className={`w-4 h-4 ${isActiveSprint ? 'text-primary' : ''}`} /> Active Sprint
           </Link>
-          <Link href="/tasks?view=backlog" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-            <ListTodo className="w-4 h-4" /> Backlog
+          <Link href="/tasks?view=backlog" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isBacklog ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <ListTodo className={`w-4 h-4 ${isBacklog ? 'text-primary' : ''}`} /> Backlog
           </Link>
-          <Link href="/tasks?view=roadmap" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-            <Calendar className="w-4 h-4" /> Roadmap
+          <Link href="/tasks?view=roadmap" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isRoadmap ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Calendar className={`w-4 h-4 ${isRoadmap ? 'text-primary' : ''}`} /> Roadmap
           </Link>
         </div>
         <div className="mt-6 space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Filters</p>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-            Assigned to me
+          <div onClick={() => handleFilter("me")} className={`flex items-center justify-between px-2 py-1.5 text-sm rounded-md cursor-pointer ${isAssignedToMe ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <span>Assigned to me</span>
+            {isAssignedToMe && <Check className="w-4 h-4" />}
           </div>
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-            Urgent Priority
+          <div onClick={() => handleFilter("urgent")} className={`flex items-center justify-between px-2 py-1.5 text-sm rounded-md cursor-pointer ${isUrgent ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <span>Urgent Priority</span>
+            {isUrgent && <Check className="w-4 h-4" />}
           </div>
         </div>
       </div>
