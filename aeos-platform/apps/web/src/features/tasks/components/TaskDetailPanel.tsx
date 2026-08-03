@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, Paperclip, CheckSquare, X } from "lucide-react";
+import { CommentSection } from "./CommentSection";
 
 interface TaskDetailPanelProps {
   taskId: string | null;
@@ -12,7 +14,15 @@ interface TaskDetailPanelProps {
 }
 
 export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
+  const [activeTab, setActiveTab] = useState<"comments" | "activity" | "history">("comments");
+
   if (!taskId) return null;
+
+  const tabs = [
+    { key: "comments" as const, label: "Comments" },
+    { key: "activity" as const, label: "Activity" },
+    { key: "history" as const, label: "History" },
+  ];
 
   return (
     <Sheet open={!!taskId} onOpenChange={(open) => !open && onClose()}>
@@ -67,6 +77,51 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                   <li>Setup Event Sourcing for audit logs</li>
                 </ul>
               </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-t border-gray-100 pt-4">
+              <div className="flex gap-1 mb-4">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer border-none ${
+                      activeTab === tab.key
+                        ? "bg-gray-900 text-white"
+                        : "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === "comments" && <CommentSection taskId={taskId} />}
+              {activeTab === "activity" && (
+                <div className="space-y-3">
+                  {[
+                    { action: "moved task to IN PROGRESS", user: "Peter Parker", time: "2h ago" },
+                    { action: "assigned task to Peter Parker", user: "Tony Stark", time: "3h ago" },
+                    { action: "created this task", user: "Tony Stark", time: "5h ago" },
+                  ].map((activity, i) => (
+                    <div key={i} className="flex items-start gap-3 text-sm">
+                      <div className="w-1.5 h-1.5 mt-2 rounded-full bg-gray-300 shrink-0" />
+                      <div>
+                        <span className="font-medium text-gray-900">{activity.user}</span>{" "}
+                        <span className="text-gray-500">{activity.action}</span>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{activity.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeTab === "history" && (
+                <div className="py-6 text-center text-sm text-gray-400">
+                  No history available yet.
+                </div>
+              )}
             </div>
           </div>
         </div>

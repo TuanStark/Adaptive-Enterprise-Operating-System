@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Search, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { NotificationPanel } from "@/features/notifications/components/NotificationPanel";
 
 import {
   DropdownMenu,
@@ -44,21 +45,7 @@ export function Header() {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger render={
-            <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-gray-900">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full border border-white"></span>
-            </Button>
-          } />
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="p-4 text-sm text-center text-gray-500">
-              No new notifications
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationPanel />
 
         <div className="h-8 w-px bg-gray-200 mx-2"></div>
 

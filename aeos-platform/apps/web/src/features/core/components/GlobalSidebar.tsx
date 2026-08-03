@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, CheckSquare, Folder, FileText, Settings, Users, MessageSquare, Plus } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Folder, FileText, Settings, Users, MessageSquare, Plus, Video, Shield } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -19,7 +19,9 @@ const globalNavItems = [
   { name: "Chat", href: "/chat", icon: MessageSquare },
   { name: "Docs", href: "/docs", icon: FileText },
   { name: "Projects", href: "/projects", icon: Folder },
+  { name: "Meetings", href: "/meetings", icon: Video },
   { name: "Team", href: "/team", icon: Users },
+  { name: "Approvals", href: "/approvals", icon: Shield },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

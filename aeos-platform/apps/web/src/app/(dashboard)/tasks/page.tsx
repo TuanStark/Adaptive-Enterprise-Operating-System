@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { TasksPageClient } from "@/features/tasks/components/TasksPageClient";
 import { Task } from "@/features/tasks/types";
 
@@ -21,5 +22,9 @@ async function getTasks(): Promise<Record<string, Task[]>> {
 export default async function TasksPage() {
   const tasks = await getTasks();
 
-  return <TasksPageClient initialTasks={tasks} />;
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading...</div>}>
+      <TasksPageClient initialTasks={tasks} />
+    </Suspense>
+  );
 }

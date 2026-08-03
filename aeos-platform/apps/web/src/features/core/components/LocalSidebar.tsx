@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
@@ -148,7 +149,7 @@ export function LocalSidebar() {
   const isLocalSidebarOpen = useAppStore((state) => state.isLocalSidebarOpen);
 
   let SidebarContent = null;
-  if (pathname.startsWith("/tasks")) SidebarContent = <TasksSidebar />;
+  if (pathname.startsWith("/tasks")) SidebarContent = <Suspense fallback={null}><TasksSidebar /></Suspense>;
   else if (pathname.startsWith("/docs")) SidebarContent = <DocsSidebar />;
   else if (pathname.startsWith("/chat")) SidebarContent = <ChatSidebar />;
 
