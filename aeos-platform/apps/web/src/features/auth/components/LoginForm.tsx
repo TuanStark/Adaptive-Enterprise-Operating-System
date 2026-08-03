@@ -1,47 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { clientApi } from "@/lib/api-client";
-import type { AuthResponse } from "../types";
+import { useLoginForm } from "../hooks/useLoginForm";
 
 export function LoginForm() {
-  const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setIsPending(true);
-    
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      setIsPending(false);
-      return;
-    }
-
-    try {
-      const response = await clientApi.post<AuthResponse>("/auth/login", { email, password });
-      
-      localStorage.setItem("aeos_access_token", response.accessToken);
-      localStorage.setItem("aeos_refresh_token", response.refreshToken);
-      localStorage.setItem("aeos_user", JSON.stringify(response.user));
-      
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message || "Failed to login");
-    } finally {
-      setIsPending(false);
-    }
-  };
+  const { isPending, error, handleSubmit } = useLoginForm();
 
   return (
     <Card className="w-full max-w-md mx-auto border-0 shadow-lg mt-20">

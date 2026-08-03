@@ -25,6 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(user);
       } catch (e) {
         console.error("Failed to parse user from localStorage");
+        localStorage.removeItem("aeos_access_token");
+        localStorage.removeItem("aeos_refresh_token");
+        localStorage.removeItem("aeos_user");
+        router.push("/login");
+        return;
       }
     }
 
