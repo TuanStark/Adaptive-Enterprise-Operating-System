@@ -98,7 +98,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               </div>
 
               {/* Tab Content */}
-              {activeTab === "comments" && <CommentSection taskId={taskId} />}
+              {activeTab === "comments" && <CommentSection taskId={taskId} tenantId="tenant-1" />}
               {activeTab === "activity" && (
                 <div className="space-y-3">
                   {[

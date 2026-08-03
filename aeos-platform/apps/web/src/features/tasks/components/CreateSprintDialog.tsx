@@ -4,20 +4,22 @@ import React, { useState } from "react";
 import { X, GitMerge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Sprint } from "../types/sprint";
+import { useSprintMutations } from "../hooks/useSprints";
 
 interface CreateSprintDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateSprint: (sprint: Sprint) => void;
+  projectId: string;
   nextSprintNumber: number;
 }
 
-export function CreateSprintDialog({ isOpen, onClose, onCreateSprint, nextSprintNumber }: CreateSprintDialogProps) {
+export function CreateSprintDialog({ isOpen, onClose, projectId, nextSprintNumber }: CreateSprintDialogProps) {
   const [name, setName] = useState(`SCRUM Sprint ${nextSprintNumber}`);
   const [goal, setGoal] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const { create } = useSprintMutations(projectId);
 
   if (!isOpen) return null;
 
@@ -25,31 +27,31 @@ export function CreateSprintDialog({ isOpen, onClose, onCreateSprint, nextSprint
     e.preventDefault();
     if (!name.trim()) return;
 
-    const newSprint: Sprint = {
-      id: `sprint-${Date.now()}`,
-      name: name.trim(),
-      goal: goal.trim() || null,
-      status: "PLANNING",
-      startDate: startDate || null,
-      endDate: endDate || null,
-    };
-
-    onCreateSprint(newSprint);
-    setName(`SCRUM Sprint ${nextSprintNumber + 1}`);
-    setGoal("");
-    setStartDate("");
-    setEndDate("");
-    onClose();
+    create.mutate(
+      {
+        tenantId: "tenant-1", // TODO: get from session
+        projectId,
+        name: name.trim(),
+        goal: goal.trim() || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      },
+      {
+        onSuccess: () => {
+          setName(`SCRUM Sprint ${nextSprintNumber + 1}`);
+          setGoal("");
+          setStartDate("");
+          setEndDate("");
+          onClose();
+        },
+      },
+    );
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      
-      {/* Dialog */}
       <div className="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-indigo-50 rounded-lg">
@@ -62,7 +64,6 @@ export function CreateSprintDialog({ isOpen, onClose, onCreateSprint, nextSprint
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Sprint name *</label>
@@ -90,31 +91,18 @@ export function CreateSprintDialog({ isOpen, onClose, onCreateSprint, nextSprint
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Start date</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9"
-              />
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">End date</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-9"
-              />
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9" />
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90">
-              Create Sprint
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90" disabled={create.isPending}>
+              {create.isPending ? "Creating..." : "Create Sprint"}
             </Button>
           </div>
         </form>

@@ -1,14 +1,20 @@
-// ── Meeting types aligned with BE Meeting Entity ──
-
-export type Meeting = {
+export interface Meeting {
   id: string;
   title: string;
-  description: string | null;
   startTime: string | null;
   endTime: string | null;
   organizerId: string;
-  organizerName: string;
-  participants: string[];
-  meetingUrl: string | null;
-  createdAt: string;
-};
+  participants: number;
+  createdAt?: string;
+}
+
+
+export interface CreateMeetingInput {
+  tenantId: string;
+  workspaceId: string;
+  title: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  meetingUrl?: string;
+}

@@ -1,3 +1,7 @@
+"use server";
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import type { ApiEnvelope } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -14,17 +18,24 @@ class ApiClientError extends Error {
   }
 }
 
-function getClientToken(): string | null {
-  if (typeof document === "undefined") return null;
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("aeos_access_token")?.value;
 
-  const match = document.cookie.match(/(?:^|;\s*)aeos_access_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 401) {
-    window.location.href = "/login";
-    throw new ApiClientError(401, "UNAUTHORIZED", "Session expired");
+    redirect("/login");
   }
 
   const body = await response.json();
@@ -37,7 +48,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (body as ApiEnvelope<T>).data;
 }
 
-export const clientApi = {
+export const serverApi = {
   get: async <T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> => {
     const url = new URL(`${API_PREFIX}${path}`, API_BASE);
 
@@ -49,52 +60,45 @@ export const clientApi = {
       });
     }
 
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const headers = await getAuthHeaders();
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    });
 
-    const response = await fetch(url.toString(), { method: "GET", headers, credentials: "include" });
     return handleResponse<T>(response);
   },
 
   post: async <T>(path: string, body?: unknown): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "POST",
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
+
     return handleResponse<T>(response);
   },
 
   patch: async <T>(path: string, body?: unknown): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "PATCH",
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
+
     return handleResponse<T>(response);
   },
 
   delete: async <T>(path: string): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "DELETE",
       headers,
-      credentials: "include",
     });
+
     return handleResponse<T>(response);
   },
 };

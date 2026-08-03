@@ -4,20 +4,23 @@ import React, { useState } from "react";
 import { X, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Meeting } from "../types";
+import { useAppStore } from "@/store/useAppStore";
+import { useCreateMeeting } from "../hooks/useMeetings";
 
 interface CreateMeetingDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateMeeting: (meeting: Meeting) => void;
 }
 
-export function CreateMeetingDialog({ isOpen, onClose, onCreateMeeting }: CreateMeetingDialogProps) {
+export function CreateMeetingDialog({ isOpen, onClose }: CreateMeetingDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [meetingUrl, setMeetingUrl] = useState("");
+
+  const workspaceId = useAppStore((s) => s.activeWorkspaceId);
+  const createMeeting = useCreateMeeting();
 
   if (!isOpen) return null;
 
@@ -25,26 +28,27 @@ export function CreateMeetingDialog({ isOpen, onClose, onCreateMeeting }: Create
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newMeeting: Meeting = {
-      id: `meeting-${Date.now()}`,
-      title: title.trim(),
-      description: description.trim() || null,
-      startTime: startTime || null,
-      endTime: endTime || null,
-      organizerId: "user-1",
-      organizerName: "Tony Stark",
-      participants: ["user-1"],
-      meetingUrl: meetingUrl.trim() || null,
-      createdAt: new Date().toISOString(),
-    };
-
-    onCreateMeeting(newMeeting);
-    setTitle("");
-    setDescription("");
-    setStartTime("");
-    setEndTime("");
-    setMeetingUrl("");
-    onClose();
+    createMeeting.mutate(
+      {
+        tenantId: "tenant-1",
+        workspaceId: workspaceId ?? "workspace-1",
+        title: title.trim(),
+        description: description.trim() || undefined,
+        startTime: startTime || undefined,
+        endTime: endTime || undefined,
+        meetingUrl: meetingUrl.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setTitle("");
+          setDescription("");
+          setStartTime("");
+          setEndTime("");
+          setMeetingUrl("");
+          onClose();
+        },
+      },
+    );
   };
 
   return (
@@ -65,21 +69,19 @@ export function CreateMeetingDialog({ isOpen, onClose, onCreateMeeting }: Create
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Meeting title *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Title *</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Sprint Planning" className="h-9" required autoFocus />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Agenda or notes for this meeting"
+              placeholder="Meeting agenda..."
               rows={3}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all placeholder:text-gray-400"
             />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Start time</label>
@@ -90,7 +92,6 @@ export function CreateMeetingDialog({ isOpen, onClose, onCreateMeeting }: Create
               <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-9" />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Meeting URL</label>
             <Input value={meetingUrl} onChange={(e) => setMeetingUrl(e.target.value)} placeholder="https://meet.google.com/..." className="h-9" />
@@ -98,7 +99,9 @@ export function CreateMeetingDialog({ isOpen, onClose, onCreateMeeting }: Create
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90">Schedule Meeting</Button>
+            <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90" disabled={createMeeting.isPending}>
+              {createMeeting.isPending ? "Creating..." : "Schedule Meeting"}
+            </Button>
           </div>
         </form>
       </div>

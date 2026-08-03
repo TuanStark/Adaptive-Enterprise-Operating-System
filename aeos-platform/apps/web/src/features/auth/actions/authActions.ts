@@ -2,49 +2,15 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { LoginCredentials, AuthResponse } from "../types";
+import { serverApi } from "@/lib/api-server";
+import type { LoginCredentials, AuthResponse } from "../types";
 
-const API_BASE = process.env.API_URL || "http://localhost:4000";
-
-async function fetchLoginAPI(credentials: LoginCredentials): Promise<AuthResponse> {
-  // TODO: Replace with real API call when BE is deployed
-  // const res = await fetch(`${API_BASE}/auth/login`, {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify(credentials),
-  // });
-  // if (!res.ok) throw new Error("Invalid credentials");
-  // return res.json();
-
-  // Mock for development — will be replaced by real fetch above
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (credentials.email === "admin@aeos.io") {
-        resolve({
-          user: {
-            id: "user-1",
-            tenantId: "tenant-1",
-            email: "admin@aeos.io",
-            firstName: "Tony",
-            lastName: "Stark",
-            avatarUrl: null,
-            status: "ACTIVE",
-            emailVerified: true,
-          },
-          accessToken: "mock.jwt.access.token",
-          refreshToken: "mock.jwt.refresh.token",
-        });
-      } else {
-        reject(new Error("Invalid credentials"));
-      }
-    }, 500);
-  });
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export async function login(credentials: LoginCredentials) {
   try {
-    const response = await fetchLoginAPI(credentials);
-    
+    const response = await serverApi.post<AuthResponse>("/auth/login", credentials);
+
     const cookieStore = await cookies();
     cookieStore.set("aeos_access_token", response.accessToken, {
       httpOnly: true,
@@ -70,14 +36,24 @@ export async function login(credentials: LoginCredentials) {
       maxAge: 60 * 60 * 24,
     });
 
-    return { success: true };
+    return { success: true as const };
   } catch (error) {
-    return { success: false, error: "Invalid email or password" };
+    const message = error instanceof Error ? error.message : "Invalid email or password";
+    return { success: false as const, error: message };
   }
 }
 
 export async function logout() {
   const cookieStore = await cookies();
+
+  try {
+    const refreshToken = cookieStore.get("aeos_refresh_token")?.value;
+    if (refreshToken) {
+      await serverApi.post("/auth/logout", { refreshToken });
+    }
+  } catch {
+  }
+
   cookieStore.delete("aeos_access_token");
   cookieStore.delete("aeos_refresh_token");
   cookieStore.delete("aeos_user");
