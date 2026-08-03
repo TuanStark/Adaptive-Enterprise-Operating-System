@@ -17,12 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { logout } from "@/features/auth/actions/authActions";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 export function Header() {
   const toggleLocalSidebar = useAppStore((state) => state.toggleLocalSidebar);
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const pathname = usePathname();
+  const { logout } = useAuthStore();
 
   const hasLocalSidebar = pathname.startsWith("/tasks") || pathname.startsWith("/docs") || pathname.startsWith("/chat");
 

@@ -5,33 +5,8 @@ import type { NextRequest } from "next/server";
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  // Skip middleware for static assets, API routes, and Next.js internal paths
-  if (
-    pathname.startsWith("/_next") || 
-    pathname.startsWith("/api") || 
-    pathname.includes(".") // e.g. favicon.ico, .png, etc.
-  ) {
-    return NextResponse.next();
-  }
-
-  const token = request.cookies.get("aeos_access_token")?.value;
-  const isPublicRoute = publicRoutes.includes(pathname);
-
-  // 1. Redirect unauthenticated users to /login
-  if (!token && !isPublicRoute) {
-    const loginUrl = new URL("/login", request.url);
-    // Optional: save the URL they were trying to access to redirect them back after login
-    // loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 2. Redirect authenticated users away from auth pages to the dashboard
-  if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
+  // Since we use localStorage for auth, middleware cannot protect routes.
+  // Route protection is handled client-side by AuthProvider.
   return NextResponse.next();
 }
 

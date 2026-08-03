@@ -1,5 +1,3 @@
-"use server";
-
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ApiEnvelope } from "@/types/api";
@@ -34,8 +32,8 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    redirect("/login");
+  if (response.status === 401 && !response.url.includes("/auth/login")) {
+    redirect("/api/auth/clear");
   }
 
   const body = await response.json();

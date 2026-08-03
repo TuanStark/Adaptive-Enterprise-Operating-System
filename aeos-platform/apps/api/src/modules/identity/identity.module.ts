@@ -15,6 +15,7 @@ import { LogoutHandler } from './application/commands/logout/logout.handler';
 import { GetCurrentUserHandler } from './application/queries/get-current-user/get-current-user.handler';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
+import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
 
 @Module({
   controllers: [AuthController],
@@ -29,6 +30,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
     RefreshTokenHandler,
     LogoutHandler,
     GetCurrentUserHandler,
+    IdentitySeeder,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
   exports: [USER_REPOSITORY, SESSION_REPOSITORY, JWT_TOKEN_SERVICE],

@@ -15,15 +15,21 @@ class ApiClientError extends Error {
 }
 
 function getClientToken(): string | null {
-  if (typeof document === "undefined") return null;
-
-  const match = document.cookie.match(/(?:^|;\s*)aeos_access_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("aeos_access_token");
 }
 
+let isRedirecting = false;
+
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401) {
-    window.location.href = "/login";
+  if (response.status === 401 && !response.url.includes("/auth/login")) {
+    if (typeof window !== "undefined" && !isRedirecting) {
+      isRedirecting = true;
+      localStorage.removeItem("aeos_access_token");
+      localStorage.removeItem("aeos_refresh_token");
+      localStorage.removeItem("aeos_user");
+      window.location.href = "/login";
+    }
     throw new ApiClientError(401, "UNAUTHORIZED", "Session expired");
   }
 

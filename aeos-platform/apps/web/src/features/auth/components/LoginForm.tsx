@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { login } from "../actions/authActions";
+import { clientApi } from "@/lib/api-client";
+import type { AuthResponse } from "../types";
 
 export function LoginForm() {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setIsPending(true);
     
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
@@ -22,19 +24,23 @@ export function LoginForm() {
 
     if (!email || !password) {
       setError("Please fill in all fields.");
+      setIsPending(false);
       return;
     }
 
-    startTransition(async () => {
-      const result = await login({ email, password });
+    try {
+      const response = await clientApi.post<AuthResponse>("/auth/login", { email, password });
       
-      if (result.success) {
-        // Redirect to dashboard on success
-        router.push("/");
-      } else {
-        setError(result.error || "Failed to login");
-      }
-    });
+      localStorage.setItem("aeos_access_token", response.accessToken);
+      localStorage.setItem("aeos_refresh_token", response.refreshToken);
+      localStorage.setItem("aeos_user", JSON.stringify(response.user));
+      
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Failed to login");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (

@@ -29,16 +29,16 @@ export function NotificationPanel() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-gray-900">
+      <DropdownMenuTrigger render={
+        <button className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent hover:bg-muted text-gray-500 hover:text-gray-900 size-8 transition-all outline-none select-none cursor-pointer">
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-destructive rounded-full border-2 border-white flex items-center justify-center">
               <span className="text-[10px] text-white font-bold leading-none">{unreadCount}</span>
             </span>
           )}
-        </Button>
-      </DropdownMenuTrigger>
+        </button>
+      } />
       <DropdownMenuContent align="end" className="w-96 p-0 max-h-[480px] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
