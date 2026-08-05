@@ -39,8 +39,18 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const body = await response.json();
 
   if (!response.ok || !body.success) {
-    const error = body.error ?? { code: "UNKNOWN", message: "An error occurred" };
-    throw new ApiClientError(response.status, error.code, error.message);
+    let errorMessage = "An error occurred";
+    let errorCode = "UNKNOWN";
+
+    if (body.error && typeof body.error === 'object' && body.error.message) {
+      errorMessage = Array.isArray(body.error.message) ? body.error.message.join(", ") : body.error.message;
+      errorCode = body.error.code || "UNKNOWN";
+    } else if (body.message) {
+      errorMessage = Array.isArray(body.message) ? body.message.join(", ") : body.message;
+      errorCode = typeof body.error === 'string' ? body.error : "UNKNOWN";
+    }
+
+    throw new ApiClientError(response.status, errorCode, errorMessage);
   }
 
   return (body as ApiEnvelope<T>).data;

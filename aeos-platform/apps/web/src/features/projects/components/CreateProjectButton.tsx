@@ -26,7 +26,6 @@ export function CreateProjectButton() {
       await createProjectAction({
         name: formData.get("name") as string,
         description: formData.get("description") as string,
-        status: "ACTIVE",
         priority: "MEDIUM",
       });
       setOpen(false);

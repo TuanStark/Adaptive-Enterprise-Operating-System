@@ -3,7 +3,8 @@ import { Project } from "../types";
 
 export async function getProjects(): Promise<Project[]> {
   try {
-    return await serverApi.get<Project[]>("/projects");
+    const response = await serverApi.get<{ data: Project[]; meta: any }>("/projects");
+    return response.data;
   } catch (error) {
     console.error("Failed to fetch projects:", error);
     // Return empty array or throw depending on how you want to handle errors in UI
