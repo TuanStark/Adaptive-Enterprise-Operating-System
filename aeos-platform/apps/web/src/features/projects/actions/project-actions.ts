@@ -1,22 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { serverApi } from "@/lib/api-server";
+import { serverApi, getSessionContext } from "@/lib/api-server";
 import { CreateProjectPayload, UpdateProjectPayload, Project } from "../types";
-import { auth } from "@/auth";
 
 export async function createProjectAction(data: CreateProjectPayload): Promise<Project> {
   try {
-    const session = await auth();
-
-    if (!session?.user?.tenantId || !session?.user?.workspaceId) {
-      throw new Error("You must have an active workspace to create a project.");
-    }
+    const { tenantId, workspaceId } = await getSessionContext();
 
     const payload = {
       ...data,
-      tenantId: session.user.tenantId,
-      workspaceId: session.user.workspaceId,
+      tenantId,
+      workspaceId,
     };
     const newProject = await serverApi.post<Project>("/projects", payload);
     revalidatePath("/projects");

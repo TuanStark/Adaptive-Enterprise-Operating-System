@@ -6,6 +6,7 @@ import { CreateWorkspaceHandler } from './application/commands/create-workspace/
 import { ArchiveWorkspaceHandler } from './application/commands/archive-workspace/archive-workspace.handler';
 import { UpdateWorkspaceHandler } from './application/commands/update-workspace/update-workspace.handler';
 import { GetUserWorkspacesHandler } from './application/queries/get-user-workspaces/get-user-workspaces.handler';
+import { GetWorkspaceMembersHandler } from './application/queries/get-workspace-members/get-workspace-members.handler';
 import { WorkspaceController } from './presentation/controllers/workspace.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
     ArchiveWorkspaceHandler,
     UpdateWorkspaceHandler,
     GetUserWorkspacesHandler,
+    GetWorkspaceMembersHandler,
   ],
   exports: [WORKSPACE_REPOSITORY],
 })

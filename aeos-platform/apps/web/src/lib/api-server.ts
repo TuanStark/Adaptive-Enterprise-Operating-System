@@ -5,6 +5,26 @@ import { auth } from "@/auth";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const API_PREFIX = "/api/v1";
 
+interface SessionContext {
+  workspaceId: string;
+  tenantId: string;
+  organizationId: string;
+  userId: string;
+}
+
+export async function getSessionContext(): Promise<SessionContext> {
+  const session = await auth();
+  if (!session?.user?.workspaceId || !session?.user?.tenantId) {
+    throw new Error("No active workspace. Please select a workspace.");
+  }
+  return {
+    workspaceId: session.user.workspaceId,
+    tenantId: session.user.tenantId,
+    organizationId: session.user.organizationId,
+    userId: session.user.id,
+  };
+}
+
 class ApiClientError extends Error {
   constructor(
     public readonly status: number,

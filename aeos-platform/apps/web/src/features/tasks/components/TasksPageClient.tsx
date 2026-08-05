@@ -8,6 +8,7 @@ import { ChevronDown, Share2, Zap, LayoutTemplate, Maximize2, MoreHorizontal, Us
 import { KanbanBoard } from "./KanbanBoard";
 
 import { Task } from "../types";
+import type { Project } from "@/features/projects/types";
 import { BacklogView } from "./BacklogView";
 import { SummaryView } from "./SummaryView";
 import { TimelineView } from "./TimelineView";
@@ -17,15 +18,18 @@ import { FormsView } from "./FormsView";
 
 interface TasksPageClientProps {
   initialTasks: Record<string, Task[]>;
+  projects: Project[];
+  initialProjectId: string | null;
 }
 
-export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
+export function TasksPageClient({ initialTasks, projects, initialProjectId }: TasksPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentView = searchParams.get("view") || "board";
 
-  const [currentProject, setCurrentProject] = useState("AEOS-CORE");
-  const projects = ["AEOS-CORE", "AEOS-WEB", "MARKETING"];
+  const [currentProjectId, setCurrentProjectId] = useState(initialProjectId);
+  const currentProject = projects.find(p => p.id === currentProjectId);
+  const currentProjectName = currentProject?.name ?? "No Project";
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -34,10 +38,13 @@ export function TasksPageClient({ initialTasks }: TasksPageClientProps) {
         <div className="flex items-center text-sm text-gray-500 mb-3">
           <span>Projects</span><span className="mx-2">/</span>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<button className="flex items-center gap-1 hover:bg-gray-100 px-1 rounded transition-colors focus:outline-none">{currentProject} <ChevronDown className="w-3 h-3" /></button>} />
+            <DropdownMenuTrigger render={<button className="flex items-center gap-1 hover:bg-gray-100 px-1 rounded transition-colors focus:outline-none">{currentProjectName} <ChevronDown className="w-3 h-3" /></button>} />
             <DropdownMenuContent align="start">
               {projects.map(p => (
-                <DropdownMenuItem key={p} onClick={() => setCurrentProject(p)}>{p}</DropdownMenuItem>
+                <DropdownMenuItem key={p.id} onClick={() => {
+                  setCurrentProjectId(p.id);
+                  router.refresh();
+                }}>{p.name}</DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>

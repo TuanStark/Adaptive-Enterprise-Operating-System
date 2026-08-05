@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@aeos/database';
+import { Injectable, Inject } from '@nestjs/common';
 import { GetUserWorkspacesQuery } from './get-user-workspaces.query';
+import { WORKSPACE_QUERY, WorkspaceQuery } from '../workspace-query.interface';
 
 export interface WorkspaceMembershipDto {
   roleId: string | null;
@@ -19,30 +19,12 @@ export interface UserWorkspaceDto {
 
 @Injectable()
 export class GetUserWorkspacesHandler {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(WORKSPACE_QUERY)
+    private readonly workspaceQuery: WorkspaceQuery,
+  ) {}
 
   async execute(query: GetUserWorkspacesQuery): Promise<UserWorkspaceDto[]> {
-    const memberships = await this.prisma.workspaceMember.findMany({
-      where: { userId: query.userId },
-      include: {
-        workspace: true,
-        role: true,
-      },
-    });
-
-    return memberships
-      .filter((m) => m.workspace && m.workspace.deletedAt === null)
-      .map((m) => ({
-        id: m.workspace!.id,
-        name: m.workspace!.name,
-        description: m.workspace!.description,
-        organizationId: m.workspace!.organizationId,
-        status: m.workspace!.status,
-        membership: {
-          roleId: m.roleId,
-          roleName: m.role?.name ?? null,
-          joinedAt: m.joinedAt,
-        },
-      }));
+    return this.workspaceQuery.getUserWorkspaces(query.userId);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { CreateWorkspaceRequestDto } from '../dto/create-workspace.request.dto';
@@ -10,6 +10,8 @@ import { UpdateWorkspaceCommand } from '../../application/commands/update-worksp
 import { UpdateWorkspaceHandler } from '../../application/commands/update-workspace/update-workspace.handler';
 import { GetUserWorkspacesQuery } from '../../application/queries/get-user-workspaces/get-user-workspaces.query';
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
+import { GetWorkspaceMembersQuery } from '../../application/queries/get-workspace-members/get-workspace-members.query';
+import { GetWorkspaceMembersHandler } from '../../application/queries/get-workspace-members/get-workspace-members.handler';
 
 @Controller('workspaces')
 export class WorkspaceController {
@@ -18,6 +20,7 @@ export class WorkspaceController {
     private readonly archiveHandler: ArchiveWorkspaceHandler,
     private readonly updateHandler: UpdateWorkspaceHandler,
     private readonly getUserWorkspacesHandler: GetUserWorkspacesHandler,
+    private readonly getWorkspaceMembersHandler: GetWorkspaceMembersHandler,
   ) {}
 
   @Get('me')
@@ -66,5 +69,18 @@ export class WorkspaceController {
     }
     return { message: 'Workspace archived successfully.' };
   }
-}
 
+  @Get(':id/members')
+  async getMembers(
+    @Param('id') workspaceId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const query = new GetWorkspaceMembersQuery(
+      workspaceId,
+      parseInt(page ?? '1', 10),
+      parseInt(limit ?? '50', 10),
+    );
+    return this.getWorkspaceMembersHandler.execute(query);
+  }
+}
