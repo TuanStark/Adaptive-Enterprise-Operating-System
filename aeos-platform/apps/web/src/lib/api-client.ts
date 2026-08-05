@@ -1,4 +1,10 @@
+// ──────────────────────────────────────────────────────────────
+// API Client (Browser/Client Components)
+// Lấy accessToken từ NextAuth session thay vì localStorage
+// ──────────────────────────────────────────────────────────────
+
 import type { ApiEnvelope } from "@/types/api";
+import { getSession } from "next-auth/react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const API_PREFIX = "/api/v1";
@@ -14,9 +20,18 @@ class ApiClientError extends Error {
   }
 }
 
-function getClientToken(): string | null {
+/**
+ * Lấy accessToken từ NextAuth session (client-side).
+ * NextAuth tự động quản lý cookie httpOnly nên ta chỉ cần gọi getSession().
+ */
+async function getClientToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("aeos_access_token");
+  try {
+    const session = await getSession();
+    return session?.accessToken ?? null;
+  } catch {
+    return null;
+  }
 }
 
 let isRedirecting = false;
@@ -25,10 +40,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 401 && !response.url.includes("/auth/login")) {
     if (typeof window !== "undefined" && !isRedirecting) {
       isRedirecting = true;
-      localStorage.removeItem("aeos_access_token");
-      localStorage.removeItem("aeos_refresh_token");
-      localStorage.removeItem("aeos_user");
-      window.location.href = "/login";
+      // Dùng next-auth signOut thay vì clear localStorage
+      const { signOut } = await import("next-auth/react");
+      await signOut({ callbackUrl: "/login" });
     }
     throw new ApiClientError(401, "UNAUTHORIZED", "Session expired");
   }
@@ -43,6 +57,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return (body as ApiEnvelope<T>).data;
 }
 
+async function buildHeaders(): Promise<HeadersInit> {
+  const token = await getClientToken();
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
+
 export const clientApi = {
   get: async <T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> => {
     const url = new URL(`${API_PREFIX}${path}`, API_BASE);
@@ -55,51 +76,36 @@ export const clientApi = {
       });
     }
 
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const response = await fetch(url.toString(), { method: "GET", headers, credentials: "include" });
+    const headers = await buildHeaders();
+    const response = await fetch(url.toString(), { method: "GET", headers });
     return handleResponse<T>(response);
   },
 
   post: async <T>(path: string, body?: unknown): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "POST",
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     return handleResponse<T>(response);
   },
 
   patch: async <T>(path: string, body?: unknown): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "PATCH",
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     return handleResponse<T>(response);
   },
 
   delete: async <T>(path: string): Promise<T> => {
-    const token = getClientToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
+    const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
       method: "DELETE",
       headers,
-      credentials: "include",
     });
     return handleResponse<T>(response);
   },

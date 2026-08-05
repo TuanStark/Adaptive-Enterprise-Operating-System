@@ -28,9 +28,25 @@ interface BackendUserProfile {
   firstName: string | null;
   lastName: string | null;
   tenantId: string;
-  role?: string;
   status: string;
 }
+
+interface WorkspaceMembership {
+  roleId: string | null;
+  roleName: string | null;
+  joinedAt: string | null;
+}
+
+interface UserWorkspace {
+  id: string;
+  name: string | null;
+  description: string | null;
+  organizationId: string | null;
+  status: string | null;
+  membership: WorkspaceMembership;
+}
+
+// ── Backend API Helpers ──────────────────────────────────────
 
 async function backendLogin(
   email: string,
@@ -75,6 +91,24 @@ async function backendGetProfile(
   }
 }
 
+async function backendGetUserWorkspaces(
+  accessToken: string,
+): Promise<UserWorkspace[]> {
+  try {
+    const res = await fetch(`${API_BASE}${API_PREFIX}/workspaces/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const body = await res.json();
+    if (res.ok && body.success) {
+      return body.data as UserWorkspace[];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 async function backendRefreshToken(
   refreshToken: string,
 ): Promise<BackendRefreshResponse | null> {
@@ -98,6 +132,8 @@ async function backendRefreshToken(
   }
 }
 
+// ── NextAuth Options ─────────────────────────────────────────
+
 export const authOptions: NextAuthConfig = {
   providers: [
     Credentials({
@@ -111,21 +147,37 @@ export const authOptions: NextAuthConfig = {
 
         if (!email || !password) return null;
 
+        // 1. Login → lấy tokens
         const loginData = await backendLogin(email, password);
         if (!loginData) return null;
 
+        // 2. Lấy user profile
         const profile = await backendGetProfile(loginData.accessToken);
 
         const displayName = profile
           ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || email
           : email;
 
+        // 3. Lấy danh sách workspace → auto-select workspace đầu tiên
+        const workspaces = await backendGetUserWorkspaces(loginData.accessToken);
+        const activeWorkspace = workspaces[0] ?? null;
+
+        const role = activeWorkspace?.membership.roleName ?? "USER";
+        const workspaceId = activeWorkspace?.id ?? "";
+        const workspaceName = activeWorkspace?.name ?? "";
+
+        console.log(
+          `[auth] User ${email} logged in → workspace: "${workspaceName}" (${workspaceId}), role: ${role}`,
+        );
+
         return {
           id: loginData.userId,
           email: loginData.email,
           name: displayName,
-          role: profile?.role ?? "USER",
+          role,
           tenantId: profile?.tenantId ?? "",
+          workspaceId,
+          workspaceName,
           accessToken: loginData.accessToken,
           refreshToken: loginData.refreshToken,
           expiresAt: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_EXPIRY_SECONDS,
@@ -146,26 +198,32 @@ export const authOptions: NextAuthConfig = {
   debug: process.env.NODE_ENV === "development",
 
   callbacks: {
+    // ── JWT Callback: Token Rotation ──
     async jwt({ token, user }) {
+      // Initial sign-in: seed JWT with all backend data
       if (user) {
         return {
           ...token,
           id: user.id,
           role: user.role,
           tenantId: user.tenantId,
+          workspaceId: user.workspaceId,
+          workspaceName: user.workspaceName,
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           expiresAt: user.expiresAt,
         };
       }
 
+      // Token chưa hết hạn → trả về nguyên
       const now = Math.floor(Date.now() / 1000);
-      if (now < token.expiresAt - TOKEN_REFRESH_BUFFER_SECONDS) {
+      if (now < (token.expiresAt as number) - TOKEN_REFRESH_BUFFER_SECONDS) {
         return token;
       }
 
+      // Token sắp hết hạn → gọi refresh
       console.log("[auth] Access token expiring, attempting refresh…");
-      const refreshed = await backendRefreshToken(token.refreshToken);
+      const refreshed = await backendRefreshToken(token.refreshToken as string);
 
       if (!refreshed) {
         console.error("[auth] Refresh token failed — marking session as errored");
@@ -182,19 +240,23 @@ export const authOptions: NextAuthConfig = {
       };
     },
 
+    // ── Session Callback: Expose data cho client ──
     async session({ session, token }) {
-      session.user.id = token.id;
-      session.user.role = token.role;
-      session.user.tenantId = token.tenantId;
-      session.accessToken = token.accessToken;
+      session.user.id = token.id as string;
+      session.user.role = token.role as string;
+      session.user.tenantId = token.tenantId as string;
+      session.user.workspaceId = token.workspaceId as string;
+      session.user.workspaceName = token.workspaceName as string;
+      session.accessToken = token.accessToken as string;
 
       if (token.error) {
-        session.error = token.error;
+        session.error = token.error as "RefreshTokenError";
       }
 
       return session;
     },
 
+    // ── Authorized Callback: Middleware route protection ──
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
@@ -202,10 +264,12 @@ export const authOptions: NextAuthConfig = {
         (route) => pathname === route || pathname.startsWith(route + "/"),
       );
 
+      // Chưa login + route bảo vệ → redirect về login
       if (!isLoggedIn && !isPublicRoute) {
         return false;
       }
 
+      // Đã login + đang ở trang auth → redirect về dashboard
       if (isLoggedIn && isPublicRoute) {
         return Response.redirect(new URL("/", nextUrl));
       }
@@ -216,7 +280,7 @@ export const authOptions: NextAuthConfig = {
 
   events: {
     async signIn({ user }) {
-      console.log(`[auth:event] User signed in: ${user.email} (${user.id})`);
+      console.log(`[auth:event] User signed in: ${user.email} (${user.id}) → workspace: ${user.workspaceId}`);
     },
     async signOut(message) {
       console.log("[auth:event] User signed out:", "token" in message ? "JWT session" : "");

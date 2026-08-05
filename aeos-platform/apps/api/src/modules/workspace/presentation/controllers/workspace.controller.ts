@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, Param, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { CreateWorkspaceRequestDto } from '../dto/create-workspace.request.dto';
@@ -6,13 +6,23 @@ import { CreateWorkspaceCommand } from '../../application/commands/create-worksp
 import { CreateWorkspaceHandler } from '../../application/commands/create-workspace/create-workspace.handler';
 import { ArchiveWorkspaceCommand } from '../../application/commands/archive-workspace/archive-workspace.command';
 import { ArchiveWorkspaceHandler } from '../../application/commands/archive-workspace/archive-workspace.handler';
+import { GetUserWorkspacesQuery } from '../../application/queries/get-user-workspaces/get-user-workspaces.query';
+import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 
 @Controller('workspaces')
 export class WorkspaceController {
   constructor(
     private readonly createHandler: CreateWorkspaceHandler,
     private readonly archiveHandler: ArchiveWorkspaceHandler,
+    private readonly getUserWorkspacesHandler: GetUserWorkspacesHandler,
   ) {}
+
+  @Get('me')
+  async getMyWorkspaces(@Req() req: Request) {
+    const user = (req as any).user;
+    const query = new GetUserWorkspacesQuery(user.userId);
+    return this.getUserWorkspacesHandler.execute(query);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -44,3 +54,4 @@ export class WorkspaceController {
     return { message: 'Workspace archived successfully.' };
   }
 }
+

@@ -17,13 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { signOut } from "next-auth/react";
 
 export function Header() {
   const toggleLocalSidebar = useAppStore((state) => state.toggleLocalSidebar);
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const pathname = usePathname();
-  const { logout } = useAuthStore();
+
 
   const hasLocalSidebar = pathname.startsWith("/tasks") || pathname.startsWith("/docs") || pathname.startsWith("/chat");
 
@@ -69,7 +69,7 @@ export function Header() {
             <DropdownMenuItem render={<Link href="/settings/profile" />}>Profile Settings</DropdownMenuItem>
             <DropdownMenuItem render={<Link href="/settings" />}>Workspace Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => logout()}>
+            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => signOut({ callbackUrl: "/login" })}>
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

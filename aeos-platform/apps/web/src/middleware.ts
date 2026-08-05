@@ -1,14 +1,12 @@
-import NextAuth from "next-auth";
-import { authOptions } from "./lib/auth/options";
+import { auth } from "./lib/auth";
 import { ROLE_ROUTE_MAP, type UserRole } from "./lib/auth/constants";
 import { NextResponse } from "next/server";
-
-const { auth } = NextAuth(authOptions);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const session = req.auth;
 
+  // ── RBAC: Kiểm tra quyền truy cập theo role ──
   if (session?.user) {
     for (const [routePrefix, allowedRoles] of Object.entries(ROLE_ROUTE_MAP)) {
       if (nextUrl.pathname.startsWith(routePrefix)) {
