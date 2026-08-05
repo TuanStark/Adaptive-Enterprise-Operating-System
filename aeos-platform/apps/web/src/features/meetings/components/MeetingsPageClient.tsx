@@ -70,7 +70,17 @@ function MeetingCard({ meeting }: MeetingCardProps) {
               </Avatar>
             </div>
             {isFuture(meeting.startTime) && (
-              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-7 text-xs gap-1"
+                disabled={!meeting.meetingUrl}
+                onClick={() => {
+                  if (meeting.meetingUrl) {
+                    window.open(meeting.meetingUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+              >
                 <Video className="w-3 h-3" /> Join
                 <ExternalLink className="w-3 h-3" />
               </Button>

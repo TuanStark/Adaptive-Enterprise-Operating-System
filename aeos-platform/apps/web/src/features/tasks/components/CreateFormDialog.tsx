@@ -5,6 +5,7 @@ import { X, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { useCreateForm } from "../hooks/useForms";
 
 interface CreateFormDialogProps {
@@ -17,17 +18,18 @@ export function CreateFormDialog({ isOpen, onClose }: CreateFormDialogProps) {
   const [description, setDescription] = useState("");
 
   const workspaceId = useAppStore((s) => s.activeWorkspaceId);
+  const user = useAuthStore((s) => s.user);
   const createForm = useCreateForm();
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !user) return;
 
     createForm.mutate(
       {
-        tenantId: "tenant-1", // TODO: get from session
+        tenantId: user.tenantId,
         workspaceId: workspaceId ?? "workspace-1",
         name: name.trim(),
         description: description.trim() || undefined,

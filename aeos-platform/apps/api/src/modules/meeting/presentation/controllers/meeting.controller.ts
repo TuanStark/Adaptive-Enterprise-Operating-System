@@ -49,6 +49,7 @@ export class MeetingController {
       data: data.map((m) => ({
         id: m.id, title: m.title, startTime: m.startTime, endTime: m.endTime,
         organizerId: m.organizerId, participants: m.participants.length,
+        meetingUrl: m.meetingUrl
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },
     };

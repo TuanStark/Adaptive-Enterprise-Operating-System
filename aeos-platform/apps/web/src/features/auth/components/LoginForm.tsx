@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">Password</label>
-              <a href="#" className="text-sm text-primary hover:underline">Forgot password?</a>
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">Forgot password?</Link>
             </div>
             <Input 
               name="password" 
@@ -57,7 +58,7 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="justify-center border-t border-gray-100 pt-6">
         <p className="text-sm text-gray-500">
-          Don't have an account? <a href="#" className="text-primary font-medium hover:underline">Request access</a>
+          Don't have an account? <Link href="/register" className="text-primary font-medium hover:underline">Request access</Link>
         </p>
       </CardFooter>
     </Card>

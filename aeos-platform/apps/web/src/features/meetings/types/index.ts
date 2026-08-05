@@ -5,6 +5,7 @@ export interface Meeting {
   endTime: string | null;
   organizerId: string;
   participants: number;
+  meetingUrl?: string | null;
   createdAt?: string;
 }
 

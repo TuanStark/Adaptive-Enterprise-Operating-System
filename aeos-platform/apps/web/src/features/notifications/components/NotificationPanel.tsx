@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,9 +83,9 @@ export function NotificationPanel() {
           <>
             <DropdownMenuSeparator className="m-0" />
             <div className="p-2">
-              <button className="w-full text-center text-sm text-primary hover:text-primary/80 font-medium py-1.5 cursor-pointer bg-transparent border-none rounded-md hover:bg-primary/5 transition-colors">
+              <Link href="/notifications" className="block w-full text-center text-sm text-primary hover:text-primary/80 font-medium py-1.5 cursor-pointer bg-transparent border-none rounded-md hover:bg-primary/5 transition-colors">
                 View all notifications
-              </button>
+              </Link>
             </div>
           </>
         )}

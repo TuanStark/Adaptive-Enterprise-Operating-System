@@ -5,6 +5,7 @@ import { X, GitMerge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSprintMutations } from "../hooks/useSprints";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
 interface CreateSprintDialogProps {
   isOpen: boolean;
@@ -20,16 +21,17 @@ export function CreateSprintDialog({ isOpen, onClose, projectId, nextSprintNumbe
   const [endDate, setEndDate] = useState("");
 
   const { create } = useSprintMutations(projectId);
+  const user = useAuthStore((s) => s.user);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !user) return;
 
     create.mutate(
       {
-        tenantId: "tenant-1", // TODO: get from session
+        tenantId: user.tenantId,
         projectId,
         name: name.trim(),
         goal: goal.trim() || undefined,
