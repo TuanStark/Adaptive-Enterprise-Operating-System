@@ -1,25 +1,30 @@
+import NextAuth from "next-auth";
+import { authOptions } from "./lib/auth/options";
+import { ROLE_ROUTE_MAP, type UserRole } from "./lib/auth/constants";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-// Add routes that don't require authentication here
-const publicRoutes = ["/login", "/register", "/forgot-password"];
+const { auth } = NextAuth(authOptions);
 
-export function middleware(request: NextRequest) {
-  // Since we use localStorage for auth, middleware cannot protect routes.
-  // Route protection is handled client-side by AuthProvider.
+export default auth((req) => {
+  const { nextUrl } = req;
+  const session = req.auth;
+
+  if (session?.user) {
+    for (const [routePrefix, allowedRoles] of Object.entries(ROLE_ROUTE_MAP)) {
+      if (nextUrl.pathname.startsWith(routePrefix)) {
+        const userRole = session.user.role as UserRole;
+        if (!allowedRoles.includes(userRole)) {
+          return NextResponse.redirect(new URL("/", nextUrl));
+        }
+      }
+    }
+  }
+
   return NextResponse.next();
-}
+});
 
-// See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    "/((?!api/auth|_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$).*)",
   ],
 };

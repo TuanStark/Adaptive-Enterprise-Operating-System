@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ApiEnvelope } from "@/types/api";
+import { auth } from "@/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const API_PREFIX = "/api/v1";
@@ -17,8 +17,8 @@ class ApiClientError extends Error {
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("aeos_access_token")?.value;
+  const session = await auth();
+  const token = session?.accessToken;
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",

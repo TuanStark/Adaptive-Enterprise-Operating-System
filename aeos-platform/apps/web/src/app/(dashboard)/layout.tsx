@@ -1,9 +1,11 @@
 import { AppLayout } from "@/features/core/components/AppLayout";
 import { AuthProvider } from "@/features/auth/components/AuthProvider";
+import { auth } from "@/auth";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
   return (
-    <AuthProvider>
+    <AuthProvider session={session}>
       <AppLayout>{children}</AppLayout>
     </AuthProvider>
   );

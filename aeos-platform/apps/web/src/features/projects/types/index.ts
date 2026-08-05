@@ -25,3 +25,14 @@ export type Project = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type CreateProjectPayload = {
+  name: string;
+  description?: string;
+  status?: ProjectStatus;
+  priority?: ProjectPriority;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type UpdateProjectPayload = Partial<CreateProjectPayload>;

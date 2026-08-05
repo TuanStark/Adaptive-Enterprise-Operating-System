@@ -1,14 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { clientApi } from "@/lib/api-client";
-import type { User } from "../types";
-
-export interface LoginResult {
-  accessToken: string;
-  refreshToken: string;
-  userId: string;
-  email: string;
-}
+import { signIn } from "next-auth/react";
 
 export function useLoginForm() {
   const router = useRouter();
@@ -19,34 +11,32 @@ export function useLoginForm() {
     e.preventDefault();
     setError(null);
     setIsPending(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      setError("Vui lòng nhập đầy đủ email và mật khẩu.");
       setIsPending(false);
       return;
     }
 
     try {
-      const response = await clientApi.post<LoginResult>("/auth/login", { email, password });
-      
-      localStorage.setItem("aeos_access_token", response.accessToken);
-      localStorage.setItem("aeos_refresh_token", response.refreshToken);
-      
-      // Fetch full user profile since login only returns userId and email
-      const user = await clientApi.get<User>("/auth/me");
-      localStorage.setItem("aeos_user", JSON.stringify(user));
-      
-      router.push("/");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to login");
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (result?.error) {
+        setError("Email hoặc mật khẩu không đúng");
+      } else if (result?.ok) {
+        router.push("/");
+        router.refresh();
       }
+    } catch {
+      setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
     } finally {
       setIsPending(false);
     }
@@ -55,6 +45,6 @@ export function useLoginForm() {
   return {
     isPending,
     error,
-    handleSubmit
+    handleSubmit,
   };
 }
