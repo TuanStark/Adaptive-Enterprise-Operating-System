@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
 import { WORKSPACE_REPOSITORY } from './domain/repositories/workspace.repository';
 import { PrismaWorkspaceRepository } from './infrastructure/persistence/prisma-workspace.repository';
+import { WORKSPACE_QUERY } from './application/queries/workspace-query.interface';
+import { PrismaWorkspaceQuery } from './infrastructure/queries/prisma-workspace.query';
 import { CreateWorkspaceHandler } from './application/commands/create-workspace/create-workspace.handler';
 import { ArchiveWorkspaceHandler } from './application/commands/archive-workspace/archive-workspace.handler';
 import { UpdateWorkspaceHandler } from './application/commands/update-workspace/update-workspace.handler';
@@ -14,6 +16,7 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
   providers: [
     PrismaService,
     { provide: WORKSPACE_REPOSITORY, useClass: PrismaWorkspaceRepository },
+    { provide: WORKSPACE_QUERY, useClass: PrismaWorkspaceQuery },
     CreateWorkspaceHandler,
     ArchiveWorkspaceHandler,
     UpdateWorkspaceHandler,
@@ -23,4 +26,3 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
   exports: [WORKSPACE_REPOSITORY],
 })
 export class WorkspaceModule {}
-

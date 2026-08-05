@@ -20,9 +20,10 @@ interface TasksPageClientProps {
   initialTasks: Record<string, Task[]>;
   projects: Project[];
   initialProjectId: string | null;
+  tenantId: string;
 }
 
-export function TasksPageClient({ initialTasks, projects, initialProjectId }: TasksPageClientProps) {
+export function TasksPageClient({ initialTasks, projects, initialProjectId, tenantId }: TasksPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentView = searchParams.get("view") || "board";
@@ -53,9 +54,9 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId }: Ta
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-blue-100 rounded text-blue-600 flex items-center justify-center font-bold text-lg">
-              M
+              {currentProjectName.charAt(0).toUpperCase()}
             </div>
-            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">My Team</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">{currentProjectName}</h1>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 bg-gray-100"><Users className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:bg-gray-100"><MoreHorizontal className="w-4 h-4" /></Button>
@@ -90,15 +91,15 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId }: Ta
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {currentView === 'backlog' && <BacklogView initialTasks={initialTasks} />}
-        {currentView === 'summary' && <SummaryView />}
-        {currentView === 'timeline' && <TimelineView />}
-        {currentView === 'calendar' && <CalendarView />}
+        {currentView === 'backlog' && currentProjectId && <BacklogView initialTasks={initialTasks} projectId={currentProjectId} />}
+        {currentView === 'summary' && <SummaryView initialTasks={initialTasks} />}
+        {currentView === 'timeline' && <TimelineView initialTasks={initialTasks} />}
+        {currentView === 'calendar' && <CalendarView initialTasks={initialTasks} />}
         {currentView === 'docs' && <DocsView />}
         {currentView === 'forms' && <FormsView />}
-        {(currentView === 'board' || currentView === 'sprint') && (
+        {(currentView === 'board' || currentView === 'sprint') && currentProjectId && (
           <div className="h-full p-6">
-            <KanbanBoard initialTasks={initialTasks} view="board" />
+            <KanbanBoard initialTasks={initialTasks} view="board" projectId={currentProjectId} tenantId={tenantId} />
           </div>
         )}
       </div>

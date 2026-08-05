@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Bug, Bookmark, CheckSquare, Plus } from "lucide-react";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { Task } from "../types";
+import { useTaskMutations } from "../hooks/useTasks";
 
 const columnsConfig: ColumnDef<Task>[] = [
   { accessorKey: "id", header: "ID" },
@@ -29,11 +30,14 @@ const TypeIcon = ({ type }: { type?: string }) => {
 interface KanbanBoardProps {
   initialTasks: Record<string, Task[]>;
   view: "board" | "list";
+  projectId: string;
+  tenantId: string;
   searchQuery?: string;
   selectedAvatar?: string | null;
 }
 
-export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }: KanbanBoardProps) {
+export function KanbanBoard({ initialTasks, view, projectId, tenantId, searchQuery, selectedAvatar }: KanbanBoardProps) {
+  const { create, changeStatus } = useTaskMutations();
   const [columns, setColumns] = useState(initialTasks);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isAddingCol, setIsAddingCol] = useState(false);
@@ -60,7 +64,9 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
       }
       destCol.splice(realDestIndex, 0, removed);
 
+      // Optimistic update UI first, then call API
       setColumns({ ...columns, [source.droppableId]: sourceCol, [destination.droppableId]: destCol });
+      changeStatus.mutate({ taskId: draggableId, status: destination.droppableId });
     } else {
       const column = [...columns[source.droppableId]];
       const taskIndex = column.findIndex(t => t.id === draggableId);
@@ -82,24 +88,19 @@ export function KanbanBoard({ initialTasks, view, searchQuery, selectedAvatar }:
       setAddingTaskCol(null);
       return;
     }
-    const newTask: Task = {
-      id: `temp-${Math.floor(Math.random() * 1000) + 100}`,
-      key: `AEOS-${Math.floor(Math.random() * 1000) + 100}`,
-      title: newTaskTitle,
-      status: colId as Task['status'],
-      type: "TASK",
-      priority: "MEDIUM",
-      storyPoints: null,
-      assigneeId: null,
-      sprintId: null,
-      projectId: "proj-1",
-      dueDate: null,
-      createdAt: new Date().toISOString(),
-    };
-    setColumns({
-      ...columns,
-      [colId]: [...(columns[colId] || []), newTask]
-    });
+    create.mutate(
+      { tenantId, projectId, title: newTaskTitle.trim() },
+      {
+        onSuccess: (createdTask) => {
+          // Add the real task returned from API into the correct column
+          const taskStatus = createdTask.status || colId;
+          setColumns((prev) => ({
+            ...prev,
+            [taskStatus]: [...(prev[taskStatus] || []), createdTask],
+          }));
+        },
+      },
+    );
     setNewTaskTitle("");
     setAddingTaskCol(null);
   };

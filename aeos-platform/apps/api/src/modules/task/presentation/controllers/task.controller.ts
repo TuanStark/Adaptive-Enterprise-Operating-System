@@ -1,34 +1,27 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, Req, HttpCode, HttpStatus, Inject } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
-import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
 import { CreateTaskCommand } from '../../application/commands/create-task/create-task.command';
 import { CreateTaskHandler } from '../../application/commands/create-task/create-task.handler';
 import { ChangeTaskStatusCommand, ChangeTaskStatusHandler } from '../../application/commands/change-task-status/change-task-status.handler';
 import { AssignTaskCommand, AssignTaskHandler } from '../../application/commands/assign-task/assign-task.handler';
 import { MoveTaskToSprintCommand, MoveTaskToSprintHandler } from '../../application/commands/move-task-to-sprint/move-task-to-sprint.handler';
-import { TaskRepository, TASK_REPOSITORY } from '../../domain/repositories/task.repository';
+import { UpdateTaskCommand } from '../../application/commands/update-task/update-task.command';
+import { UpdateTaskHandler } from '../../application/commands/update-task/update-task.handler';
+import { DeleteTaskHandler } from '../../application/commands/delete-task/delete-task.handler';
+import { DeleteTaskCommand } from '../../application/commands/delete-task/delete-task.command';
+import { GetTasksQuery } from '../../application/queries/get-tasks/get-tasks.query';
+import { GetTasksHandler } from '../../application/queries/get-tasks/get-tasks.handler';
+import { GetTaskDetailQuery } from '../../application/queries/get-task-detail/get-task-detail.query';
+import { GetTaskDetailHandler } from '../../application/queries/get-task-detail/get-task-detail.handler';
+import { CreateTaskRequestDto } from '../dto/create-task.request.dto';
+import { ChangeStatusRequestDto } from '../dto/change-status.request.dto';
+import { AssignTaskRequestDto } from '../dto/assign-task.request.dto';
+import { MoveToSprintRequestDto } from '../dto/move-to-sprint.request.dto';
+import { UpdateTaskRequestDto } from '../dto/update-task.request.dto';
 
-class CreateTaskRequestDto {
-  @IsString() tenantId!: string;
-  @IsString() projectId!: string;
-  @IsString() @MinLength(1) @MaxLength(255) title!: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsString() type?: string;
-  @IsOptional() @IsString() priority?: string;
-  @IsOptional() storyPoints?: number;
-}
-
-class ChangeStatusRequestDto {
-  @IsString() status!: string;
-}
-
-class AssignTaskRequestDto {
-  @IsString() assigneeId!: string;
-}
-
-class MoveToSprintRequestDto {
-  @IsOptional() @IsString() sprintId?: string;
+interface AuthenticatedRequest extends Request {
+  user: { userId: string; email: string; tenantId: string };
 }
 
 @Controller('tasks')
@@ -38,17 +31,18 @@ export class TaskController {
     private readonly changeStatusHandler: ChangeTaskStatusHandler,
     private readonly assignHandler: AssignTaskHandler,
     private readonly moveToSprintHandler: MoveTaskToSprintHandler,
-    @Inject(TASK_REPOSITORY)
-    private readonly taskRepository: TaskRepository,
+    private readonly updateHandler: UpdateTaskHandler,
+    private readonly deleteHandler: DeleteTaskHandler,
+    private readonly getTasksHandler: GetTasksHandler,
+    private readonly getTaskDetailHandler: GetTaskDetailHandler,
   ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateTaskRequestDto, @Req() req: Request) {
-    const user = (req as any).user;
+  async create(@Body() dto: CreateTaskRequestDto, @Req() req: AuthenticatedRequest) {
     const command = new CreateTaskCommand(
       dto.tenantId, dto.projectId, dto.title,
-      dto.description ?? null, user.userId, dto.priority ?? 'MEDIUM',
+      dto.description ?? null, req.user.userId, dto.priority ?? 'MEDIUM',
       dto.type ?? 'TASK',
     );
     const result = await this.createHandler.execute(command);
@@ -66,19 +60,34 @@ export class TaskController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const p = parseInt(page ?? '1', 10);
-    const l = parseInt(limit ?? '20', 10);
-    const { data, total } = await this.taskRepository.findAll(
-      { projectId, sprintId, status, assigneeId, priority }, p, l,
+    const query = new GetTasksQuery(
+      { projectId, sprintId, status, assigneeId, priority },
+      parseInt(page ?? '1', 10),
+      parseInt(limit ?? '20', 10),
     );
-    return {
-      data: data.map((t) => ({
-        id: t.id, key: t.key, title: t.title, status: t.status, type: t.type,
-        priority: t.priority, storyPoints: t.storyPoints,
-        assigneeId: t.assigneeId, sprintId: t.sprintId, dueDate: t.dueDate, createdAt: t.createdAt,
-      })),
-      meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },
-    };
+    return this.getTasksHandler.execute(query);
+  }
+
+  @Get(':id')
+  async detail(@Param('id') id: string) {
+    return this.getTaskDetailHandler.execute(new GetTaskDetailQuery(id));
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateTaskRequestDto) {
+    const command = new UpdateTaskCommand(
+      id, dto.title, dto.description, dto.priority,
+      dto.type, dto.storyPoints, dto.dueDate,
+    );
+    const result = await this.updateHandler.execute(command);
+    if (result.isFail) throw result.error as DomainError;
+    return { message: 'Task updated.' };
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(@Param('id') id: string) {
+    await this.deleteHandler.execute(new DeleteTaskCommand(id));
   }
 
   @Patch(':id/status')

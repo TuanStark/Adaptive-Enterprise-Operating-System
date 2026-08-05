@@ -14,10 +14,10 @@ import type { Task } from "../types";
 
 interface BacklogViewProps {
   initialTasks: Record<string, Task[]>;
-  projectId?: string;
+  projectId: string;
 }
 
-export function BacklogView({ initialTasks, projectId = "proj-1" }: BacklogViewProps) {
+export function BacklogView({ initialTasks, projectId }: BacklogViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [collapsedSprints, setCollapsedSprints] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

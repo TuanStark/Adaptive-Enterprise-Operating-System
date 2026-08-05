@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { TasksPageClient } from "@/features/tasks/components/TasksPageClient";
 import { getTasksByProject, getWorkspaceProjects } from "@/features/tasks/api/queries";
+import { getSessionContext } from "@/lib/api-server";
 
 export default async function TasksPage() {
+  const { tenantId } = await getSessionContext();
   const projects = await getWorkspaceProjects();
   const firstProject = projects[0] ?? null;
 
@@ -16,6 +18,7 @@ export default async function TasksPage() {
         initialTasks={tasks}
         projects={projects}
         initialProjectId={firstProject?.id ?? null}
+        tenantId={tenantId}
       />
     </Suspense>
   );
