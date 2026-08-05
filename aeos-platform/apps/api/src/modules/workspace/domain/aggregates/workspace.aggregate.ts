@@ -117,6 +117,9 @@ export class Workspace extends AggregateRoot<string> {
       0,
     );
 
+    // Chuẩn DDD: Khi tạo Workspace, owner mặc định phải là một member.
+    ws.addMember(tenantId, ownerId, null);
+
     ws.addDomainEvent(new WorkspaceCreatedEvent(id, tenantId, organizationId, name.trim(), ownerId));
     return Result.ok(ws);
   }
@@ -145,6 +148,16 @@ export class Workspace extends AggregateRoot<string> {
       return Result.fail(new WorkspaceNameRequiredError());
     }
     this._name = newName.trim();
+    this.touch();
+    return Result.ok(undefined);
+  }
+
+  updateDetails(name: string, description: string | null): Result<void, WorkspaceNameRequiredError> {
+    if (!name || name.trim().length === 0) {
+      return Result.fail(new WorkspaceNameRequiredError());
+    }
+    this._name = name.trim();
+    this._description = description;
     this.touch();
     return Result.ok(undefined);
   }

@@ -165,9 +165,10 @@ export const authOptions: NextAuthConfig = {
         const role = activeWorkspace?.membership.roleName ?? "USER";
         const workspaceId = activeWorkspace?.id ?? "";
         const workspaceName = activeWorkspace?.name ?? "";
+        const organizationId = activeWorkspace?.organizationId ?? "";
 
         console.log(
-          `[auth] User ${email} logged in → workspace: "${workspaceName}" (${workspaceId}), role: ${role}`,
+          `[auth] User ${email} logged in → org: ${organizationId}, workspace: "${workspaceName}" (${workspaceId}), role: ${role}`,
         );
 
         return {
@@ -176,6 +177,7 @@ export const authOptions: NextAuthConfig = {
           name: displayName,
           role,
           tenantId: profile?.tenantId ?? "",
+          organizationId,
           workspaceId,
           workspaceName,
           accessToken: loginData.accessToken,
@@ -199,7 +201,13 @@ export const authOptions: NextAuthConfig = {
 
   callbacks: {
     // ── JWT Callback: Token Rotation ──
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session) {
+        if (session.workspaceId) token.workspaceId = session.workspaceId;
+        if (session.workspaceName) token.workspaceName = session.workspaceName;
+        if (session.organizationId) token.organizationId = session.organizationId;
+      }
+
       // Initial sign-in: seed JWT with all backend data
       if (user) {
         return {
@@ -207,6 +215,7 @@ export const authOptions: NextAuthConfig = {
           id: user.id,
           role: user.role,
           tenantId: user.tenantId,
+          organizationId: user.organizationId,
           workspaceId: user.workspaceId,
           workspaceName: user.workspaceName,
           accessToken: user.accessToken,
@@ -245,6 +254,7 @@ export const authOptions: NextAuthConfig = {
       session.user.id = token.id as string;
       session.user.role = token.role as string;
       session.user.tenantId = token.tenantId as string;
+      session.user.organizationId = token.organizationId as string;
       session.user.workspaceId = token.workspaceId as string;
       session.user.workspaceName = token.workspaceName as string;
       session.accessToken = token.accessToken as string;

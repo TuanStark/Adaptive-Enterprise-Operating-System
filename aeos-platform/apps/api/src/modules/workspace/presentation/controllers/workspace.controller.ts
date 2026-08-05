@@ -6,6 +6,8 @@ import { CreateWorkspaceCommand } from '../../application/commands/create-worksp
 import { CreateWorkspaceHandler } from '../../application/commands/create-workspace/create-workspace.handler';
 import { ArchiveWorkspaceCommand } from '../../application/commands/archive-workspace/archive-workspace.command';
 import { ArchiveWorkspaceHandler } from '../../application/commands/archive-workspace/archive-workspace.handler';
+import { UpdateWorkspaceCommand } from '../../application/commands/update-workspace/update-workspace.command';
+import { UpdateWorkspaceHandler } from '../../application/commands/update-workspace/update-workspace.handler';
 import { GetUserWorkspacesQuery } from '../../application/queries/get-user-workspaces/get-user-workspaces.query';
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 
@@ -14,6 +16,7 @@ export class WorkspaceController {
   constructor(
     private readonly createHandler: CreateWorkspaceHandler,
     private readonly archiveHandler: ArchiveWorkspaceHandler,
+    private readonly updateHandler: UpdateWorkspaceHandler,
     private readonly getUserWorkspacesHandler: GetUserWorkspacesHandler,
   ) {}
 
@@ -41,6 +44,16 @@ export class WorkspaceController {
       throw result.error as DomainError;
     }
     return result.value;
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: { name?: string; description?: string; domain?: string }) {
+    const command = new UpdateWorkspaceCommand(id, dto.name, dto.description, dto.domain);
+    const result = await this.updateHandler.execute(command);
+    if (result.isFail) {
+      throw result.error as DomainError;
+    }
+    return { message: 'Workspace updated successfully.' };
   }
 
   @Patch(':id/archive')

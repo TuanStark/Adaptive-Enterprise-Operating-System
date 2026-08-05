@@ -66,5 +66,99 @@ export class IdentitySeeder implements OnModuleInit {
       where: { email: 'admin@aeos.com' },
       data: { status: 'ACTIVE', emailVerified: true },
     });
+
+    // ── Bootstrap: Organization → Workspace → Member → Role ──
+    await this.bootstrapDefaultHierarchy();
+  }
+
+  /**
+   * Tạo chuỗi Organization → Workspace → Member → Role mặc định
+   * nếu chưa tồn tại, đảm bảo admin user luôn có một workspace sẵn sàng.
+   */
+  private async bootstrapDefaultHierarchy() {
+    const adminUser = await this.prisma.user.findUnique({
+      where: { email: 'admin@aeos.com' },
+    });
+    if (!adminUser) return;
+
+    const tenantId = adminUser.tenantId;
+
+    // 1. Ensure default Organization
+    let org = await this.prisma.organization.findFirst({
+      where: { tenantId, name: 'Default Organization' },
+    });
+    if (!org) {
+      org = await this.prisma.organization.create({
+        data: {
+          tenantId,
+          name: 'Default Organization',
+          ownerId: adminUser.id,
+        },
+      });
+
+      // Add admin as org member
+      await this.prisma.organizationMember.create({
+        data: {
+          tenantId,
+          organizationId: org.id,
+          userId: adminUser.id,
+          role: 'ADMIN',
+          joinedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`Default Organization created: ${org.id}`);
+    }
+
+    // 2. Ensure default Workspace
+    let workspace = await this.prisma.workspace.findFirst({
+      where: { tenantId, organizationId: org.id, name: 'Default Workspace' },
+    });
+    if (!workspace) {
+      workspace = await this.prisma.workspace.create({
+        data: {
+          tenantId,
+          organizationId: org.id,
+          name: 'Default Workspace',
+          description: 'Auto-generated default workspace',
+          ownerId: adminUser.id,
+          status: 'ACTIVE',
+        },
+      });
+      this.logger.log(`Default Workspace created: ${workspace.id}`);
+    }
+
+    // 3. Ensure default Role within workspace
+    let adminRole = await this.prisma.role.findFirst({
+      where: { tenantId, workspaceId: workspace.id, name: 'ADMIN' },
+    });
+    if (!adminRole) {
+      adminRole = await this.prisma.role.create({
+        data: {
+          tenantId,
+          workspaceId: workspace.id,
+          name: 'ADMIN',
+          description: 'Workspace administrator with full access',
+        },
+      });
+      this.logger.log(`Default ADMIN role created: ${adminRole.id}`);
+    }
+
+    // 4. Ensure admin is a WorkspaceMember
+    const existingMember = await this.prisma.workspaceMember.findFirst({
+      where: { workspaceId: workspace.id, userId: adminUser.id },
+    });
+    if (!existingMember) {
+      await this.prisma.workspaceMember.create({
+        data: {
+          tenantId,
+          workspaceId: workspace.id,
+          userId: adminUser.id,
+          roleId: adminRole.id,
+          joinedAt: new Date(),
+        },
+      });
+      this.logger.log(`Admin user added to Default Workspace as ADMIN`);
+    }
   }
 }

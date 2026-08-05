@@ -17,13 +17,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export function Header() {
   const toggleLocalSidebar = useAppStore((state) => state.toggleLocalSidebar);
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const pathname = usePathname();
+  const { data: session } = useSession();
 
+  const userName = session?.user?.name || "User";
+  const userRole = session?.user?.role || "USER";
+  const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   const hasLocalSidebar = pathname.startsWith("/tasks") || pathname.startsWith("/docs") || pathname.startsWith("/chat");
 
@@ -54,12 +58,11 @@ export function Header() {
           <DropdownMenuTrigger render={
             <button className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1 pr-2 rounded-md transition-colors border-none bg-transparent focus:outline-none text-left">
               <div className="hidden md:block text-right">
-                <p className="text-sm font-medium text-gray-900">Tony Stark</p>
-                <p className="text-xs text-gray-500">Administrator</p>
+                <p className="text-sm font-medium text-gray-900">{userName}</p>
+                <p className="text-xs text-gray-500">{userRole}</p>
               </div>
               <Avatar className="h-9 w-9 border border-gray-200 shadow-sm">
-                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                <AvatarFallback>TS</AvatarFallback>
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </button>
           } />
