@@ -42,6 +42,40 @@ export class UpdateTaskHandler {
       task.setDueDate(command.dueDate ? new Date(command.dueDate) : null);
     }
 
+    if (command.startDate !== undefined) {
+      task.setStartDate(command.startDate ? new Date(command.startDate) : null);
+    }
+
+    if (command.resolution !== undefined) {
+      if (command.resolution) {
+        task.resolve(command.resolution);
+      } else {
+        task.clearResolution();
+      }
+    }
+
+    if (command.labels !== undefined) {
+      task.setLabels(command.labels);
+    }
+
+    if (command.environment !== undefined) {
+      task.setEnvironment(command.environment);
+    }
+
+    if (command.fixVersionId !== undefined) {
+      task.setFixVersion(command.fixVersionId);
+    }
+
+    if (command.reporterId !== undefined) {
+      task.setReporter(command.reporterId);
+    }
+
+    if (command.originalEstimate !== undefined) {
+      if (command.originalEstimate !== null) {
+        task.setEstimate(command.originalEstimate);
+      }
+    }
+
     await this.taskRepository.save(task);
     return Result.ok(undefined);
   }

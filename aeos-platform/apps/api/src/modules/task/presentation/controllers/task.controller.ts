@@ -41,9 +41,9 @@ export class TaskController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateTaskRequestDto, @Req() req: AuthenticatedRequest) {
     const command = new CreateTaskCommand(
-      dto.tenantId, dto.projectId, dto.title,
+      dto.tenantId, dto.workspaceId, dto.projectId, dto.title,
       dto.description ?? null, req.user.userId, dto.priority ?? 'MEDIUM',
-      dto.type ?? 'TASK',
+      dto.type ?? 'TASK', dto.labels ?? [],
     );
     const result = await this.createHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -52,16 +52,21 @@ export class TaskController {
 
   @Get()
   async list(
+    @Query('workspaceId') workspaceId?: string,
     @Query('projectId') projectId?: string,
     @Query('sprintId') sprintId?: string,
     @Query('status') status?: string,
     @Query('assigneeId') assigneeId?: string,
+    @Query('reporterId') reporterId?: string,
     @Query('priority') priority?: string,
+    @Query('type') type?: string,
+    @Query('fixVersionId') fixVersionId?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     const query = new GetTasksQuery(
-      { projectId, sprintId, status, assigneeId, priority },
+      { workspaceId, projectId, sprintId, status, assigneeId, reporterId, priority, type, fixVersionId, search },
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '20', 10),
     );
@@ -77,7 +82,9 @@ export class TaskController {
   async update(@Param('id') id: string, @Body() dto: UpdateTaskRequestDto) {
     const command = new UpdateTaskCommand(
       id, dto.title, dto.description, dto.priority,
-      dto.type, dto.storyPoints, dto.dueDate,
+      dto.type, dto.storyPoints, dto.dueDate, dto.startDate,
+      dto.resolution, dto.labels, dto.environment,
+      dto.fixVersionId, dto.reporterId, dto.originalEstimate,
     );
     const result = await this.updateHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;

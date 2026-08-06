@@ -1,11 +1,17 @@
 import { Task } from '../aggregates/task.aggregate';
 
 export interface TaskFilters {
+  workspaceId?: string;
   projectId?: string;
   sprintId?: string;
   status?: string;
   assigneeId?: string;
+  reporterId?: string;
   priority?: string;
+  type?: string;
+  labels?: string[];
+  fixVersionId?: string;
+  search?: string;
 }
 
 export interface TaskRepository {

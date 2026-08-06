@@ -62,6 +62,14 @@ enum TaskType {
   SUBTASK
 }
 
+enum TaskLinkType {
+  BLOCKS
+  DUPLICATES
+  RELATES_TO
+  CLONES
+  CAUSES
+}
+
 enum EventStatus {
   PENDING
   PROCESSING
@@ -96,6 +104,12 @@ model Tenant {
   tasks               Task[]
   taskComments        TaskComment[]
   taskAttachments     TaskAttachment[]
+  taskLinks           TaskLink[]
+  taskHistory         TaskHistory[]
+  worklogs            Worklog[]
+  taskWatchers        TaskWatcher[]
+  projectComponents   ProjectComponent[]
+  projectVersions     ProjectVersion[]
   files               File[]
   documents           Document[]
   sprints             Sprint[]
@@ -146,7 +160,11 @@ model User {
   projectMembers      ProjectMember[]
   createdTasks        Task[]               @relation("TaskCreator")
   assignedTasks       Task[]               @relation("TaskAssignee")
+  reportedTasks       Task[]               @relation("TaskReporter")
   taskComments        TaskComment[]
+  taskHistoryActions  TaskHistory[]         @relation("TaskHistoryActor")
+  worklogs            Worklog[]            @relation("WorklogAuthor")
+  watchedTasks        TaskWatcher[]        @relation("TaskWatcher")
   ownedDocuments      Document[]           @relation("DocumentOwner")
   auditLogs           AuditLog[]           @relation("Actor")
   notifications       Notification[]
@@ -266,6 +284,13 @@ model Workspace {
   members      WorkspaceMember[]
   roles        Role[]
   projects     Project[]
+  tasks        Task[]
+  taskLinks    TaskLink[]
+  taskHistory  TaskHistory[]
+  worklogs     Worklog[]
+  taskWatchers TaskWatcher[]
+  projectComponents ProjectComponent[]
+  projectVersions   ProjectVersion[]
   documents    Document[]
   workflows    Workflow[]
   meetings     Meeting[]
@@ -361,9 +386,11 @@ model Project {
   tenant    Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner     User?           @relation("ProjectOwner", fields: [ownerId], references: [id])
-  members   ProjectMember[]
-  sprints   Sprint[]
-  tasks     Task[]
+  members    ProjectMember[]
+  sprints    Sprint[]
+  tasks      Task[]
+  components ProjectComponent[]
+  versions   ProjectVersion[]
 
   @@index([tenantId])
   @@index([workspaceId])
@@ -417,58 +444,91 @@ model Sprint {
 // ----------------------------------------------------
 
 model Task {
-  id           String      @id @default(uuid()) @db.Uuid
-  tenantId     String?     @map("tenant_id") @db.Uuid
-  projectId    String?     @map("project_id") @db.Uuid
-  key          String      @unique @db.VarChar(50)
-  sprintId     String?     @map("sprint_id") @db.Uuid
-  parentTaskId String?     @map("parent_task_id") @db.Uuid
-  title        String?     @db.VarChar(255)
-  description  String?
-  type         TaskType    @default(TASK)
-  creatorId    String?     @map("creator_id") @db.Uuid
-  assigneeId   String?     @map("assignee_id") @db.Uuid
-  status       TaskStatus?
-  priority     Priority?
-  storyPoints  Int?        @map("story_points")
-  dueDate      DateTime?   @map("due_date")
-  version      Int         @default(1)
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  createdBy    String?     @map("created_by") @db.Uuid
-  updatedBy    String?     @map("updated_by") @db.Uuid
-  deletedAt    DateTime?   @map("deleted_at")
+  id                String      @id @default(uuid()) @db.Uuid
+  tenantId          String?     @map("tenant_id") @db.Uuid
+  workspaceId       String?     @map("workspace_id") @db.Uuid
+  projectId         String?     @map("project_id") @db.Uuid
+  key               String      @unique @db.VarChar(50)
+  sprintId          String?     @map("sprint_id") @db.Uuid
+  parentTaskId      String?     @map("parent_task_id") @db.Uuid
+  title             String?     @db.VarChar(255)
+  description       String?
+  type              TaskType    @default(TASK)
+  creatorId         String?     @map("creator_id") @db.Uuid
+  reporterId        String?     @map("reporter_id") @db.Uuid
+  assigneeId        String?     @map("assignee_id") @db.Uuid
+  status            TaskStatus?
+  priority          Priority?
+  resolution        String?     @db.VarChar(50)
+  labels            String[]    @default([])
+  storyPoints       Int?        @map("story_points")
+  originalEstimate  Int?        @map("original_estimate")
+  remainingEstimate Int?        @map("remaining_estimate")
+  timeSpent         Int         @default(0) @map("time_spent")
+  boardPosition     Float       @default(0) @map("board_position")
+  startDate         DateTime?   @map("start_date")
+  dueDate           DateTime?   @map("due_date")
+  environment       String?     @db.VarChar(100)
+  fixVersionId      String?     @map("fix_version_id") @db.Uuid
+  version           Int         @default(1)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  createdBy         String?     @map("created_by") @db.Uuid
+  updatedBy         String?     @map("updated_by") @db.Uuid
+  deletedAt         DateTime?   @map("deleted_at")
 
   tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace   Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   project     Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   sprint      Sprint?          @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   parentTask  Task?            @relation("SubTasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
   subTasks    Task[]           @relation("SubTasks")
   creator     User?            @relation("TaskCreator", fields: [creatorId], references: [id])
+  reporter    User?            @relation("TaskReporter", fields: [reporterId], references: [id])
   assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  fixVersion  ProjectVersion?  @relation(fields: [fixVersionId], references: [id], onDelete: SetNull)
   comments    TaskComment[]
   attachments TaskAttachment[]
+  sourceLinks TaskLink[]       @relation("SourceLinks")
+  targetLinks TaskLink[]       @relation("TargetLinks")
+  history     TaskHistory[]
+  worklogs    Worklog[]
+  watchers    TaskWatcher[]
+  components  TaskComponent[]
 
   @@index([tenantId])
+  @@index([workspaceId])
+  @@index([workspaceId, assigneeId])
+  @@index([workspaceId, status])
   @@index([projectId])
+  @@index([projectId, boardPosition])
   @@index([sprintId])
   @@index([projectId, status])
   @@index([assigneeId, status])
+  @@index([reporterId])
+  @@index([fixVersionId])
   @@map("tasks")
 }
 
 model TaskComment {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String?  @map("tenant_id") @db.Uuid
-  taskId    String?  @map("task_id") @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  content   String?
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String?   @map("tenant_id") @db.Uuid
+  taskId     String?   @map("task_id") @db.Uuid
+  userId     String?   @map("user_id") @db.Uuid
+  parentId   String?   @map("parent_id") @db.Uuid
+  content    String?
+  isInternal Boolean   @default(false) @map("is_internal")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant  Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  task    Task?         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user    User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies TaskComment[] @relation("CommentReplies")
 
+  @@index([taskId])
   @@map("task_comments")
 }
 
@@ -484,6 +544,146 @@ model TaskAttachment {
   file   File?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@map("task_attachments")
+}
+
+model TaskLink {
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String?      @map("tenant_id") @db.Uuid
+  workspaceId  String?      @map("workspace_id") @db.Uuid
+  sourceTaskId String       @map("source_task_id") @db.Uuid
+  targetTaskId String       @map("target_task_id") @db.Uuid
+  linkType     TaskLinkType @map("link_type")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  createdBy    String?      @map("created_by") @db.Uuid
+
+  tenant     Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace  Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sourceTask Task       @relation("SourceLinks", fields: [sourceTaskId], references: [id], onDelete: Cascade)
+  targetTask Task       @relation("TargetLinks", fields: [targetTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceTaskId, targetTaskId, linkType])
+  @@index([workspaceId])
+  @@index([sourceTaskId])
+  @@index([targetTaskId])
+  @@map("task_links")
+}
+
+model TaskHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  taskId      String   @map("task_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  field       String   @db.VarChar(100)
+  oldValue    String?  @map("old_value") @db.Text
+  newValue    String?  @map("new_value") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User       @relation("TaskHistoryActor", fields: [userId], references: [id])
+
+  @@index([workspaceId])
+  @@index([taskId, createdAt])
+  @@index([taskId, field])
+  @@map("task_history")
+}
+
+model Worklog {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  taskId      String   @map("task_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  timeSpent   Int
+  startDate   DateTime @map("start_date") @db.Date
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User       @relation("WorklogAuthor", fields: [userId], references: [id])
+
+  @@index([workspaceId])
+  @@index([workspaceId, userId])
+  @@index([taskId])
+  @@index([userId, startDate])
+  @@map("task_worklogs")
+}
+
+model TaskWatcher {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  taskId      String   @map("task_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User       @relation("TaskWatcher", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([workspaceId])
+  @@map("task_watchers")
+}
+
+model ProjectComponent {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  workspaceId String?  @map("workspace_id") @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?
+  leadId      String?  @map("lead_id") @db.Uuid
+
+  tenant    Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     TaskComponent[]
+
+  @@unique([projectId, name])
+  @@index([workspaceId])
+  @@map("project_components")
+}
+
+model TaskComponent {
+  taskId      String @map("task_id") @db.Uuid
+  componentId String @map("component_id") @db.Uuid
+
+  task      Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  component ProjectComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, componentId])
+  @@map("task_components")
+}
+
+model ProjectVersion {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  workspaceId String?   @map("workspace_id") @db.Uuid
+  projectId   String    @map("project_id") @db.Uuid
+  name        String    @db.VarChar(100)
+  description String?
+  startDate   DateTime? @map("start_date") @db.Date
+  releaseDate DateTime? @map("release_date") @db.Date
+  isReleased  Boolean   @default(false) @map("is_released")
+  isArchived  Boolean   @default(false) @map("is_archived")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@unique([projectId, name])
+  @@index([workspaceId])
+  @@map("project_versions")
 }
 
 // ----------------------------------------------------
