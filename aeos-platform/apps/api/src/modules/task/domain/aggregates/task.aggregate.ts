@@ -34,14 +34,19 @@ export enum TaskType {
   SUBTASK = 'SUBTASK',
 }
 
+const ALL_STATUSES = [
+  TaskStatus.BACKLOG, TaskStatus.TODO, TaskStatus.IN_PROGRESS, 
+  TaskStatus.BLOCKED, TaskStatus.REVIEW, TaskStatus.DONE, TaskStatus.CANCELLED
+];
+
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-  [TaskStatus.BACKLOG]: [TaskStatus.TODO, TaskStatus.CANCELLED],
-  [TaskStatus.TODO]: [TaskStatus.IN_PROGRESS, TaskStatus.BACKLOG, TaskStatus.CANCELLED],
-  [TaskStatus.IN_PROGRESS]: [TaskStatus.REVIEW, TaskStatus.BLOCKED, TaskStatus.TODO, TaskStatus.CANCELLED],
-  [TaskStatus.BLOCKED]: [TaskStatus.IN_PROGRESS, TaskStatus.TODO, TaskStatus.CANCELLED],
-  [TaskStatus.REVIEW]: [TaskStatus.DONE, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
-  [TaskStatus.DONE]: [TaskStatus.TODO],
-  [TaskStatus.CANCELLED]: [TaskStatus.BACKLOG],
+  [TaskStatus.BACKLOG]: ALL_STATUSES,
+  [TaskStatus.TODO]: ALL_STATUSES,
+  [TaskStatus.IN_PROGRESS]: ALL_STATUSES,
+  [TaskStatus.BLOCKED]: ALL_STATUSES,
+  [TaskStatus.REVIEW]: ALL_STATUSES,
+  [TaskStatus.DONE]: ALL_STATUSES,
+  [TaskStatus.CANCELLED]: ALL_STATUSES,
 };
 
 export interface TaskProps {

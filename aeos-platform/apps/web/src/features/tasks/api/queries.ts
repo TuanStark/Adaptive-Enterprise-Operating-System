@@ -7,28 +7,18 @@ interface PaginatedResponse<T> {
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
-export async function getTasksByProject(projectId: string): Promise<Record<string, Task[]>> {
+export async function getTasksByProject(projectId: string): Promise<Task[]> {
   try {
+    const { workspaceId } = await getSessionContext();
     const response = await serverApi.get<PaginatedResponse<Task>>("/tasks", {
       projectId,
+      workspaceId,
       limit: 200,
     });
-
-    const grouped: Record<string, Task[]> = {};
-    for (const task of response.data) {
-      const status = task.status || "TODO";
-      if (!grouped[status]) grouped[status] = [];
-      grouped[status].push(task);
-    }
-
-    if (!grouped["TODO"]) grouped["TODO"] = [];
-    if (!grouped["IN_PROGRESS"]) grouped["IN_PROGRESS"] = [];
-    if (!grouped["DONE"]) grouped["DONE"] = [];
-
-    return grouped;
+    return response.data;
   } catch (error) {
     console.error("Failed to fetch tasks:", error);
-    return { TODO: [], IN_PROGRESS: [], DONE: [] };
+    return [];
   }
 }
 

@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChevronDown, Share2, Zap, LayoutTemplate, Maximize2, MoreHorizontal, Users, Plus } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
 
-import { Task } from "../types";
+import type { Task } from "../types";
 import type { Project } from "@/features/projects/types";
 import { BacklogView } from "./BacklogView";
 import { SummaryView } from "./SummaryView";
@@ -17,13 +17,14 @@ import { DocsView } from "./DocsView";
 import { FormsView } from "./FormsView";
 
 interface TasksPageClientProps {
-  initialTasks: Record<string, Task[]>;
+  initialTasks: Task[];
   projects: Project[];
   initialProjectId: string | null;
   tenantId: string;
+  workspaceId: string;
 }
 
-export function TasksPageClient({ initialTasks, projects, initialProjectId, tenantId }: TasksPageClientProps) {
+export function TasksPageClient({ initialTasks, projects, initialProjectId, tenantId, workspaceId }: TasksPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentView = searchParams.get("view") || "board";
@@ -31,6 +32,14 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId, tena
   const [currentProjectId, setCurrentProjectId] = useState(initialProjectId);
   const currentProject = projects.find(p => p.id === currentProjectId);
   const currentProjectName = currentProject?.name ?? "No Project";
+
+  // Convert flat list to grouped for views that still need it
+  const groupedTasks = initialTasks.reduce((acc, task) => {
+    const status = task.status || "TODO";
+    if (!acc[status]) acc[status] = [];
+    acc[status].push(task);
+    return acc;
+  }, {} as Record<string, Task[]>);
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -91,15 +100,15 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId, tena
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {currentView === 'backlog' && currentProjectId && <BacklogView initialTasks={initialTasks} projectId={currentProjectId} />}
-        {currentView === 'summary' && <SummaryView initialTasks={initialTasks} />}
-        {currentView === 'timeline' && <TimelineView initialTasks={initialTasks} />}
-        {currentView === 'calendar' && <CalendarView initialTasks={initialTasks} />}
+        {currentView === 'backlog' && currentProjectId && <BacklogView initialTasks={groupedTasks} projectId={currentProjectId} />}
+        {currentView === 'summary' && <SummaryView initialTasks={groupedTasks} />}
+        {currentView === 'timeline' && <TimelineView initialTasks={groupedTasks} />}
+        {currentView === 'calendar' && <CalendarView initialTasks={groupedTasks} />}
         {currentView === 'docs' && <DocsView />}
         {currentView === 'forms' && <FormsView />}
         {(currentView === 'board' || currentView === 'sprint') && currentProjectId && (
           <div className="h-full p-6">
-            <KanbanBoard initialTasks={initialTasks} view="board" projectId={currentProjectId} tenantId={tenantId} />
+            <KanbanBoard initialTasks={initialTasks} projectId={currentProjectId} tenantId={tenantId} workspaceId={workspaceId} />
           </div>
         )}
       </div>

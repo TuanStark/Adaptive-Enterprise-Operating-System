@@ -1,38 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown } from "lucide-react";
+import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown, X, Plus, Clock, Calendar, Tag } from "lucide-react";
 import { CommentSection } from "./CommentSection";
-import { useTaskDetail, useTaskMutations } from "../hooks/useTasks";
 import { useSession } from "next-auth/react";
-import type { TaskStatus, TaskPriority, TaskType } from "../types";
-
-const STATUS_OPTIONS: TaskStatus[] = ["BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"];
-const PRIORITY_OPTIONS: TaskPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
-const TYPE_OPTIONS: TaskType[] = ["EPIC", "STORY", "TASK", "BUG", "SUBTASK"];
-
-const STATUS_COLORS: Record<string, string> = {
-  BACKLOG: "bg-gray-50 text-gray-700 border-gray-200",
-  TODO: "bg-blue-50 text-blue-700 border-blue-200",
-  IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  BLOCKED: "bg-red-50 text-red-700 border-red-200",
-  REVIEW: "bg-purple-50 text-purple-700 border-purple-200",
-  DONE: "bg-green-50 text-green-700 border-green-200",
-  CANCELLED: "bg-gray-50 text-gray-400 border-gray-200",
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  LOW: "bg-gray-50 text-gray-600 border-gray-200",
-  MEDIUM: "bg-blue-50 text-blue-600 border-blue-200",
-  HIGH: "bg-orange-50 text-orange-600 border-orange-200",
-  URGENT: "bg-red-50 text-red-600 border-red-200",
-};
+import {
+  useTaskDetailPanel,
+  STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  TYPE_OPTIONS,
+  RESOLUTION_OPTIONS,
+  ENVIRONMENT_OPTIONS,
+  STATUS_COLORS,
+  PRIORITY_COLORS,
+  getLabelColor,
+  formatMinutes,
+} from "../hooks/useTaskDetailPanel";
 
 interface TaskDetailPanelProps {
   taskId: string | null;
@@ -40,24 +28,34 @@ interface TaskDetailPanelProps {
 }
 
 export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
-  const [activeTab, setActiveTab] = useState<"comments" | "activity" | "history">("comments");
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-
   const { data: session } = useSession();
   const tenantId = session?.user?.tenantId ?? "";
 
-  const { data: task, isLoading } = useTaskDetail(taskId);
-  const { update, changeStatus } = useTaskMutations();
+  const {
+    task,
+    isLoading,
+    activeTab,
+    setActiveTab,
+    isEditingTitle,
+    editTitle,
+    setEditTitle,
+    handleSaveTitle,
+    startEditingTitle,
+    setIsEditingTitle,
+    handleChangeStatus,
+    handleUpdateField,
+    labelInput,
+    setLabelInput,
+    isAddingLabel,
+    setIsAddingLabel,
+    handleAddLabel,
+    handleRemoveLabel,
+    isResolved,
+    isBug,
+    timeProgress,
+  } = useTaskDetailPanel(taskId);
 
   if (!taskId) return null;
-
-  const handleSaveTitle = () => {
-    if (editTitle.trim() && editTitle !== task?.title) {
-      update.mutate({ taskId, title: editTitle.trim() });
-    }
-    setIsEditingTitle(false);
-  };
 
   const tabs = [
     { key: "comments" as const, label: "Comments" },
@@ -104,17 +102,14 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                   ) : (
                     <h2
                       className="text-2xl font-bold text-gray-900 cursor-text hover:bg-gray-50 p-1 -ml-1 rounded transition-colors"
-                      onClick={() => {
-                        setEditTitle(task.title);
-                        setIsEditingTitle(true);
-                      }}
+                      onClick={startEditingTitle}
                     >
                       {task.title}
                     </h2>
                   )}
 
-                  {/* Status + Priority Badges */}
-                  <div className="flex gap-2 pt-2">
+                  {/* Status + Priority + Type Badges */}
+                  <div className="flex gap-2 pt-2 flex-wrap">
                     <DropdownMenu>
                       <DropdownMenuTrigger render={
                         <button className="focus:outline-none">
@@ -127,7 +122,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                         {STATUS_OPTIONS.map((s) => (
                           <DropdownMenuItem
                             key={s}
-                            onClick={() => changeStatus.mutate({ taskId: task.id, status: s })}
+                            onClick={() => handleChangeStatus(s)}
                             className={task.status === s ? "font-semibold" : ""}
                           >
                             {s.replace(/_/g, " ")}
@@ -148,7 +143,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                         {PRIORITY_OPTIONS.map((p) => (
                           <DropdownMenuItem
                             key={p}
-                            onClick={() => update.mutate({ taskId: task.id, priority: p })}
+                            onClick={() => handleUpdateField({ priority: p })}
                             className={task.priority === p ? "font-semibold" : ""}
                           >
                             {p}
@@ -169,7 +164,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                         {TYPE_OPTIONS.map((t) => (
                           <DropdownMenuItem
                             key={t}
-                            onClick={() => update.mutate({ taskId: task.id, type: t })}
+                            onClick={() => handleUpdateField({ type: t })}
                             className={task.type === t ? "font-semibold" : ""}
                           >
                             {t}
@@ -177,6 +172,51 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Labels */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Tag className="w-3.5 h-3.5 text-gray-400" />
+                    <p className="text-xs font-medium text-gray-500">Labels</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {(task.labels ?? []).map((label) => (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getLabelColor(label)}`}
+                      >
+                        {label}
+                        <button
+                          onClick={() => handleRemoveLabel(label)}
+                          className="hover:bg-black/10 rounded-full p-0.5 transition-colors cursor-pointer border-none bg-transparent"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    {isAddingLabel ? (
+                      <Input
+                        autoFocus
+                        value={labelInput}
+                        onChange={(e) => setLabelInput(e.target.value)}
+                        onBlur={() => { handleAddLabel(); setIsAddingLabel(false); }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddLabel();
+                          if (e.key === "Escape") setIsAddingLabel(false);
+                        }}
+                        placeholder="Label name..."
+                        className="h-6 w-24 text-xs px-2"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setIsAddingLabel(true)}
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer border border-dashed border-gray-200 bg-transparent"
+                      >
+                        <Plus className="w-3 h-3" /> Add
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -196,15 +236,15 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 mb-2">Creator</p>
+                    <p className="text-xs font-medium text-gray-500 mb-2">Reporter</p>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {task.creatorId.substring(0, 2).toUpperCase()}
+                          {task.reporterId ? task.reporterId.substring(0, 2).toUpperCase() : task.creatorId.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-sm font-medium text-gray-900">
-                        User {task.creatorId.substring(0, 8)}
+                        {task.reporterId ? `User ${task.reporterId.substring(0, 8)}` : `User ${task.creatorId.substring(0, 8)}`}
                       </span>
                     </div>
                   </div>
@@ -213,11 +253,104 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     <span className="text-sm text-gray-700">{task.storyPoints ?? "—"}</span>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 mb-2">Due Date</p>
+                    <p className="text-xs font-medium text-gray-500 mb-2">Start Date</p>
+                    <span className="text-sm text-gray-700">
+                      {task.startDate ? new Date(task.startDate).toLocaleDateString() : "—"}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1 mb-2">
+                      <Calendar className="w-3 h-3 text-gray-400" />
+                      <p className="text-xs font-medium text-gray-500">Due Date</p>
+                    </div>
                     <span className="text-sm text-gray-700">
                       {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}
                     </span>
                   </div>
+
+                  {/* Resolution — only show when resolved */}
+                  {isResolved && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Resolution</p>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={
+                          <button className="focus:outline-none">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 cursor-pointer text-xs">
+                              {task.resolution ?? "None"} <ChevronDown className="w-3 h-3 ml-1" />
+                            </Badge>
+                          </button>
+                        } />
+                        <DropdownMenuContent>
+                          {RESOLUTION_OPTIONS.map((r) => (
+                            <DropdownMenuItem
+                              key={r}
+                              onClick={() => handleUpdateField({ resolution: r })}
+                              className={task.resolution === r ? "font-semibold" : ""}
+                            >
+                              {r.replace(/_/g, " ")}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+
+                  {/* Environment — only show for bugs */}
+                  {isBug && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">Environment</p>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={
+                          <button className="focus:outline-none">
+                            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 cursor-pointer text-xs">
+                              {task.environment ?? "None"} <ChevronDown className="w-3 h-3 ml-1" />
+                            </Badge>
+                          </button>
+                        } />
+                        <DropdownMenuContent>
+                          {ENVIRONMENT_OPTIONS.map((e) => (
+                            <DropdownMenuItem
+                              key={e}
+                              onClick={() => handleUpdateField({ environment: e })}
+                              className={task.environment === e ? "font-semibold" : ""}
+                            >
+                              {e}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </div>
+
+                {/* Time Tracking */}
+                <div className="border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    <p className="text-sm font-semibold text-gray-900">Time Tracking</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Original</p>
+                      <p className="text-sm font-semibold text-gray-700">{formatMinutes(task.originalEstimate)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Remaining</p>
+                      <p className="text-sm font-semibold text-gray-700">{formatMinutes(task.remainingEstimate)}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-medium text-blue-400 uppercase tracking-wide mb-0.5">Logged</p>
+                      <p className="text-sm font-semibold text-blue-700">{formatMinutes(task.timeSpent)}</p>
+                    </div>
+                  </div>
+                  {task.originalEstimate != null && task.originalEstimate > 0 && (
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${timeProgress > 100 ? "bg-red-500" : "bg-blue-500"}`}
+                        style={{ width: `${Math.min(timeProgress, 100)}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}

@@ -2,71 +2,28 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientApi } from "@/lib/api-client";
-import type { Task } from "../types";
+import type { Task, TaskDetail, TaskFilters, CreateTaskInput, UpdateTaskInput, TaskStatus } from "../types";
 import type { PaginatedResponse } from "@/types/api";
-
-interface TaskFilters {
-  projectId?: string;
-  sprintId?: string;
-  status?: string;
-  assigneeId?: string;
-  priority?: string;
-  page?: number;
-  limit?: number;
-}
-
-interface CreateTaskInput {
-  tenantId: string;
-  projectId: string;
-  title: string;
-  description?: string;
-  type?: string;
-  priority?: string;
-}
-
-interface UpdateTaskInput {
-  title?: string;
-  description?: string | null;
-  priority?: string;
-  type?: string;
-  storyPoints?: number | null;
-  dueDate?: string | null;
-}
-
-export interface TaskDetail {
-  id: string;
-  key: string;
-  tenantId: string;
-  projectId: string;
-  title: string;
-  description: string | null;
-  status: string;
-  type: string;
-  priority: string;
-  storyPoints: number | null;
-  assigneeId: string | null;
-  creatorId: string;
-  sprintId: string | null;
-  parentTaskId: string | null;
-  dueDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export function useTasks(filters: TaskFilters) {
   return useQuery({
     queryKey: ["tasks", filters],
     queryFn: () =>
       clientApi.get<PaginatedResponse<Task>>("/tasks", {
+        workspaceId: filters.workspaceId,
         projectId: filters.projectId,
         sprintId: filters.sprintId,
         status: filters.status,
         assigneeId: filters.assigneeId,
+        reporterId: filters.reporterId,
         priority: filters.priority,
+        type: filters.type,
+        fixVersionId: filters.fixVersionId,
+        search: filters.search,
         page: filters.page ?? 1,
         limit: filters.limit ?? 50,
       }),
-    enabled: !!filters.projectId,
+    enabled: !!filters.projectId || !!filters.workspaceId,
   });
 }
 
@@ -89,9 +46,32 @@ export function useTaskMutations() {
   });
 
   const changeStatus = useMutation({
-    mutationFn: (variables: { taskId: string; status: string }) =>
+    mutationFn: (variables: { taskId: string; status: TaskStatus }) =>
       clientApi.patch<{ message: string }>(`/tasks/${variables.taskId}/status`, { status: variables.status }),
-    onSuccess: invalidate,
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      const previousTasksQueries = queryClient.getQueriesData<PaginatedResponse<Task>>({ queryKey: ["tasks"] });
+      queryClient.setQueriesData<PaginatedResponse<Task>>({ queryKey: ["tasks"] }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.map((task) =>
+            task.id === variables.taskId ? { ...task, status: variables.status } : task
+          ),
+        };
+      });
+      return { previousTasksQueries };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasksQueries) {
+        context.previousTasksQueries.forEach(([queryKey, previousData]) => {
+          queryClient.setQueryData(queryKey, previousData);
+        });
+      }
+    },
+    onSettled: () => {
+      invalidate();
+    },
   });
 
   const update = useMutation({
@@ -127,4 +107,3 @@ export function useTaskMutations() {
 
   return { create, changeStatus, update, remove, assign, moveToSprint };
 }
-

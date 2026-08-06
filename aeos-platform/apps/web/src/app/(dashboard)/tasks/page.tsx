@@ -4,13 +4,13 @@ import { getTasksByProject, getWorkspaceProjects } from "@/features/tasks/api/qu
 import { getSessionContext } from "@/lib/api-server";
 
 export default async function TasksPage() {
-  const { tenantId } = await getSessionContext();
+  const { tenantId, workspaceId } = await getSessionContext();
   const projects = await getWorkspaceProjects();
   const firstProject = projects[0] ?? null;
 
   const tasks = firstProject
     ? await getTasksByProject(firstProject.id)
-    : { TODO: [], IN_PROGRESS: [], DONE: [] };
+    : [];
 
   return (
     <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading...</div>}>
@@ -19,6 +19,7 @@ export default async function TasksPage() {
         projects={projects}
         initialProjectId={firstProject?.id ?? null}
         tenantId={tenantId}
+        workspaceId={workspaceId}
       />
     </Suspense>
   );

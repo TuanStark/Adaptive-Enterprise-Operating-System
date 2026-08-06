@@ -132,6 +132,28 @@ async function backendRefreshToken(
   }
 }
 
+// ── Refresh Token Dedup Lock ─────────────────────────────────
+// Prevents race condition: multiple concurrent jwt() calls all see
+// "token expiring" → all call backendRefreshToken → first succeeds
+// and revokes old session → second fails with "invalid or expired".
+// Solution: dedup by refreshToken string, share the same promise.
+let inflightRefresh: Promise<BackendRefreshResponse | null> | null = null;
+let inflightRefreshKey: string | null = null;
+
+async function dedupRefreshToken(
+  refreshToken: string,
+): Promise<BackendRefreshResponse | null> {
+  if (inflightRefreshKey === refreshToken && inflightRefresh) {
+    return inflightRefresh;
+  }
+  inflightRefreshKey = refreshToken;
+  inflightRefresh = backendRefreshToken(refreshToken).finally(() => {
+    inflightRefresh = null;
+    inflightRefreshKey = null;
+  });
+  return inflightRefresh;
+}
+
 // ── NextAuth Options ─────────────────────────────────────────
 
 export const authOptions: NextAuthConfig = {
@@ -230,9 +252,9 @@ export const authOptions: NextAuthConfig = {
         return token;
       }
 
-      // Token sắp hết hạn → gọi refresh
+      // Token sắp hết hạn → gọi refresh (deduped)
       console.log("[auth] Access token expiring, attempting refresh…");
-      const refreshed = await backendRefreshToken(token.refreshToken as string);
+      const refreshed = await dedupRefreshToken(token.refreshToken as string);
 
       if (!refreshed) {
         console.error("[auth] Refresh token failed — marking session as errored");

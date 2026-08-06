@@ -101,6 +101,16 @@ export const clientApi = {
     return handleResponse<T>(response);
   },
 
+  put: async <T>(path: string, body?: unknown): Promise<T> => {
+    const headers = await buildHeaders();
+    const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
+      method: "PUT",
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return handleResponse<T>(response);
+  },
+
   delete: async <T>(path: string): Promise<T> => {
     const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
