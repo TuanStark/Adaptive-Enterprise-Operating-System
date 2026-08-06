@@ -15,8 +15,13 @@ export enum TaskStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   BLOCKED = 'BLOCKED',
   REVIEW = 'REVIEW',
+  TESTING = 'TESTING',
+  QA = 'QA',
+  READY_FOR_RELEASE = 'READY_FOR_RELEASE',
+  DEPLOYED = 'DEPLOYED',
   DONE = 'DONE',
   CANCELLED = 'CANCELLED',
+  ON_HOLD = 'ON_HOLD',
 }
 
 export enum TaskPriority {
@@ -36,7 +41,9 @@ export enum TaskType {
 
 const ALL_STATUSES = [
   TaskStatus.BACKLOG, TaskStatus.TODO, TaskStatus.IN_PROGRESS, 
-  TaskStatus.BLOCKED, TaskStatus.REVIEW, TaskStatus.DONE, TaskStatus.CANCELLED
+  TaskStatus.BLOCKED, TaskStatus.REVIEW, TaskStatus.TESTING,
+  TaskStatus.QA, TaskStatus.READY_FOR_RELEASE, TaskStatus.DEPLOYED,
+  TaskStatus.DONE, TaskStatus.CANCELLED, TaskStatus.ON_HOLD
 ];
 
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
@@ -45,8 +52,13 @@ const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   [TaskStatus.IN_PROGRESS]: ALL_STATUSES,
   [TaskStatus.BLOCKED]: ALL_STATUSES,
   [TaskStatus.REVIEW]: ALL_STATUSES,
+  [TaskStatus.TESTING]: ALL_STATUSES,
+  [TaskStatus.QA]: ALL_STATUSES,
+  [TaskStatus.READY_FOR_RELEASE]: ALL_STATUSES,
+  [TaskStatus.DEPLOYED]: ALL_STATUSES,
   [TaskStatus.DONE]: ALL_STATUSES,
   [TaskStatus.CANCELLED]: ALL_STATUSES,
+  [TaskStatus.ON_HOLD]: ALL_STATUSES,
 };
 
 export interface TaskProps {

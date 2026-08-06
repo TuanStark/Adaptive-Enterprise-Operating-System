@@ -6,11 +6,18 @@ export type TaskStatusValue =
   | 'IN_PROGRESS'
   | 'BLOCKED'
   | 'REVIEW'
+  | 'TESTING'
+  | 'QA'
+  | 'READY_FOR_RELEASE'
+  | 'DEPLOYED'
   | 'DONE'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'ON_HOLD';
 
 export const ALL_STATUSES: TaskStatusValue[] = [
-  'BACKLOG', 'TODO', 'IN_PROGRESS', 'BLOCKED', 'REVIEW', 'DONE', 'CANCELLED',
+  'BACKLOG', 'TODO', 'IN_PROGRESS', 'BLOCKED', 'REVIEW', 
+  'TESTING', 'QA', 'READY_FOR_RELEASE', 'DEPLOYED',
+  'DONE', 'CANCELLED', 'ON_HOLD'
 ];
 
 export interface BoardColumn {

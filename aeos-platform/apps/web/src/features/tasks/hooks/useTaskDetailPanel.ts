@@ -4,7 +4,11 @@ import { useState, useCallback } from "react";
 import { useTaskDetail, useTaskMutations } from "./useTasks";
 import type { TaskStatus, TaskPriority, TaskType } from "../types";
 
-export const STATUS_OPTIONS: TaskStatus[] = ["BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "DONE", "CANCELLED"];
+export const STATUS_OPTIONS: TaskStatus[] = [
+  "BACKLOG", "TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", 
+  "TESTING", "QA", "READY_FOR_RELEASE", "DEPLOYED",
+  "DONE", "CANCELLED", "ON_HOLD"
+];
 export const PRIORITY_OPTIONS: TaskPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 export const TYPE_OPTIONS: TaskType[] = ["EPIC", "STORY", "TASK", "BUG", "SUBTASK"];
 export const RESOLUTION_OPTIONS = ["FIXED", "WONT_FIX", "DUPLICATE", "CANNOT_REPRODUCE", "INCOMPLETE"] as const;
@@ -80,7 +84,7 @@ export function useTaskDetailPanel(taskId: string | null) {
     }
   }, [task]);
 
-  const handleChangeStatus = useCallback((status: string) => {
+  const handleChangeStatus = useCallback((status: TaskStatus) => {
     if (taskId) changeStatus.mutate({ taskId, status });
   }, [taskId, changeStatus]);
 

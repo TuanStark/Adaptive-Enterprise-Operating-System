@@ -6,8 +6,13 @@ export type TaskStatus =
   | 'IN_PROGRESS'
   | 'BLOCKED'
   | 'REVIEW'
+  | 'TESTING'
+  | 'QA'
+  | 'READY_FOR_RELEASE'
+  | 'DEPLOYED'
   | 'DONE'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'ON_HOLD';
 
 export type TaskType = 'EPIC' | 'STORY' | 'TASK' | 'BUG' | 'SUBTASK';
 
