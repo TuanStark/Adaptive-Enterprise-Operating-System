@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
 import { TaskRepository, TASK_REPOSITORY } from '../../../domain/repositories/task.repository';
 
@@ -9,6 +9,7 @@ export class MoveTaskToSprintCommand {
   ) {}
 }
 
+@Injectable()
 export class MoveTaskToSprintHandler {
   constructor(
     @Inject(TASK_REPOSITORY)

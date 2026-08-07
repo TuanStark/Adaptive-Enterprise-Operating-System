@@ -1,9 +1,10 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Sprint } from '../../../domain/aggregates/sprint.aggregate';
 import { SprintRepository, SPRINT_REPOSITORY } from '../../../domain/repositories/sprint.repository';
 import { CreateSprintCommand } from './create-sprint.command';
 
+@Injectable()
 export class CreateSprintHandler {
   constructor(
     @Inject(SPRINT_REPOSITORY)

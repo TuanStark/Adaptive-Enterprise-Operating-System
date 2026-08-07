@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
 import { SprintRepository, SPRINT_REPOSITORY } from '../../../domain/repositories/sprint.repository';
 
@@ -6,6 +6,7 @@ export class CompleteSprintCommand {
   constructor(public readonly sprintId: string) {}
 }
 
+@Injectable()
 export class CompleteSprintHandler {
   constructor(
     @Inject(SPRINT_REPOSITORY)
