@@ -233,7 +233,7 @@ export class Task extends AggregateRoot<string> {
     }
     this._assigneeId = assigneeId;
     this.touch();
-    this.addDomainEvent(new TaskAssignedEvent(this.id, assigneeId));
+    this.addDomainEvent(new TaskAssignedEvent(this.id, assigneeId, this._tenantId));
     return Result.ok(undefined);
   }
 
@@ -241,7 +241,7 @@ export class Task extends AggregateRoot<string> {
     if (this._assigneeId !== userId) {
       this._assigneeId = userId;
       this.touch();
-      this.addDomainEvent(new TaskAssignedEvent(this.id, userId));
+      this.addDomainEvent(new TaskAssignedEvent(this.id, userId, this._tenantId));
     }
   }
 

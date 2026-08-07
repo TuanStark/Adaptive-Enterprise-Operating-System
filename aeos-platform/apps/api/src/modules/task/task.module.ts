@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
 import { TASK_REPOSITORY } from './domain/repositories/task.repository';
 import { PrismaTaskRepository } from './infrastructure/persistence/prisma-task.repository';
@@ -17,7 +18,7 @@ import { BoardConfigController } from './presentation/controllers/board-config.c
 import { EventsModule } from '../../common/events/events.module';
 
 @Module({
-  imports: [EventsModule],
+  imports: [EventsModule, CqrsModule],
   controllers: [TaskController, BoardConfigController],
   providers: [
     PrismaService,

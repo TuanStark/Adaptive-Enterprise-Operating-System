@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
 import { COMMENT_REPOSITORY } from './domain/repositories/comment.repository';
 import { PrismaCommentRepository } from './infrastructure/persistence/prisma-comment.repository';
@@ -7,6 +8,7 @@ import { GetCommentsByTaskHandler } from './application/queries/get-comments-by-
 import { CommentController } from './presentation/controllers/comment.controller';
 
 @Module({
+  imports: [CqrsModule],
   controllers: [CommentController],
   providers: [
     PrismaService,

@@ -1,8 +1,9 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { DomainEvent } from '../../../../common/events/outbox.processor';
+import { DomainEvent } from '@aeos/shared-kernel';
 import { CreateNotificationHandler, CreateNotificationCommand } from '../commands/create-notification/create-notification.handler';
 import { NotificationRepository, NOTIFICATION_REPOSITORY } from '../../domain/repositories/notification.repository';
+import { TaskAssignedEvent } from '../../../task/domain/events/task.events';
 
 @EventsHandler(DomainEvent)
 export class GenericDomainEventListener implements IEventHandler<DomainEvent> {
@@ -13,16 +14,15 @@ export class GenericDomainEventListener implements IEventHandler<DomainEvent> {
   ) {}
 
   async handle(event: DomainEvent) {
-    if (event.eventType === 'TaskAssignedEvent') {
-      const payload = event.payload as any;
-      if (payload.assigneeId) {
+    if (event instanceof TaskAssignedEvent) {
+      if (event.assigneeId) {
         await this.createNotificationHandler.execute(
           new CreateNotificationCommand(
-            payload.tenantId,
-            payload.assigneeId,
+            event.tenantId,
+            event.assigneeId,
             'TASK_ASSIGNED',
             'You have been assigned to a new task',
-            payload.taskId,
+            event.taskId,
           ),
         );
       }

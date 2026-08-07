@@ -30,10 +30,11 @@ export class TaskAssignedEvent extends DomainEvent {
   constructor(
     public readonly taskId: string,
     public readonly assigneeId: string,
+    public readonly tenantId: string,
   ) {
     super(taskId);
   }
   toPayload(): Record<string, unknown> {
-    return { taskId: this.taskId, assigneeId: this.assigneeId };
+    return { taskId: this.taskId, assigneeId: this.assigneeId, tenantId: this.tenantId };
   }
 }
