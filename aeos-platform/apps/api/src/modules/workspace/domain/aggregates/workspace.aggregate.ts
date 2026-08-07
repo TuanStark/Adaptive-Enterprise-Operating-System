@@ -3,6 +3,7 @@ import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { WorkspaceMember } from '../entities/workspace-member.entity';
 import { WorkspaceCreatedEvent } from '../events/workspace-created.event';
+import { WorkspaceMemberAddedEvent, WorkspaceMemberRemovedEvent } from '../events/workspace-member.events';
 import {
   WorkspaceNameRequiredError,
   WorkspaceAlreadyArchivedError,
@@ -199,6 +200,7 @@ export class Workspace extends AggregateRoot<string> {
       joinedAt: new Date(),
     });
     this._members.push(member);
+    this.addDomainEvent(new WorkspaceMemberAddedEvent(userId, this.id));
     this.touch();
     return Result.ok(undefined);
   }
@@ -209,6 +211,7 @@ export class Workspace extends AggregateRoot<string> {
       return Result.fail(new WorkspaceMemberNotFoundError(userId));
     }
     this._members.splice(index, 1);
+    this.addDomainEvent(new WorkspaceMemberRemovedEvent(userId, this.id));
     this.touch();
     return Result.ok(undefined);
   }

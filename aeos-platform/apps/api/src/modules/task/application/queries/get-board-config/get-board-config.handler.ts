@@ -1,7 +1,9 @@
 import { Inject } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
 import { GetBoardConfigQuery } from './get-board-config.query';
 import { generateId } from '@aeos/common';
+import { GetProjectWorkspaceInternalQuery, ProjectWorkspaceDto } from '../../../../../common/contracts/project.contract';
 
 export interface BoardColumnConfig {
   id: string;
@@ -27,6 +29,7 @@ const DEFAULT_COLUMNS: BoardColumnConfig[] = [
 export class GetBoardConfigHandler {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    private readonly queryBus: QueryBus,
   ) {}
 
   async execute(query: GetBoardConfigQuery): Promise<BoardConfigResult> {
@@ -39,10 +42,9 @@ export class GetBoardConfigHandler {
       // Need workspaceId for creation — look up from project if not provided
       let workspaceId = query.workspaceId ?? '';
       if (!workspaceId) {
-        const project = await this.prisma.project.findUnique({
-          where: { id: query.projectId },
-          select: { workspaceId: true },
-        });
+        const project = await this.queryBus.execute<GetProjectWorkspaceInternalQuery, ProjectWorkspaceDto | null>(
+          new GetProjectWorkspaceInternalQuery(query.projectId)
+        );
         workspaceId = project?.workspaceId ?? '';
       }
 

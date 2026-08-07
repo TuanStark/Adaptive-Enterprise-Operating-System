@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Result, DomainError } from '@aeos/errors';
 import { PrismaService } from '@aeos/database';
+import { Result, DomainError } from '@aeos/errors';
 import { GetWorkspaceAnalyticsQuery } from './get-workspace-analytics.query';
 
 @Injectable()
@@ -10,37 +10,39 @@ export class GetWorkspaceAnalyticsHandler {
   async execute(query: GetWorkspaceAnalyticsQuery): Promise<Result<any, DomainError>> {
     const { workspaceId } = query;
 
-    const [
-      totalProjects,
-      totalTasks,
-      totalDocuments,
-      totalForms,
-      totalApprovals,
-    ] = await Promise.all([
-      this.prisma.project.count({ where: { workspaceId } }),
-      this.prisma.task.count({ where: { project: { workspaceId } } }),
-      this.prisma.document.count({ where: { workspaceId } }),
-      this.prisma.dynamicForm.count({ where: { workspaceId } }),
-      this.prisma.approvalRequest.count({ where: { workspaceId } }),
-    ]);
-
-    const activeProjects = await this.prisma.project.count({
-      where: { workspaceId, status: 'ACTIVE' },
+    let record = await this.prisma.workspaceAnalytics.findUnique({
+      where: { workspaceId },
     });
 
-    const pendingTasks = await this.prisma.task.count({
-      where: { project: { workspaceId }, status: { in: ['TODO', 'IN_PROGRESS'] } },
-    });
+    if (!record) {
+      // If projection doesn't exist yet, return zeros.
+      // The projection handler will populate it on the next event.
+      record = {
+        workspaceId,
+        totalProjects: 0,
+        activeProjects: 0,
+        totalTasks: 0,
+        pendingTasks: 0,
+        totalDocuments: 0,
+        totalForms: 0,
+        totalApprovals: 0,
+        totalUsers: 0,
+        totalComments: 0,
+        updatedAt: new Date(),
+      };
+    }
 
     return Result.ok({
       overview: {
-        totalProjects,
-        activeProjects,
-        totalTasks,
-        pendingTasks,
-        totalDocuments,
-        totalForms,
-        totalApprovals,
+        totalProjects: record.totalProjects,
+        activeProjects: record.activeProjects,
+        totalTasks: record.totalTasks,
+        pendingTasks: record.pendingTasks,
+        totalDocuments: record.totalDocuments,
+        totalForms: record.totalForms,
+        totalApprovals: record.totalApprovals,
+        totalUsers: record.totalUsers,
+        totalComments: record.totalComments,
       },
     });
   }

@@ -18,3 +18,23 @@ export class TaskCreatedIntegrationEvent implements IIntegrationEvent {
   title: string;
   creatorId: string;
 }
+
+export class GetTaskAnalyticsInternalQuery {
+  constructor(public readonly workspaceId: string) {}
+}
+
+export interface TaskAnalyticsDto {
+  totalTasks: number;
+  pendingTasks: number;
+}
+
+export class TaskDeletedIntegrationEvent implements IIntegrationEvent {
+  public static readonly EVENT_TYPE = 'TaskDeletedEvent';
+  constructor(payload: any) {
+    this.eventId = payload.eventId || '';
+    this.occurredOn = payload.occurredOn || new Date();
+    this.taskId = payload.taskId;
+    this.workspaceId = payload.workspaceId;
+  }
+  eventId: string; occurredOn: Date; taskId: string; workspaceId: string;
+}

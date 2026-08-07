@@ -3,12 +3,18 @@ import { PrismaService } from '@aeos/database';
 import { ProjectRepository } from '../../domain/repositories/project.repository';
 import { Project, ProjectStatus, Priority, ProjectProps } from '../../domain/aggregates/project.aggregate';
 import { ProjectMember } from '../../domain/entities/project-member.entity';
+import { OutboxService } from '../../../../common/events/outbox.service';
 
 @Injectable()
 export class PrismaProjectRepository implements ProjectRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(project: Project): Promise<void> {
+    const domainEvents = project.pullDomainEvents();
+
     await this.prisma.$transaction(async (tx) => {
       await tx.project.upsert({
         where: { id: project.id },
@@ -49,6 +55,16 @@ export class PrismaProjectRepository implements ProjectRepository {
             role: m.role,
             joinedAt: m.joinedAt,
           })),
+        });
+      }
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: project.tenantId,
+          aggregateType: 'Project',
+          aggregateId: project.id,
+          eventType: event.constructor.name,
+          payload: typeof (event as any).toPayload === 'function' ? (event as any).toPayload() : {},
         });
       }
     });

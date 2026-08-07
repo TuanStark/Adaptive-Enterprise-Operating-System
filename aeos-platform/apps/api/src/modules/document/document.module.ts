@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
+import { EventsModule } from '../../common/events/events.module';
 import { PrismaService } from '@aeos/database';
 import { DOCUMENT_REPOSITORY } from './domain/repositories/document.repository';
 import { PrismaDocumentRepository } from './infrastructure/persistence/prisma-document.repository';
@@ -6,8 +8,10 @@ import { CreateDocumentHandler } from './application/commands/create-document/cr
 import { UpdateDocumentHandler } from './application/commands/update-document/update-document.handler';
 import { PublishDocumentVersionHandler } from './application/commands/publish-document-version/publish-document-version.handler';
 import { DocumentController } from './presentation/controllers/document.controller';
+import { GetDocumentAnalyticsInternalHandler } from './application/queries/get-document-analytics-internal/get-document-analytics-internal.handler';
 
 @Module({
+  imports: [CqrsModule, EventsModule],
   controllers: [DocumentController],
   providers: [
     PrismaService,
@@ -15,6 +19,7 @@ import { DocumentController } from './presentation/controllers/document.controll
     CreateDocumentHandler,
     UpdateDocumentHandler,
     PublishDocumentVersionHandler,
+    GetDocumentAnalyticsInternalHandler,
   ],
   exports: [DOCUMENT_REPOSITORY],
 })

@@ -3,12 +3,18 @@ import { PrismaService } from '@aeos/database';
 import { FormRepository } from '../../domain/repositories/form.repository';
 import { DynamicForm } from '../../domain/aggregates/dynamic-form.aggregate';
 import { FormSubmission } from '../../domain/entities/form-submission.entity';
+import { OutboxService } from '../../../../common/events/outbox.service';
 
 @Injectable()
 export class PrismaFormRepository implements FormRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(form: DynamicForm): Promise<void> {
+    const domainEvents = form.pullDomainEvents();
+
     await this.prisma.$transaction(async (tx) => {
       await tx.dynamicForm.upsert({
         where: { id: form.id },
@@ -44,6 +50,16 @@ export class PrismaFormRepository implements FormRepository {
             data: s.data as any,
             createdAt: s.createdAt,
           })),
+        });
+      }
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: form.tenantId,
+          aggregateType: 'DynamicForm',
+          aggregateId: form.id,
+          eventType: event.constructor.name,
+          payload: typeof (event as any).toPayload === 'function' ? (event as any).toPayload() : {},
         });
       }
     });

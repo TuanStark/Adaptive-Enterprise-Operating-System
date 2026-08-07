@@ -3,6 +3,7 @@ import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { DocumentNameRequiredError } from '../errors/document.errors';
 import { DocumentVersion } from '../entities/document-version.entity';
+import { DocumentCreatedEvent, DocumentDeletedEvent } from '../events/document.events';
 
 export interface DocumentProps {
   id: string;
@@ -58,9 +59,11 @@ export class Document extends AggregateRoot<string> {
       return Result.fail(new DocumentNameRequiredError());
     }
     const id = generateId();
-    return Result.ok(new Document(
+    const document = new Document(
       id, tenantId, workspaceId, name.trim(), ownerId, visibility, 0,
-    ));
+    );
+    document.addDomainEvent(new DocumentCreatedEvent(document.id, document.workspaceId));
+    return Result.ok(document);
   }
 
   static fromPersistence(props: DocumentProps): Document {
@@ -93,6 +96,7 @@ export class Document extends AggregateRoot<string> {
 
   softDelete(): void {
     this._deletedAt = new Date();
+    this.addDomainEvent(new DocumentDeletedEvent(this.id, this.workspaceId));
     this.touch();
   }
 }

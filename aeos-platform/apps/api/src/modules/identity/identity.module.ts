@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaService } from '@aeos/database';
 import { USER_REPOSITORY } from './domain/repositories/user.repository';
@@ -14,11 +15,13 @@ import { RefreshTokenHandler } from './application/commands/refresh-token/refres
 import { LogoutHandler } from './application/commands/logout/logout.handler';
 import { GetCurrentUserHandler } from './application/queries/get-current-user/get-current-user.handler';
 import { GetUsersInternalHandler } from './application/queries/get-users-internal/get-users-internal.handler';
+import { GetUserAnalyticsInternalHandler } from './application/queries/get-user-analytics-internal/get-user-analytics-internal.handler';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
 
 @Module({
+  imports: [CqrsModule],
   controllers: [AuthController],
   providers: [
     PrismaService,
@@ -32,6 +35,7 @@ import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
     LogoutHandler,
     GetCurrentUserHandler,
     GetUsersInternalHandler,
+    GetUserAnalyticsInternalHandler,
     IdentitySeeder,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

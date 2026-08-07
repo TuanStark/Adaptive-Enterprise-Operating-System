@@ -16,6 +16,7 @@ import { SaveBoardConfigHandler } from './application/commands/save-board-config
 import { TaskController } from './presentation/controllers/task.controller';
 import { BoardConfigController } from './presentation/controllers/board-config.controller';
 import { EventsModule } from '../../common/events/events.module';
+import { GetTaskAnalyticsInternalHandler } from './application/queries/get-task-analytics-internal/get-task-analytics-internal.handler';
 
 @Module({
   imports: [EventsModule, CqrsModule],
@@ -35,6 +36,7 @@ import { EventsModule } from '../../common/events/events.module';
     GetTasksHandler,
     GetTaskDetailHandler,
     GetBoardConfigHandler,
+    GetTaskAnalyticsInternalHandler,
   ],
   exports: [TASK_REPOSITORY],
 })

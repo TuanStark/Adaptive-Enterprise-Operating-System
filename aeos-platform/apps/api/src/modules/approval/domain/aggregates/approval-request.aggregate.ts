@@ -3,6 +3,7 @@ import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { ApprovalAlreadyCompletedError } from '../errors/approval.errors';
 import { ApprovalStep } from '../entities/approval-step.entity';
+import { ApprovalCreatedEvent } from '../events/approval.events';
 
 export interface ApprovalRequestProps {
   id: string;
@@ -60,11 +61,13 @@ export class ApprovalRequest extends AggregateRoot<string> {
     const id = generateId();
     const steps = reviewerIds.map((reviewerId, index) => ApprovalStep.create(id, reviewerId, index + 1));
 
-    return new ApprovalRequest({
+    const approval = new ApprovalRequest({
       id, tenantId, workspaceId, requesterId, title,
       status: 'PENDING', entityType, entityId, metadata,
       createdAt: new Date(), updatedAt: new Date(), steps,
     });
+    approval.addDomainEvent(new ApprovalCreatedEvent(approval.id, approval.workspaceId));
+    return approval;
   }
 
   static fromPersistence(props: ApprovalRequestProps): ApprovalRequest {

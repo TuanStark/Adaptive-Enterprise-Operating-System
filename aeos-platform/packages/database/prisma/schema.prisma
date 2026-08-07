@@ -303,10 +303,29 @@ model Workspace {
   approvalRequests ApprovalRequest[]
   dynamicForms   DynamicForm[]
   boardConfigs   BoardConfig[]
+  analytics      WorkspaceAnalytics?
 
   @@unique([organizationId, name])
   @@index([tenantId])
   @@map("workspaces")
+}
+
+model WorkspaceAnalytics {
+  workspaceId      String   @id @db.Uuid
+  totalProjects    Int      @default(0)
+  activeProjects   Int      @default(0)
+  totalTasks       Int      @default(0)
+  pendingTasks     Int      @default(0)
+  totalDocuments   Int      @default(0)
+  totalForms       Int      @default(0)
+  totalApprovals   Int      @default(0)
+  totalUsers       Int      @default(0)
+  totalComments    Int      @default(0)
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_analytics")
 }
 
 model WorkspaceMember {

@@ -3,6 +3,7 @@ import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { InvalidFormSchemaError } from '../errors/form.errors';
 import { FormSubmission } from '../entities/form-submission.entity';
+import { FormCreatedEvent, FormDeletedEvent } from '../events/form.events';
 
 export interface DynamicFormProps {
   id: string;
@@ -53,10 +54,12 @@ export class DynamicForm extends AggregateRoot<string> {
       return Result.fail(new InvalidFormSchemaError());
     }
 
-    return Result.ok(new DynamicForm({
+    const form = new DynamicForm({
       id: generateId(), tenantId, workspaceId, name, description, schema,
       isActive: true, createdAt: new Date(), updatedAt: new Date(), submissions: [],
-    }));
+    });
+    form.addDomainEvent(new FormCreatedEvent(form.id, form.workspaceId));
+    return Result.ok(form);
   }
 
   static fromPersistence(props: DynamicFormProps): DynamicForm {

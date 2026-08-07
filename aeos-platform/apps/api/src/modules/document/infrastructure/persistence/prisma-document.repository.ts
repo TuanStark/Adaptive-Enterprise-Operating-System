@@ -3,12 +3,18 @@ import { PrismaService } from '@aeos/database';
 import { DocumentRepository } from '../../domain/repositories/document.repository';
 import { Document, DocumentProps } from '../../domain/aggregates/document.aggregate';
 import { DocumentVersion } from '../../domain/entities/document-version.entity';
+import { OutboxService } from '../../../../common/events/outbox.service';
 
 @Injectable()
 export class PrismaDocumentRepository implements DocumentRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(document: Document): Promise<void> {
+    const domainEvents = document.pullDomainEvents();
+
     await this.prisma.$transaction(async (tx) => {
       await tx.document.upsert({
         where: { id: document.id },
@@ -41,6 +47,16 @@ export class PrismaDocumentRepository implements DocumentRepository {
             fileId: v.fileId,
             createdAt: v.createdAt,
           })),
+        });
+      }
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: document.tenantId,
+          aggregateType: 'Document',
+          aggregateId: document.id,
+          eventType: event.constructor.name,
+          payload: typeof (event as any).toPayload === 'function' ? (event as any).toPayload() : {},
         });
       }
     });

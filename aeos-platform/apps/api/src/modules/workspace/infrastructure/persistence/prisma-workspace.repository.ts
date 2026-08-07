@@ -3,13 +3,18 @@ import { PrismaService } from '@aeos/database';
 import { WorkspaceRepository } from '../../domain/repositories/workspace.repository';
 import { Workspace } from '../../domain/aggregates/workspace.aggregate';
 import { WorkspacePersistenceMapper } from '../mappers/workspace-persistence.mapper';
+import { OutboxService } from '../../../../common/events/outbox.service';
 
 @Injectable()
 export class PrismaWorkspaceRepository implements WorkspaceRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(ws: Workspace): Promise<void> {
     const data = WorkspacePersistenceMapper.toPersistence(ws);
+    const domainEvents = ws.pullDomainEvents();
 
     await this.prisma.$transaction(async (tx) => {
       await tx.workspace.upsert({
@@ -37,6 +42,16 @@ export class PrismaWorkspaceRepository implements WorkspaceRepository {
       await tx.workspaceMember.deleteMany({ where: { workspaceId: ws.id } });
       if (data.members.length > 0) {
         await tx.workspaceMember.createMany({ data: data.members });
+      }
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: ws.tenantId,
+          aggregateType: 'Workspace',
+          aggregateId: ws.id,
+          eventType: event.constructor.name,
+          payload: typeof (event as any).toPayload === 'function' ? (event as any).toPayload() : {},
+        });
       }
     });
   }

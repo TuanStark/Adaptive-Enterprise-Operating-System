@@ -3,12 +3,18 @@ import { PrismaService } from '@aeos/database';
 import { ApprovalRepository } from '../../domain/repositories/approval.repository';
 import { ApprovalRequest } from '../../domain/aggregates/approval-request.aggregate';
 import { ApprovalStep } from '../../domain/entities/approval-step.entity';
+import { OutboxService } from '../../../../common/events/outbox.service';
 
 @Injectable()
 export class PrismaApprovalRepository implements ApprovalRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly outboxService: OutboxService,
+  ) {}
 
   async save(approval: ApprovalRequest): Promise<void> {
+    const domainEvents = approval.pullDomainEvents();
+
     await this.prisma.$transaction(async (tx) => {
       await tx.approvalRequest.upsert({
         where: { id: approval.id },
@@ -45,6 +51,16 @@ export class PrismaApprovalRepository implements ApprovalRepository {
             comment: step.comment,
             actedAt: step.actedAt,
           },
+        });
+      }
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: approval.tenantId,
+          aggregateType: 'ApprovalRequest',
+          aggregateId: approval.id,
+          eventType: event.constructor.name,
+          payload: typeof (event as any).toPayload === 'function' ? (event as any).toPayload() : {},
         });
       }
     });

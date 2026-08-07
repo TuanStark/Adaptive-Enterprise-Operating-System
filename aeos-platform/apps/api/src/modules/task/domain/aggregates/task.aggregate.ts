@@ -8,6 +8,7 @@ import {
   TaskAlreadyDoneError,
 } from '../errors/task.errors';
 import { TaskCreatedEvent, TaskStatusChangedEvent, TaskAssignedEvent } from '../events/task.events';
+import { TaskDeletedEvent } from '../events/task-deleted.event';
 
 export enum TaskStatus {
   BACKLOG = 'BACKLOG',
@@ -306,6 +307,7 @@ export class Task extends AggregateRoot<string> {
 
   softDelete(): void {
     this._deletedAt = new Date();
+    this.addDomainEvent(new TaskDeletedEvent(this.id, this.workspaceId));
     this.touch();
   }
 

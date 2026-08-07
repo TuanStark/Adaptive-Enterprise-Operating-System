@@ -8,3 +8,11 @@ export interface UserInternalDto {
   lastName: string | null;
   avatarUrl: string | null;
 }
+
+export class GetUserAnalyticsInternalQuery {
+  constructor(public readonly workspaceId: string) {}
+}
+
+export interface UserAnalyticsDto {
+  totalUsers: number;
+}

@@ -3,6 +3,7 @@ import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { ProjectMember } from '../entities/project-member.entity';
 import { ProjectCreatedEvent } from '../events/project-created.event';
+import { ProjectDeletedEvent } from '../events/project-deleted.event';
 import {
   ProjectNameRequiredError,
   InvalidProjectStatusTransitionError,
@@ -185,6 +186,7 @@ export class Project extends AggregateRoot<string> {
 
   softDelete(): void {
     this._deletedAt = new Date();
+    this.addDomainEvent(new ProjectDeletedEvent(this.id, this.workspaceId));
     this.touch();
   }
 }

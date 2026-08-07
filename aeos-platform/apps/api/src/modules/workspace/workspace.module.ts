@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventsModule } from '../../common/events/events.module';
 import { PrismaService } from '@aeos/database';
 import { WORKSPACE_REPOSITORY } from './domain/repositories/workspace.repository';
 import { PrismaWorkspaceRepository } from './infrastructure/persistence/prisma-workspace.repository';
@@ -12,6 +13,7 @@ import { GetWorkspaceMembersHandler } from './application/queries/get-workspace-
 import { WorkspaceController } from './presentation/controllers/workspace.controller';
 
 @Module({
+  imports: [EventsModule],
   controllers: [WorkspaceController],
   providers: [
     PrismaService,
