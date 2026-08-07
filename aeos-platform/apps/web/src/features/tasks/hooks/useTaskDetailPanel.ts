@@ -65,6 +65,8 @@ export function useTaskDetailPanel(taskId: string | null) {
   const [editTitle, setEditTitle] = useState("");
   const [labelInput, setLabelInput] = useState("");
   const [isAddingLabel, setIsAddingLabel] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editDescription, setEditDescription] = useState("");
 
   const { data: task, isLoading } = useTaskDetail(taskId);
   const { update, changeStatus } = useTaskMutations();
@@ -83,6 +85,21 @@ export function useTaskDetailPanel(taskId: string | null) {
       setIsEditingTitle(true);
     }
   }, [task]);
+
+  const startEditingDescription = useCallback(() => {
+    if (task) {
+      setEditDescription(task.description || "");
+      setIsEditingDescription(true);
+    }
+  }, [task]);
+
+  const handleSaveDescription = useCallback(() => {
+    if (!taskId) return;
+    if (editDescription !== (task?.description || "")) {
+      update.mutate({ taskId, description: editDescription });
+    }
+    setIsEditingDescription(false);
+  }, [taskId, editDescription, task?.description, update]);
 
   const handleChangeStatus = useCallback((status: TaskStatus) => {
     if (taskId) changeStatus.mutate({ taskId, status });
@@ -135,5 +152,11 @@ export function useTaskDetailPanel(taskId: string | null) {
     isResolved,
     isBug,
     timeProgress,
+    isEditingDescription,
+    editDescription,
+    setEditDescription,
+    handleSaveDescription,
+    startEditingDescription,
+    setIsEditingDescription,
   };
 }

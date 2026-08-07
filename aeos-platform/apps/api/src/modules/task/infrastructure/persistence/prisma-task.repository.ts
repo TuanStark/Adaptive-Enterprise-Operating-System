@@ -9,84 +9,86 @@ export class PrismaTaskRepository implements TaskRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly outboxService: OutboxService,
-  ) {}
+  ) { }
 
   async save(task: Task): Promise<void> {
     const domainEvents = task.pullDomainEvents();
 
     await this.prisma.$transaction(async (tx) => {
       await tx.task.upsert({
-      where: { id: task.id },
-      create: {
-        id: task.id,
-        tenantId: task.tenantId,
-        workspaceId: task.workspaceId,
-        projectId: task.projectId,
-        key: task.key,
-        sprintId: task.sprintId,
-        parentTaskId: task.parentTaskId,
-        title: task.title,
-        description: task.description,
-        type: task.type as any,
-        creatorId: task.creatorId,
-        reporterId: task.reporterId,
-        assigneeId: task.assigneeId,
-        status: task.status as any,
-        priority: task.priority as any,
-        resolution: task.resolution,
-        labels: task.labels,
-        storyPoints: task.storyPoints,
-        originalEstimate: task.originalEstimate,
-        remainingEstimate: task.remainingEstimate,
-        timeSpent: task.timeSpent,
-        boardPosition: task.boardPosition,
-        startDate: task.startDate,
-        dueDate: task.dueDate,
-        environment: task.environment,
-        fixVersionId: task.fixVersionId,
-        version: task.version,
-      },
-      update: {
-        workspaceId: task.workspaceId,
-        sprintId: task.sprintId,
-        parentTaskId: task.parentTaskId,
-        title: task.title,
-        description: task.description,
-        type: task.type as any,
-        reporterId: task.reporterId,
-        assigneeId: task.assigneeId,
-        status: task.status as any,
-        priority: task.priority as any,
-        resolution: task.resolution,
-        labels: task.labels,
-        storyPoints: task.storyPoints,
-        originalEstimate: task.originalEstimate,
-        remainingEstimate: task.remainingEstimate,
-        timeSpent: task.timeSpent,
-        boardPosition: task.boardPosition,
-        startDate: task.startDate,
-        dueDate: task.dueDate,
-        environment: task.environment,
-        fixVersionId: task.fixVersionId,
-        deletedAt: task.deletedAt,
-        version: { increment: 1 },
-      },
-    });
-
-    for (const event of domainEvents) {
-      await this.outboxService.saveEvent(tx, {
-        tenantId: task.tenantId,
-        aggregateType: 'Task',
-        aggregateId: task.id,
-        eventType: event.eventType,
-        payload: event.toPayload(),
+        where: { id: task.id },
+        create: {
+          id: task.id,
+          tenantId: task.tenantId,
+          workspaceId: task.workspaceId,
+          projectId: task.projectId,
+          key: task.key,
+          sprintId: task.sprintId,
+          parentTaskId: task.parentTaskId,
+          title: task.title,
+          description: task.description,
+          type: task.type as any,
+          creatorId: task.creatorId,
+          reporterId: task.reporterId,
+          assigneeId: task.assigneeId,
+          status: task.status as any,
+          priority: task.priority as any,
+          resolution: task.resolution,
+          labels: task.labels,
+          storyPoints: task.storyPoints,
+          originalEstimate: task.originalEstimate,
+          remainingEstimate: task.remainingEstimate,
+          timeSpent: task.timeSpent,
+          boardPosition: task.boardPosition,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          environment: task.environment,
+          fixVersionId: task.fixVersionId,
+          version: task.version,
+        },
+        update: {
+          workspaceId: task.workspaceId,
+          sprintId: task.sprintId,
+          parentTaskId: task.parentTaskId,
+          title: task.title,
+          description: task.description,
+          type: task.type as any,
+          reporterId: task.reporterId,
+          assigneeId: task.assigneeId,
+          status: task.status as any,
+          priority: task.priority as any,
+          resolution: task.resolution,
+          labels: task.labels,
+          storyPoints: task.storyPoints,
+          originalEstimate: task.originalEstimate,
+          remainingEstimate: task.remainingEstimate,
+          timeSpent: task.timeSpent,
+          boardPosition: task.boardPosition,
+          startDate: task.startDate,
+          dueDate: task.dueDate,
+          environment: task.environment,
+          fixVersionId: task.fixVersionId,
+          deletedAt: task.deletedAt,
+          version: { increment: 1 },
+        },
       });
-    }
-  });
-}
+
+      for (const event of domainEvents) {
+        await this.outboxService.saveEvent(tx, {
+          tenantId: task.tenantId,
+          aggregateType: 'Task',
+          aggregateId: task.id,
+          eventType: event.eventType,
+          payload: event.toPayload(),
+        });
+      }
+    });
+  }
 
   async findById(id: string): Promise<Task | null> {
-    const record = await this.prisma.task.findUnique({ where: { id, deletedAt: null } });
+    const record = await this.prisma.task.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!record) return null;
     return this.toDomain(record);
   }

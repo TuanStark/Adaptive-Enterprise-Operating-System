@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown, X, Plus, Clock, Calendar, Tag } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown, X, Plus, Clock, Calendar, Tag, Pencil } from "lucide-react";
 import { CommentSection } from "./CommentSection";
 import { useSession } from "next-auth/react";
 import {
@@ -21,6 +22,65 @@ import {
   getLabelColor,
   formatMinutes,
 } from "../hooks/useTaskDetailPanel";
+import { useState } from "react";
+
+function EditableField({
+  value,
+  displayValue,
+  onSave,
+  placeholder = "—",
+  type = "text",
+}: {
+  value: string | number;
+  displayValue?: React.ReactNode;
+  onSave: (val: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [val, setVal] = useState(value);
+
+  if (isEditing) {
+    return (
+      <Input
+        autoFocus
+        type={type}
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={() => {
+          onSave(val.toString());
+          setIsEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            onSave(val.toString());
+            setIsEditing(false);
+          }
+          if (e.key === "Escape") {
+            setIsEditing(false);
+            setVal(value);
+          }
+        }}
+        className="h-7 text-sm px-2 py-1 w-full"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="group flex items-center gap-1 cursor-pointer hover:bg-gray-50 p-1 -ml-1 rounded transition-colors"
+      onClick={() => {
+        setVal(value);
+        setIsEditing(true);
+      }}
+    >
+      <span className="text-sm text-gray-700 truncate">
+        {value ? (displayValue ?? value) : <span className="text-gray-400 italic">{placeholder}</span>}
+      </span>
+      <Pencil className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  );
+}
 
 interface TaskDetailPanelProps {
   taskId: string | null;
@@ -53,6 +113,12 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
     isResolved,
     isBug,
     timeProgress,
+    isEditingDescription,
+    editDescription,
+    setEditDescription,
+    handleSaveDescription,
+    startEditingDescription,
+    setIsEditingDescription,
   } = useTaskDetailPanel(taskId);
 
   if (!taskId) return null;
@@ -77,7 +143,7 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
               <Button variant="ghost" size="icon" className="h-8 w-8"><MessageSquare className="w-4 h-4" /></Button>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -100,12 +166,17 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       className="text-2xl font-bold border-none shadow-none px-1 -ml-1 focus-visible:ring-1"
                     />
                   ) : (
-                    <h2
-                      className="text-2xl font-bold text-gray-900 cursor-text hover:bg-gray-50 p-1 -ml-1 rounded transition-colors"
-                      onClick={startEditingTitle}
-                    >
-                      {task.title}
-                    </h2>
+                    <div className="group flex items-center gap-2">
+                      <h2
+                        className="text-2xl font-bold text-gray-900 cursor-text hover:bg-gray-50 p-1 -ml-1 rounded transition-colors"
+                        onClick={startEditingTitle}
+                      >
+                        {task.title}
+                      </h2>
+                      <button onClick={startEditingTitle} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer rounded-md hover:bg-gray-100">
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Status + Priority + Type Badges */}
@@ -227,11 +298,11 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     <div className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??"}
+                          {task.assignee?.displayName ? task.assignee.displayName.substring(0, 2).toUpperCase() : (task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??")}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-sm font-medium text-gray-900">
-                        {task.assigneeId ? `User ${task.assigneeId.substring(0, 8)}` : "Unassigned"}
+                        {task.assignee?.displayName ?? (task.assigneeId ? `User ${task.assigneeId.substring(0, 8)}` : "Unassigned")}
                       </span>
                     </div>
                   </div>
@@ -240,32 +311,45 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     <div className="flex items-center gap-2">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {task.reporterId ? task.reporterId.substring(0, 2).toUpperCase() : task.creatorId.substring(0, 2).toUpperCase()}
+                          {task.reporter?.displayName ? task.reporter.displayName.substring(0, 2).toUpperCase() : (task.reporterId ? task.reporterId.substring(0, 2).toUpperCase() : (task.creator?.displayName ? task.creator.displayName.substring(0, 2).toUpperCase() : task.creatorId.substring(0, 2).toUpperCase()))}
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-sm font-medium text-gray-900">
-                        {task.reporterId ? `User ${task.reporterId.substring(0, 8)}` : `User ${task.creatorId.substring(0, 8)}`}
+                        {task.reporter?.displayName ?? (task.reporterId ? `User ${task.reporterId.substring(0, 8)}` : (task.creator?.displayName ?? `User ${task.creatorId.substring(0, 8)}`))}
                       </span>
                     </div>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Story Points</p>
-                    <span className="text-sm text-gray-700">{task.storyPoints ?? "—"}</span>
+                    <EditableField
+                      value={task.storyPoints ?? ""}
+                      type="number"
+                      onSave={(val) => handleUpdateField({ storyPoints: val ? Number(val) : null })}
+                      placeholder="None"
+                    />
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Start Date</p>
-                    <span className="text-sm text-gray-700">
-                      {task.startDate ? new Date(task.startDate).toLocaleDateString() : "—"}
-                    </span>
+                    <EditableField
+                      value={task.startDate ? task.startDate.split("T")[0] : ""}
+                      displayValue={task.startDate ? new Date(task.startDate).toLocaleDateString() : undefined}
+                      type="date"
+                      onSave={(val) => handleUpdateField({ startDate: val ? new Date(val).toISOString() : null })}
+                      placeholder="None"
+                    />
                   </div>
                   <div>
                     <div className="flex items-center gap-1 mb-2">
                       <Calendar className="w-3 h-3 text-gray-400" />
                       <p className="text-xs font-medium text-gray-500">Due Date</p>
                     </div>
-                    <span className="text-sm text-gray-700">
-                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}
-                    </span>
+                    <EditableField
+                      value={task.dueDate ? task.dueDate.split("T")[0] : ""}
+                      displayValue={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : undefined}
+                      type="date"
+                      onSave={(val) => handleUpdateField({ dueDate: val ? new Date(val).toISOString() : null })}
+                      placeholder="None"
+                    />
                   </div>
 
                   {/* Resolution — only show when resolved */}
@@ -330,13 +414,25 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                     <p className="text-sm font-semibold text-gray-900">Time Tracking</p>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-3">
-                    <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                    <div className="bg-gray-50 rounded-lg p-2.5 text-center group cursor-pointer hover:bg-gray-100 transition-colors">
                       <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Original</p>
-                      <p className="text-sm font-semibold text-gray-700">{formatMinutes(task.originalEstimate)}</p>
+                      <EditableField
+                        value={task.originalEstimate ?? ""}
+                        displayValue={formatMinutes(task.originalEstimate)}
+                        type="number"
+                        onSave={(val) => handleUpdateField({ originalEstimate: val ? Number(val) : null })}
+                        placeholder="0m"
+                      />
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-2.5 text-center">
+                    <div className="bg-gray-50 rounded-lg p-2.5 text-center group cursor-pointer hover:bg-gray-100 transition-colors">
                       <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Remaining</p>
-                      <p className="text-sm font-semibold text-gray-700">{formatMinutes(task.remainingEstimate)}</p>
+                      <EditableField
+                        value={task.remainingEstimate ?? ""}
+                        displayValue={formatMinutes(task.remainingEstimate)}
+                        type="number"
+                        onSave={(val) => handleUpdateField({ remainingEstimate: val ? Number(val) : null })}
+                        placeholder="0m"
+                      />
                     </div>
                     <div className="bg-blue-50 rounded-lg p-2.5 text-center">
                       <p className="text-[10px] font-medium text-blue-400 uppercase tracking-wide mb-0.5">Logged</p>
@@ -355,14 +451,40 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
 
                 {/* Description */}
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 mb-2">Description</p>
-                  <div className="text-sm text-gray-700 space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-100 min-h-[60px]">
-                    {task.description ? (
-                      <p>{task.description}</p>
-                    ) : (
-                      <p className="text-gray-400 italic">No description provided.</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-gray-900">Description</p>
+                    {!isEditingDescription && (
+                      <button onClick={startEditingDescription} className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 bg-transparent border-none cursor-pointer">
+                        <Pencil className="w-3 h-3" /> Edit
+                      </button>
                     )}
                   </div>
+                  {isEditingDescription ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        autoFocus
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Add a description..."
+                        className="min-h-[120px] text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={handleSaveDescription}>Save</Button>
+                        <Button size="sm" variant="outline" onClick={() => setIsEditingDescription(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="text-sm text-gray-700 space-y-2 bg-gray-50 hover:bg-gray-100 p-4 rounded-xl border border-gray-100 min-h-[60px] cursor-pointer transition-colors"
+                      onClick={startEditingDescription}
+                    >
+                      {task.description ? (
+                        <p className="whitespace-pre-wrap">{task.description}</p>
+                      ) : (
+                        <p className="text-gray-400 italic">No description provided. Click to add one.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Tabs */}
@@ -372,11 +494,10 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                       <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer border-none ${
-                          activeTab === tab.key
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer border-none ${activeTab === tab.key
                             ? "bg-gray-900 text-white"
                             : "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         {tab.label}
                       </button>

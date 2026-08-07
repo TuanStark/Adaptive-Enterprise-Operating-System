@@ -71,12 +71,6 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId, tena
               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:bg-gray-100"><MoreHorizontal className="w-4 h-4" /></Button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 border-gray-300 text-gray-600"><Share2 className="w-4 h-4" /></Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 border-gray-300 text-gray-600"><Zap className="w-4 h-4" /></Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 border-gray-300 text-gray-600"><LayoutTemplate className="w-4 h-4" /></Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 border-gray-300 text-gray-600"><Maximize2 className="w-4 h-4" /></Button>
-          </div>
         </div>
 
         <div className="flex items-center gap-6">

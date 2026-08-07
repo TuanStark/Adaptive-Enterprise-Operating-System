@@ -51,9 +51,16 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface TaskUser {
+  id: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+}
+
 export interface TaskDetail extends Task {
-  // Extended detail fields can go here in the future
-  // e.g. comments count, attachments count, etc.
+  creator?: TaskUser;
+  reporter?: TaskUser;
+  assignee?: TaskUser;
 }
 
 export interface TaskFilters {

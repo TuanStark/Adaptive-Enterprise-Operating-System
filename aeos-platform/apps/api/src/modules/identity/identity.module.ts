@@ -13,6 +13,7 @@ import { LoginHandler } from './application/commands/login/login.handler';
 import { RefreshTokenHandler } from './application/commands/refresh-token/refresh-token.handler';
 import { LogoutHandler } from './application/commands/logout/logout.handler';
 import { GetCurrentUserHandler } from './application/queries/get-current-user/get-current-user.handler';
+import { GetUsersInternalHandler } from './application/queries/get-users-internal/get-users-internal.handler';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
@@ -30,6 +31,7 @@ import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
     RefreshTokenHandler,
     LogoutHandler,
     GetCurrentUserHandler,
+    GetUsersInternalHandler,
     IdentitySeeder,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

@@ -1093,3 +1093,14 @@ model MessageReaction {
   @@index([messageId])
   @@map("message_reactions")
 }
+
+model ProcessedMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  eventId   String   @unique @map("event_id") @db.VarChar(100)
+  consumer  String   @db.VarChar(100)
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@unique([eventId, consumer])
+  @@index([eventId])
+  @@map("processed_messages")
+}

@@ -6,6 +6,7 @@ import { CreateNotificationHandler } from './application/commands/create-notific
 import { MarkAsReadHandler } from './application/commands/mark-as-read/mark-as-read.handler';
 import { MarkAllAsReadHandler } from './application/commands/mark-all-as-read/mark-all-as-read.handler';
 import { GenericDomainEventListener } from './application/listeners/generic-domain-event.listener';
+import { TaskCreatedNotificationHandler } from './application/events/task-created-notification.handler';
 import { NotificationController } from './presentation/controllers/notification.controller';
 
 @Module({
@@ -17,6 +18,7 @@ import { NotificationController } from './presentation/controllers/notification.
     MarkAsReadHandler,
     MarkAllAsReadHandler,
     GenericDomainEventListener,
+    TaskCreatedNotificationHandler,
   ],
   exports: [NOTIFICATION_REPOSITORY, CreateNotificationHandler],
 })

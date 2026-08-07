@@ -12,8 +12,21 @@ export interface TaskListItemDto {
   storyPoints: number | null;
   assigneeId: string | null;
   sprintId: string | null;
+  parentTaskId: string | null;
+  startDate: Date | null;
   dueDate: Date | null;
+  resolution: string | null;
+  labels: string[];
+  originalEstimate: number | null;
+  remainingEstimate: number | null;
+  timeSpent: number;
+  boardPosition: number;
+  environment: string | null;
+  fixVersionId: string | null;
+  creatorId: string;
+  reporterId: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface PaginatedTasksDto {
@@ -44,8 +57,21 @@ export class GetTasksHandler {
         storyPoints: t.storyPoints,
         assigneeId: t.assigneeId,
         sprintId: t.sprintId,
+        parentTaskId: t.parentTaskId,
+        startDate: t.startDate,
         dueDate: t.dueDate,
+        resolution: t.resolution,
+        labels: t.labels,
+        originalEstimate: t.originalEstimate,
+        remainingEstimate: t.remainingEstimate,
+        timeSpent: t.timeSpent,
+        boardPosition: t.boardPosition,
+        environment: t.environment,
+        fixVersionId: t.fixVersionId,
+        creatorId: t.creatorId,
+        reporterId: t.reporterId,
         createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
       })),
       meta: {
         page: query.page,
