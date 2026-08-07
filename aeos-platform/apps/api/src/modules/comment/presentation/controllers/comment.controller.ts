@@ -2,8 +2,9 @@ import { Controller, Post, Get, Body, Param, Req, HttpCode, HttpStatus, Inject }
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { IsString, MinLength } from 'class-validator';
+import { QueryBus } from '@nestjs/cqrs';
 import { AddCommentCommand, AddCommentHandler } from '../../application/commands/add-comment/add-comment.handler';
-import { CommentRepository, COMMENT_REPOSITORY } from '../../domain/repositories/comment.repository';
+import { GetCommentsByTaskQuery } from '../../application/queries/get-comments-by-task/get-comments-by-task.query';
 
 class AddCommentRequestDto {
   @IsString() tenantId!: string;
@@ -14,8 +15,7 @@ class AddCommentRequestDto {
 export class CommentController {
   constructor(
     private readonly addCommentHandler: AddCommentHandler,
-    @Inject(COMMENT_REPOSITORY)
-    private readonly commentRepository: CommentRepository,
+    private readonly queryBus: QueryBus,
   ) {}
 
   @Post()
@@ -30,9 +30,6 @@ export class CommentController {
 
   @Get()
   async list(@Param('taskId') taskId: string) {
-    const comments = await this.commentRepository.findByTaskId(taskId);
-    return comments.map((c) => ({
-      id: c.id, userId: c.userId, content: c.content, createdAt: c.createdAt,
-    }));
+    return this.queryBus.execute(new GetCommentsByTaskQuery(taskId));
   }
 }

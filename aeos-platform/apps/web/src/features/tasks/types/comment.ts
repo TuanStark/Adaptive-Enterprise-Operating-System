@@ -3,4 +3,9 @@ export interface Comment {
   userId: string;
   content: string;
   createdAt: string;
+  user?: {
+    id: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+  };
 }
