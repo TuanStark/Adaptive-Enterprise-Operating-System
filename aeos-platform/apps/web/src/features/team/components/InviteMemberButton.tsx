@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAppStore } from "@/store/useAppStore";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,16 +14,19 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { clientApi } from "@/lib/api-client";
 
 export function InviteMemberButton() {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const workspaceId = useAppStore((s) => s.activeWorkspaceId);
 
   async function onSubmit(formData: FormData) {
+    if (!workspaceId) return;
     setIsPending(true);
     try {
       const email = formData.get("email") as string;
-      console.log("Invite member:", email);
+      await clientApi.post(`/workspaces/${workspaceId}/invites`, { email });
       setOpen(false);
     } catch (error) {
       console.error(error);

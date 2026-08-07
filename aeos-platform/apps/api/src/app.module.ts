@@ -18,6 +18,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { MessageModule } from './modules/message/message.module';
 import { EventsModule } from './common/events/events.module';
 import { SearchModule } from './common/search/search.module';
+import { MailModule } from './common/mail/mail.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SearchModule } from './common/search/search.module';
     MessageModule,
     EventsModule,
     SearchModule,
+    MailModule,
   ],
   providers: [
     {

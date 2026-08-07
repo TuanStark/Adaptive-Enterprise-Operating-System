@@ -1,5 +1,14 @@
 import { IIntegrationEvent } from '@aeos/shared-kernel';
 
+export class GetWorkspaceInternalQuery {
+  constructor(public readonly workspaceId: string) {}
+}
+
+export interface WorkspaceInternalDto {
+  id: string;
+  name: string;
+}
+
 export class WorkspaceMemberAddedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'WorkspaceMemberAddedEvent';
   constructor(payload: any) {

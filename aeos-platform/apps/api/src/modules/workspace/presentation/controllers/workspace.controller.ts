@@ -8,10 +8,17 @@ import { ArchiveWorkspaceCommand } from '../../application/commands/archive-work
 import { ArchiveWorkspaceHandler } from '../../application/commands/archive-workspace/archive-workspace.handler';
 import { UpdateWorkspaceCommand } from '../../application/commands/update-workspace/update-workspace.command';
 import { UpdateWorkspaceHandler } from '../../application/commands/update-workspace/update-workspace.handler';
+import { InviteMemberCommand } from '../../application/commands/invite-member/invite-member.command';
+import { InviteMemberHandler } from '../../application/commands/invite-member/invite-member.handler';
 import { GetUserWorkspacesQuery } from '../../application/queries/get-user-workspaces/get-user-workspaces.query';
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 import { GetWorkspaceMembersQuery } from '../../application/queries/get-workspace-members/get-workspace-members.query';
 import { GetWorkspaceMembersHandler } from '../../application/queries/get-workspace-members/get-workspace-members.handler';
+import { IsString, IsEmail, MinLength, MaxLength, IsOptional } from 'class-validator';
+
+class InviteMemberRequestDto {
+  @IsString() @IsEmail() email!: string;
+}
 
 @Controller('workspaces')
 export class WorkspaceController {
@@ -21,6 +28,7 @@ export class WorkspaceController {
     private readonly updateHandler: UpdateWorkspaceHandler,
     private readonly getUserWorkspacesHandler: GetUserWorkspacesHandler,
     private readonly getWorkspaceMembersHandler: GetWorkspaceMembersHandler,
+    private readonly inviteMemberHandler: InviteMemberHandler,
   ) {}
 
   @Get('me')
@@ -82,5 +90,19 @@ export class WorkspaceController {
       parseInt(limit ?? '50', 10),
     );
     return this.getWorkspaceMembersHandler.execute(query);
+  }
+
+  @Post(':id/invites')
+  @HttpCode(HttpStatus.OK)
+  async inviteMember(
+    @Param('id') workspaceId: string,
+    @Body() dto: InviteMemberRequestDto,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    const command = new InviteMemberCommand(user.tenantId, workspaceId, user.userId, dto.email);
+    const result = await this.inviteMemberHandler.execute(command);
+    if (result.isFail) throw result.error as DomainError;
+    return { message: 'Invitation sent' };
   }
 }

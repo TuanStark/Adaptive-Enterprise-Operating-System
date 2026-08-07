@@ -10,6 +10,8 @@ import { ArchiveWorkspaceHandler } from './application/commands/archive-workspac
 import { UpdateWorkspaceHandler } from './application/commands/update-workspace/update-workspace.handler';
 import { GetUserWorkspacesHandler } from './application/queries/get-user-workspaces/get-user-workspaces.handler';
 import { GetWorkspaceMembersHandler } from './application/queries/get-workspace-members/get-workspace-members.handler';
+import { GetWorkspaceInternalHandler } from './application/queries/get-workspace-internal/get-workspace-internal.handler';
+import { InviteMemberHandler } from './application/commands/invite-member/invite-member.handler';
 import { WorkspaceController } from './presentation/controllers/workspace.controller';
 
 @Module({
@@ -24,6 +26,8 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
     UpdateWorkspaceHandler,
     GetUserWorkspacesHandler,
     GetWorkspaceMembersHandler,
+    GetWorkspaceInternalHandler,
+    InviteMemberHandler,
   ],
   exports: [WORKSPACE_REPOSITORY],
 })

@@ -4,6 +4,7 @@ import { generateId } from '@aeos/common';
 import { WorkspaceMember } from '../entities/workspace-member.entity';
 import { WorkspaceCreatedEvent } from '../events/workspace-created.event';
 import { WorkspaceMemberAddedEvent, WorkspaceMemberRemovedEvent } from '../events/workspace-member.events';
+import { WorkspaceMemberInvitedEvent } from '../events/workspace-member-invited.event';
 import {
   WorkspaceNameRequiredError,
   WorkspaceAlreadyArchivedError,
@@ -175,6 +176,18 @@ export class Workspace extends AggregateRoot<string> {
   activate(): void {
     this._status = WorkspaceStatus.ACTIVE;
     this.touch();
+  }
+
+  inviteMember(email: string, inviterId: string): Result<void, Error> {
+    if (this._status === WorkspaceStatus.ARCHIVED) {
+      return Result.fail(new Error('Cannot invite to an archived workspace'));
+    }
+    
+    // In a real application, we would create an Invitation entity inside the Organization
+    // For this example, we just emit the domain event which triggers the Outbox to send an email.
+    this.addDomainEvent(new WorkspaceMemberInvitedEvent(email, this.id, inviterId));
+    this.touch();
+    return Result.ok(undefined);
   }
 
   addMember(
