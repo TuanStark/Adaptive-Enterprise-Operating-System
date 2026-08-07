@@ -94,7 +94,7 @@ export function TasksPageClient({ initialTasks, projects, initialProjectId, tena
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {currentView === 'backlog' && currentProjectId && <BacklogView initialTasks={groupedTasks} projectId={currentProjectId} />}
+        {currentView === 'backlog' && currentProjectId && <BacklogView initialTasks={groupedTasks} projectId={currentProjectId} tenantId={tenantId} workspaceId={workspaceId} />}
         {currentView === 'summary' && <SummaryView initialTasks={groupedTasks} />}
         {currentView === 'timeline' && <TimelineView initialTasks={groupedTasks} />}
         {currentView === 'calendar' && <CalendarView initialTasks={groupedTasks} />}

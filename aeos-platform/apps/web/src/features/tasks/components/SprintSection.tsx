@@ -3,6 +3,8 @@
 import { ChevronDown, ChevronRight, Play, Check, Plus, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Droppable } from "@hello-pangea/dnd";
 import type { Sprint } from "../types/sprint";
 import type { Task } from "../types";
 import { BacklogTaskRow } from "./BacklogTaskRow";
@@ -22,6 +24,12 @@ interface SprintSectionProps {
   onCompleteSprint: () => void;
   isStarting?: boolean;
   isCompleting?: boolean;
+  addingTaskTo?: string | null;
+  setAddingTaskTo?: (val: string | null) => void;
+  newTaskTitle?: string;
+  setNewTaskTitle?: (val: string) => void;
+  onHandleCreateTask?: () => void;
+  onTaskClick?: (taskId: string) => void;
 }
 
 export function SprintSection({
@@ -33,6 +41,12 @@ export function SprintSection({
   onCompleteSprint,
   isStarting,
   isCompleting,
+  addingTaskTo,
+  setAddingTaskTo,
+  newTaskTitle,
+  setNewTaskTitle,
+  onHandleCreateTask,
+  onTaskClick,
 }: SprintSectionProps) {
   const isActive = sprint.status === "ACTIVE";
   const isPlanning = sprint.status === "PLANNING";
@@ -45,7 +59,7 @@ export function SprintSection({
     <div className="mb-8">
       <div className={`flex items-center justify-between px-4 py-2 rounded-t border border-gray-200 ${isActive ? "bg-gray-50/80" : ""}`}>
         <div className="flex items-center gap-2">
-          <button onClick={onToggleCollapse} className="border-none bg-transparent cursor-pointer p-0">
+          <button onClick={onToggleCollapse} className="border-none bg-transparent cursor-pointer p-0 flex items-center justify-center">
             {isCollapsed
               ? <ChevronRight className="w-4 h-4 text-gray-600" />
               : <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -100,18 +114,44 @@ export function SprintSection({
       </div>
 
       {!isCollapsed && (
-        <div className="flex flex-col">
-          {tasks.length > 0 ? (
-            tasks.map((task) => <BacklogTaskRow key={task.id} task={task} />)
-          ) : (
-            <div className="border-2 border-dashed border-gray-200 rounded-b-lg p-6 flex flex-col items-center justify-center text-gray-500 text-sm bg-gray-50/30">
-              Plan a sprint by dragging work items into it, or by dragging the sprint footer.
+        <Droppable droppableId={sprint.id}>
+          {(provided) => (
+            <div className="flex flex-col min-h-[50px]" ref={provided.innerRef} {...provided.droppableProps}>
+              {tasks.length > 0 ? (
+                tasks.map((task, index) => <BacklogTaskRow key={task.id} task={task} index={index} onTaskClick={onTaskClick} />)
+              ) : (
+                <div className="border-2 border-dashed border-gray-200 rounded-b-lg p-6 flex flex-col items-center justify-center text-gray-500 text-sm bg-gray-50/30">
+                  Plan a sprint by dragging work items into it, or by dragging the sprint footer.
+                </div>
+              )}
+              {provided.placeholder}
+
+              {addingTaskTo === sprint.id ? (
+                <div className="px-4 py-2 border border-t-0 border-gray-200 bg-white rounded-b">
+                  <Input
+                    autoFocus
+                    value={newTaskTitle || ""}
+                    onChange={(e) => setNewTaskTitle?.(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onHandleCreateTask?.();
+                      if (e.key === "Escape") setAddingTaskTo?.(null);
+                    }}
+                    onBlur={() => onHandleCreateTask?.()}
+                    className="h-8 text-sm"
+                    placeholder="What needs to be done?"
+                  />
+                </div>
+              ) : (
+                <div
+                  onClick={() => setAddingTaskTo?.(sprint.id)}
+                  className="flex items-center px-4 py-2 border border-t-0 border-gray-200 bg-white rounded-b hover:bg-gray-50 cursor-pointer text-gray-500 text-sm font-medium transition-colors"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Create task
+                </div>
+              )}
             </div>
           )}
-          <div className="flex items-center px-4 py-2 border border-t-0 border-gray-200 bg-white rounded-b hover:bg-gray-50 cursor-pointer text-gray-500 text-sm font-medium transition-colors">
-            <Plus className="w-4 h-4 mr-2" /> Create
-          </div>
-        </div>
+        </Droppable>
       )}
     </div>
   );
