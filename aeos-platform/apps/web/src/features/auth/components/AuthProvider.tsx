@@ -3,6 +3,7 @@
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 import { useEffect } from "react";
+import { useAuthStore } from "../store/useAuthStore";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -11,6 +12,11 @@ interface AuthProviderProps {
 
 function AuthSessionGuard({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
+  const setUser = useAuthStore((s) => s.setUser);
+
+  useEffect(() => {
+    setUser(session?.user || null);
+  }, [session?.user, setUser]);
 
   useEffect(() => {
     if (session?.error === "RefreshTokenError") {

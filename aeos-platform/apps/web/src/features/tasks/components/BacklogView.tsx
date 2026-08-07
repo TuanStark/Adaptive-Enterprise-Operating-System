@@ -10,6 +10,7 @@ import { useTasks } from "../hooks/useTasks";
 import { SprintSection } from "./SprintSection";
 import { BacklogTaskRow } from "./BacklogTaskRow";
 import { CreateSprintDialog } from "./CreateSprintDialog";
+import { ScrollDownIndicator } from "./ScrollDownIndicator";
 import type { Task } from "../types";
 
 interface BacklogViewProps {
@@ -75,7 +76,7 @@ export function BacklogView({ initialTasks, projectId }: BacklogViewProps) {
       </div>
 
       {/* Sprints Area */}
-      <div className="px-8 mt-6 max-w-[1200px]">
+      <div className="px-8 mt-6">
         {/* Active & Planning Sprints */}
         {activeSprints.map((sprint) => (
           <SprintSection
@@ -92,11 +93,7 @@ export function BacklogView({ initialTasks, projectId }: BacklogViewProps) {
         ))}
 
         {/* Divider */}
-        <div className="flex justify-center my-6">
-          <div className="w-6 h-6 rounded border border-gray-200 bg-white flex items-center justify-center text-gray-400 shadow-sm">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>
-          </div>
-        </div>
+        <ScrollDownIndicator />
 
         {/* Backlog */}
         <div className="mb-8">
