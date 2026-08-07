@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Check, X, ChevronDown, ChevronRight, Clock, User } from "lucide-react";
+import { Shield, Check, X, ChevronDown, ChevronRight, Clock, User, Plus } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { useApprovals, useProcessApproval } from "../hooks/useApprovals";
 import type { Approval, ApprovalStatus } from "../types";
+import { CreateApprovalDialog } from "./CreateApprovalDialog";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -117,6 +118,7 @@ function ApprovalCard({ approval, onProcess, isProcessing }: ApprovalCardProps) 
 
 export function ApprovalsPageClient() {
   const [activeFilter, setActiveFilter] = useState<"ALL" | ApprovalStatus>("ALL");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const workspaceId = useAppStore((s) => s.activeWorkspaceId);
   const { data, isLoading, error } = useApprovals(workspaceId);
   const processApproval = useProcessApproval();
@@ -153,6 +155,11 @@ export function ApprovalsPageClient() {
             </p>
           </div>
         </div>
+        
+        <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Create Approval
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -197,6 +204,8 @@ export function ApprovalsPageClient() {
           </div>
         )}
       </div>
+
+      <CreateApprovalDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
     </div>
   );
 }

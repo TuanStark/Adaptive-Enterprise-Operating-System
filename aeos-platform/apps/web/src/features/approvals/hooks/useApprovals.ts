@@ -32,3 +32,21 @@ export function useProcessApproval() {
     },
   });
 }
+
+export function useCreateApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      tenantId: string;
+      workspaceId: string;
+      title: string;
+      entityType: string;
+      entityId: string;
+      reviewerIds: string[];
+    }) => clientApi.post<{ id: string; message: string }>("/approvals", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    },
+  });
+}

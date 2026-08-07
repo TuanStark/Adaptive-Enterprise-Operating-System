@@ -49,8 +49,8 @@ export function InviteMemberButton() {
             <Input id="email" name="email" type="email" placeholder="colleague@company.com" required autoFocus />
           </div>
           <DialogFooter>
-            <DialogClose>
-              <Button type="button" variant="outline">Cancel</Button>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
             </DialogClose>
             <Button type="submit" disabled={isPending}>
               {isPending ? "Sending..." : "Send Invite"}
