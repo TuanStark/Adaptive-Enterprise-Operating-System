@@ -13,6 +13,7 @@ import { BacklogTaskRow } from "./BacklogTaskRow";
 import { CreateSprintDialog } from "./CreateSprintDialog";
 import { ScrollDownIndicator } from "./ScrollDownIndicator";
 import { TaskDetailPanel } from "./TaskDetailPanel";
+import { useDebounce } from "@/hooks/useDebounce";
 import type { Task } from "../types";
 
 interface BacklogViewProps {
@@ -30,8 +31,10 @@ export function BacklogView({ initialTasks, projectId, tenantId, workspaceId }: 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const { data: sprintsData } = useSprints(projectId);
-  const { data: tasksData } = useTasks({ projectId });
+  const { data: tasksData } = useTasks({ projectId, search: debouncedSearch || undefined });
   const { start, complete } = useSprintMutations(projectId);
   const { create, moveToSprint } = useTaskMutations();
 
@@ -45,14 +48,8 @@ export function BacklogView({ initialTasks, projectId, tenantId, workspaceId }: 
     setLocalTasks(allTasks);
   }, [allTasks]);
 
-  const filteredTasks = localTasks.filter((t) =>
-    searchQuery === "" ||
-    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.key.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getSprintTasks = (sprintId: string) => filteredTasks.filter((t) => t.sprintId === sprintId);
-  const backlogTasks = filteredTasks.filter((t) => !t.sprintId);
+  const getSprintTasks = (sprintId: string) => localTasks.filter((t) => t.sprintId === sprintId);
+  const backlogTasks = localTasks.filter((t) => !t.sprintId);
   const activeSprints = sprints.filter((s) => s.status !== "COMPLETED");
   const completedSprints = sprints.filter((s) => s.status === "COMPLETED");
 

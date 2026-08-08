@@ -18,6 +18,7 @@ import { useTaskMutations, useTasks } from "../hooks/useTasks";
 import { useBoardConfig, useBoardConfigMutations } from "../hooks/useBoardConfig";
 import { getLabelColor } from "../hooks/useTaskDetailPanel";
 import { generateId } from "../utils/id";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // ── Icons ──
 
@@ -49,16 +50,27 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
   const { create, changeStatus } = useTaskMutations();
   const { data: boardConfig, isLoading: configLoading } = useBoardConfig(projectId);
   const { save: saveConfig } = useBoardConfigMutations(projectId);
-  const { data: tasksData } = useTasks({ projectId, workspaceId, limit: 200 });
-
-  const tasks = tasksData?.data ?? initialTasks;
-  const columns = boardConfig?.columns ?? [];
 
   // ── Filter State ──
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedPriority, setSelectedPriority] = useState<string | null>(null);
+
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const { data: tasksData } = useTasks({
+    projectId,
+    workspaceId,
+    limit: 200,
+    search: debouncedSearch || undefined,
+    assigneeId: selectedAssignee || undefined,
+    type: selectedType || undefined,
+    priority: selectedPriority || undefined,
+  });
+
+  const tasks = tasksData?.data ?? initialTasks;
+  const columns = boardConfig?.columns ?? [];
 
   // ── UI State ──
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -83,15 +95,11 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
     for (const col of columns) {
       map[col.id] = localTasks.filter((t) => {
         if (!col.statuses.includes(t.status as TaskStatusValue)) return false;
-        if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase()) && !t.key.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-        if (selectedAssignee && t.assigneeId !== selectedAssignee) return false;
-        if (selectedType && t.type !== selectedType) return false;
-        if (selectedPriority && t.priority !== selectedPriority) return false;
         return true;
       });
     }
     return map;
-  }, [columns, localTasks, searchQuery, selectedAssignee, selectedType, selectedPriority]);
+  }, [columns, localTasks]);
 
   // ── Statuses already used by existing columns ──
   const usedStatuses = useMemo(() => {
