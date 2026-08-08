@@ -10,6 +10,7 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "dev": "pnpm --filter @aeos/api dev",
+    "dev:web": "pnpm --filter @aeos/web dev",
     "build": "pnpm --filter @aeos/api build",
     "start:prod": "pnpm --filter @aeos/api start:prod",
     "test": "pnpm --filter @aeos/api test",

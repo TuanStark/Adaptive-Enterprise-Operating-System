@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Patch, Body, Param, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
-import { DomainError } from '@aeos/errors';
+import { DomainError, ValidationError } from '@aeos/errors';
 import { CreateWorkspaceRequestDto } from '../dto/create-workspace.request.dto';
 import { CreateWorkspaceCommand } from '../../application/commands/create-workspace/create-workspace.command';
 import { CreateWorkspaceHandler } from '../../application/commands/create-workspace/create-workspace.handler';
@@ -40,7 +40,7 @@ export class WorkspaceController {
     private readonly inviteMemberHandler: InviteMemberHandler,
     private readonly acceptWorkspaceInviteHandler: AcceptWorkspaceInviteHandler,
     private readonly validateWorkspaceInviteHandler: ValidateWorkspaceInviteHandler,
-  ) {}
+  ) { }
 
   @Get('me')
   async getMyWorkspaces(@Req() req: Request) {
@@ -123,12 +123,12 @@ export class WorkspaceController {
   @Get('invites/validate')
   async validateInvite(@Query('token') token: string) {
     if (!token) {
-      throw new DomainError('Missing token', 'INVALID_INVITE', 400);
+      throw new ValidationError('Missing token');
     }
     const query = new ValidateWorkspaceInviteQuery(token);
     const result = await this.validateWorkspaceInviteHandler.execute(query);
     if (result.isFail) {
-      throw new DomainError(result.error.message, 'INVALID_INVITE', 400);
+      throw result.error;
     }
     return result.value;
   }
