@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { createDocumentAction } from "../actions/document-actions";
+import { toast } from "sonner";
 
 interface CreateDocumentButtonProps {
   children?: React.ReactNode;
@@ -21,22 +24,31 @@ interface CreateDocumentButtonProps {
 }
 
 export function CreateDocumentButton({ children, renderButton }: CreateDocumentButtonProps = {}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   async function onSubmit(formData: FormData) {
     setIsPending(true);
-    try {
-      await createDocumentAction({
-        name: formData.get("name") as string,
-        visibility: "PRIVATE",
-      });
-      setOpen(false);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsPending(false);
-    }
+    
+    const promise = createDocumentAction({
+      name: formData.get("name") as string,
+      visibility: "PRIVATE",
+    });
+
+    toast.promise(promise, {
+      loading: "Creating document...",
+      success: (data) => {
+        setOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["documents"] });
+        router.push(`/docs/${data.id}`);
+        router.refresh();
+        return "Document created successfully!";
+      },
+      error: "Failed to create document",
+      finally: () => setIsPending(false),
+    });
   }
 
   return (

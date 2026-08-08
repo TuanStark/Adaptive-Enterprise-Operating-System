@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 
 export function useLoginForm() {
   const router = useRouter();
@@ -31,12 +32,21 @@ export function useLoginForm() {
 
       if (result?.error) {
         setError("Email hoặc mật khẩu không đúng");
+        toast.error("Đăng nhập thất bại", {
+          description: "Email hoặc mật khẩu không đúng",
+        });
       } else if (result?.ok) {
+        toast.success("Đăng nhập thành công", {
+          description: "Chào mừng bạn trở lại hệ thống AEOS.",
+        });
         router.push("/");
         router.refresh();
       }
     } catch {
       setError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
+      toast.error("Lỗi hệ thống", {
+        description: "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.",
+      });
     } finally {
       setIsPending(false);
     }

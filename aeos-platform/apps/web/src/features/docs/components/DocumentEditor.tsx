@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import { publishDocumentVersionAction } from "../actions/document-actions";
 import { uploadFileDirectly } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Save, Check, Loader2, Eye, Edit3 } from "lucide-react";
@@ -35,24 +36,30 @@ export function DocumentEditor({ documentId, initialContent }: DocumentEditorPro
 
     setSaveStatus("saving");
     startTransition(async () => {
-      try {
-        const file = new File([content], `doc-${documentId}.md`, { type: "text/markdown" });
+      const file = new File([content], `doc-${documentId}.md`, { type: "text/markdown" });
+      
+      const savePromise = async () => {
         const uploadResult = await uploadFileDirectly(file, "documents");
-        if (uploadResult?.id) {
-          await publishDocumentVersionAction(documentId, uploadResult.id);
+        if (!uploadResult?.id) throw new Error("Upload failed");
+        await publishDocumentVersionAction(documentId, uploadResult.id);
+        return uploadResult.id;
+      };
+
+      toast.promise(savePromise(), {
+        loading: "Saving document...",
+        success: () => {
           setSaveStatus("saved");
           setHasUnsavedChanges(false);
-          
           setTimeout(() => {
             setSaveStatus("idle");
           }, 3000);
-        } else {
+          return "Document saved successfully!";
+        },
+        error: () => {
           setSaveStatus("idle");
-        }
-      } catch (error) {
-        console.error("Failed to save document:", error);
-        setSaveStatus("idle");
-      }
+          return "Failed to save document.";
+        },
+      });
     });
   };
 

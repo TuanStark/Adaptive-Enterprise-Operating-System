@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { clientApi } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export function useRegisterForm() {
   const router = useRouter();
@@ -71,7 +72,13 @@ export function useRegisterForm() {
 
       if (result?.error) {
         setError("Tạo tài khoản thành công nhưng không thể tự động đăng nhập.");
+        toast.error("Đăng nhập thất bại", {
+          description: "Tạo tài khoản thành công nhưng không thể tự động đăng nhập.",
+        });
       } else if (result?.ok) {
+        toast.success("Tạo tài khoản thành công!", {
+          description: "Chào mừng bạn đến với AEOS.",
+        });
         if (callbackUrl) {
           router.push(callbackUrl);
         } else {
@@ -81,6 +88,9 @@ export function useRegisterForm() {
       }
     } catch (err: any) {
       setError(err.message || "Tạo tài khoản thất bại. Email có thể đã tồn tại.");
+      toast.error("Tạo tài khoản thất bại", {
+        description: err.message || "Email có thể đã tồn tại.",
+      });
     } finally {
       setIsPending(false);
     }
