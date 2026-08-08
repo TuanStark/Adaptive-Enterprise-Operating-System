@@ -1,12 +1,11 @@
 import { serverApi, getSessionContext } from "@/lib/api-server";
-import type { Document } from "../types";
+import { Document, DocumentDetail } from "../types";
 
 interface PaginatedResponse<T> {
   data: T[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
-export async function getDocuments(): Promise<Document[]> {
+export async function getDocuments() {
   try {
     const { workspaceId } = await getSessionContext();
     const response = await serverApi.get<PaginatedResponse<Document>>("/documents", { workspaceId });
@@ -16,3 +15,23 @@ export async function getDocuments(): Promise<Document[]> {
     return [];
   }
 }
+
+export const getDocument = async (id: string, workspaceId: string): Promise<DocumentDetail | null> => {
+  try {
+    const document = await serverApi.get<DocumentDetail>(`/documents/${id}?workspaceId=${workspaceId}`);
+    return document;
+  } catch (error) {
+    console.error(`Failed to fetch document ${id}:`, error);
+    return null;
+  }
+};
+
+export const getFileUrl = async (fileId: string): Promise<string | null> => {
+  try {
+    const result = await serverApi.get<{ url: string }>(`/files/${fileId}/url`);
+    return result.url;
+  } catch (error) {
+    console.error(`Failed to fetch file url for ${fileId}:`, error);
+    return null;
+  }
+};

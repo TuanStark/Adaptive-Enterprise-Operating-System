@@ -129,6 +129,24 @@ export const serverApi = {
 
     return handleResponse<T>(response);
   },
+
+  upload: async <T>(path: string, formData: FormData): Promise<T> => {
+    const session = await auth();
+    const token = session?.accessToken;
+
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    return handleResponse<T>(response);
+  },
 };
 
 export { ApiClientError };

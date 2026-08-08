@@ -26,7 +26,7 @@ export default function InvitePage() {
     }
     const validateToken = async () => {
       try {
-        const res = await clientApi.get(`/workspaces/invites/validate?token=${token}`);
+        const res = await clientApi.get(`/workspaces/invites/validate?token=${token}`) as any;
         setInviteInfo(res.data);
       } catch (err: any) {
         setErrorMessage(err.message || "The invitation link is invalid or has expired.");

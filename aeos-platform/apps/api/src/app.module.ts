@@ -11,6 +11,7 @@ import { TaskModule } from './modules/task/task.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { DocumentModule } from './modules/document/document.module';
+import { FileModule } from './modules/file/file.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
 import { ApprovalModule } from './modules/approval/approval.module';
 import { FormModule } from './modules/form/form.module';
@@ -50,6 +51,7 @@ import { MailModule } from './common/mail/mail.module';
     CommentModule,
     NotificationModule,
     DocumentModule,
+    FileModule,
     MeetingModule,
     ApprovalModule,
     FormModule,

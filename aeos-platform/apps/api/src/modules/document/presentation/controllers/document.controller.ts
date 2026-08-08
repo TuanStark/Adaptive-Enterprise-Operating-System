@@ -6,6 +6,8 @@ import { CreateDocumentCommand } from '../../application/commands/create-documen
 import { CreateDocumentHandler } from '../../application/commands/create-document/create-document.handler';
 import { UpdateDocumentCommand, UpdateDocumentHandler } from '../../application/commands/update-document/update-document.handler';
 import { PublishDocumentVersionCommand, PublishDocumentVersionHandler } from '../../application/commands/publish-document-version/publish-document-version.handler';
+import { GetDocumentQuery } from '../../application/queries/get-document/get-document.query';
+import { GetDocumentHandler } from '../../application/queries/get-document/get-document.handler';
 import { DocumentRepository, DOCUMENT_REPOSITORY } from '../../domain/repositories/document.repository';
 
 class CreateDocumentRequestDto {
@@ -30,6 +32,7 @@ export class DocumentController {
     private readonly createHandler: CreateDocumentHandler,
     private readonly updateHandler: UpdateDocumentHandler,
     private readonly publishVersionHandler: PublishDocumentVersionHandler,
+    private readonly getDocumentHandler: GetDocumentHandler,
     @Inject(DOCUMENT_REPOSITORY)
     private readonly documentRepository: DocumentRepository,
   ) {}
@@ -59,6 +62,14 @@ export class DocumentController {
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },
     };
+  }
+
+  @Get(':id')
+  async get(@Param('id') id: string, @Query('workspaceId') workspaceId: string) {
+    const query = new GetDocumentQuery(id, workspaceId);
+    const result = await this.getDocumentHandler.execute(query);
+    if (result.isFail) throw result.error as DomainError;
+    return result.value;
   }
 
   @Patch(':id')

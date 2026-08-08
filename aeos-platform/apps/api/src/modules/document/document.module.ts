@@ -9,6 +9,7 @@ import { UpdateDocumentHandler } from './application/commands/update-document/up
 import { PublishDocumentVersionHandler } from './application/commands/publish-document-version/publish-document-version.handler';
 import { DocumentController } from './presentation/controllers/document.controller';
 import { GetDocumentAnalyticsInternalHandler } from './application/queries/get-document-analytics-internal/get-document-analytics-internal.handler';
+import { GetDocumentHandler } from './application/queries/get-document/get-document.handler';
 
 @Module({
   imports: [CqrsModule, EventsModule],
@@ -20,6 +21,7 @@ import { GetDocumentAnalyticsInternalHandler } from './application/queries/get-d
     UpdateDocumentHandler,
     PublishDocumentVersionHandler,
     GetDocumentAnalyticsInternalHandler,
+    GetDocumentHandler,
   ],
   exports: [DOCUMENT_REPOSITORY],
 })

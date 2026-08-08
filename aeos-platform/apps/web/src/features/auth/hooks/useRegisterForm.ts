@@ -8,7 +8,7 @@ export function useRegisterForm() {
   const searchParams = useSearchParams();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Extract invite token and email if present
   const callbackUrl = searchParams.get("callbackUrl");
   const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function useRegisterForm() {
         const token = url.searchParams.get("token");
         if (token) {
           clientApi.get(`/workspaces/invites/validate?token=${token}`)
-            .then(res => {
+            .then((res: any) => {
               if (res.data?.email) {
                 setInvitedEmail(res.data.email);
               }
