@@ -22,10 +22,10 @@ export function useRegisterForm() {
         const url = new URL(urlStr);
         const token = url.searchParams.get("token");
         if (token) {
-          clientApi.get(`/workspaces/invites/validate?token=${token}`)
-            .then((res: any) => {
-              if (res.data?.email) {
-                setInvitedEmail(res.data.email);
+          clientApi.get<{ email: string; workspaceId: string }>(`/workspaces/invites/validate?token=${token}`)
+            .then((res) => {
+              if (res?.email) {
+                setInvitedEmail(res.email);
               }
             })
             .catch(err => console.error("Failed to validate invite token on register page", err));

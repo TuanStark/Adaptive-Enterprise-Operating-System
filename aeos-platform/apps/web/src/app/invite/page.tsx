@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { clientApi } from "@/lib/api-client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
-import { Suspense } from "react";
+import { AuthProvider } from "@/features/auth/components/AuthProvider";
 
 function InviteContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { update } = useSession();
+  const queryClient = useQueryClient();
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -27,8 +31,8 @@ function InviteContent() {
     }
     const validateToken = async () => {
       try {
-        const res = await clientApi.get(`/workspaces/invites/validate?token=${token}`) as any;
-        setInviteInfo(res.data);
+        const res = await clientApi.get<{ email: string; workspaceId: string }>(`/workspaces/invites/validate?token=${token}`);
+        setInviteInfo(res);
       } catch (err: any) {
         setErrorMessage(err.message || "The invitation link is invalid or has expired.");
         setStatus("error");
@@ -44,14 +48,18 @@ function InviteContent() {
     setStatus("loading");
     try {
       await clientApi.post("/workspaces/invites/accept", { token });
+      if (inviteInfo?.workspaceId) {
+        await update({ workspaceId: inviteInfo.workspaceId });
+      }
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       setStatus("success");
       setTimeout(() => {
-        router.push("/workspaces"); // Redirect to workspaces list
+        router.push("/"); // Redirect to dashboard
       }, 2000);
     } catch (err: any) {
       console.error(err);
       setStatus("error");
-      setErrorMessage(err.response?.data?.message || "Failed to accept invitation. It may be invalid or expired.");
+      setErrorMessage(err.message || "Failed to accept invitation. It may be invalid or expired.");
     }
   };
 
@@ -180,8 +188,10 @@ function InviteContent() {
 
 export default function InvitePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center p-4 bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-      <InviteContent />
-    </Suspense>
+    <AuthProvider>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center p-4 bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+        <InviteContent />
+      </Suspense>
+    </AuthProvider>
   );
 }

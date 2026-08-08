@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
 export function useLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,11 @@ export function useLoginForm() {
         toast.success("Đăng nhập thành công", {
           description: "Chào mừng bạn trở lại hệ thống AEOS.",
         });
-        router.push("/");
+        if (callbackUrl) {
+          router.push(callbackUrl);
+        } else {
+          router.push("/");
+        }
         router.refresh();
       }
     } catch {

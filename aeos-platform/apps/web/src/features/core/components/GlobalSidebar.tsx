@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { LayoutDashboard, CheckSquare, Folder, FileText, Settings, Users, MessageSquare, Plus, Video, Shield, Check } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useWorkspaces } from "@/features/workspace/hooks/useWorkspaces";
 import { CreateWorkspaceDialog } from "@/features/workspace/components/CreateWorkspaceDialog";
+import { useAppStore } from "@/store/useAppStore";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ export function GlobalSidebar() {
   const { data: session, update } = useSession();
   const { data: workspacesData, isLoading } = useWorkspaces();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const setActiveWorkspaceId = useAppStore((s) => s.setActiveWorkspaceId);
 
   const workspaces = workspacesData || [];
   const currentWorkspaceId = session?.user?.workspaceId;
@@ -42,10 +44,25 @@ export function GlobalSidebar() {
   const workspaceInitial = currentWorkspace?.name?.charAt(0).toUpperCase() || "W";
 
   const handleSwitchWorkspace = async (workspaceId: string, workspaceName: string) => {
-    if (workspaceId === currentWorkspaceId) return;
+    if (workspaceId === currentWorkspaceId) {
+      setActiveWorkspaceId(workspaceId);
+      return;
+    }
+    setActiveWorkspaceId(workspaceId);
     await update({ workspaceId, workspaceName });
     router.refresh();
   };
+
+  useEffect(() => {
+    if (!isLoading && workspaces.length > 0) {
+      if (!currentWorkspaceId || !workspaces.find((w) => w.id === currentWorkspaceId)) {
+        const first = workspaces[0];
+        handleSwitchWorkspace(first.id, first.name || "Unknown");
+      } else {
+        setActiveWorkspaceId(currentWorkspaceId);
+      }
+    }
+  }, [workspaces, currentWorkspaceId, isLoading]);
 
   return (
     <aside className="w-16 h-screen bg-[#1E1F22] flex flex-col items-center py-4 border-r border-[#1E1F22] z-30 shrink-0">

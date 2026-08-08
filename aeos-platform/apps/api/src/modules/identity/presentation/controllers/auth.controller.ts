@@ -18,6 +18,7 @@ import { LogoutHandler } from '../../application/commands/logout/logout.handler'
 import { GetCurrentUserQuery } from '../../application/queries/get-current-user/get-current-user.query';
 import { GetCurrentUserHandler } from '../../application/queries/get-current-user/get-current-user.handler';
 import { DomainError } from '@aeos/errors';
+import { GetSystemTenantHandler } from '../../application/queries/get-system-tenant/get-system-tenant.handler';
 
 @Controller('auth')
 export class AuthController {
@@ -27,14 +28,25 @@ export class AuthController {
     private readonly refreshTokenHandler: RefreshTokenHandler,
     private readonly logoutHandler: LogoutHandler,
     private readonly getCurrentUserHandler: GetCurrentUserHandler,
-  ) {}
+    private readonly getSystemTenantHandler: GetSystemTenantHandler,
+  ) { }
 
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterRequestDto) {
+    let tenantId = dto.tenantId;
+
+    if (tenantId === 'default' || !tenantId) {
+      const tenantResult = await this.getSystemTenantHandler.execute();
+      if (tenantResult.isFail) {
+        throw tenantResult.error as DomainError;
+      }
+      tenantId = tenantResult.value;
+    }
+
     const command = new RegisterUserCommand(
-      dto.tenantId,
+      tenantId,
       dto.email,
       dto.password,
       dto.firstName ?? null,

@@ -41,3 +41,9 @@ export class SessionNotFoundError extends DomainError {
     super('SESSION_NOT_FOUND', 'Session not found or already revoked.', 404);
   }
 }
+
+export class SystemTenantNotFoundError extends DomainError {
+  constructor() {
+    super('SYSTEM_TENANT_NOT_FOUND', 'System tenant not found in database.', 404);
+  }
+}

@@ -20,6 +20,7 @@ import { SearchUsersInternalHandler } from './application/queries/search-users-i
 import { AuthController } from './presentation/controllers/auth.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
+import { GetSystemTenantHandler } from './application/queries/get-system-tenant/get-system-tenant.handler';
 
 @Module({
   imports: [CqrsModule],
@@ -38,9 +39,10 @@ import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
     GetUsersInternalHandler,
     SearchUsersInternalHandler,
     GetUserAnalyticsInternalHandler,
+    GetSystemTenantHandler,
     IdentitySeeder,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
   exports: [USER_REPOSITORY, SESSION_REPOSITORY, JWT_TOKEN_SERVICE],
 })
-export class IdentityModule {}
+export class IdentityModule { }
