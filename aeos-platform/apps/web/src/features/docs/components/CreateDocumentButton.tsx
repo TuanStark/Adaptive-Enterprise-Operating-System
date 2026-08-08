@@ -15,7 +15,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { createDocumentAction } from "../actions/document-actions";
 
-export function CreateDocumentButton() {
+interface CreateDocumentButtonProps {
+  children?: React.ReactNode;
+  renderButton?: React.ReactElement;
+}
+
+export function CreateDocumentButton({ children, renderButton }: CreateDocumentButtonProps = {}) {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
@@ -37,9 +42,9 @@ export function CreateDocumentButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button className="rounded-full bg-primary hover:bg-primary/90" />}
+        render={renderButton || <Button className="rounded-full bg-primary hover:bg-primary/90" />}
       >
-        Create Document
+        {children || "Create Document"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -52,8 +57,8 @@ export function CreateDocumentButton() {
             <Input id="name" name="name" placeholder="e.g., Architecture Guide" required autoFocus />
           </div>
           <DialogFooter>
-            <DialogClose>
-              <Button type="button" variant="outline">Cancel</Button>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
             </DialogClose>
             <Button type="submit" disabled={isPending}>
               {isPending ? "Creating..." : "Create"}

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash, Check, Timeline } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DocsSidebar } from "@/features/docs/components/DocsSidebar";
 
 function TasksSidebar() {
   const searchParams = useSearchParams();
@@ -70,38 +71,7 @@ function TasksSidebar() {
   );
 }
 
-function DocsSidebar() {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">Workspace</h2>
-        <Button variant="ghost" size="icon" className="h-6 w-6"><Plus className="w-4 h-4" /></Button>
-      </div>
-      <div className="p-3 overflow-y-auto flex-1">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Favorites</p>
-          <Link href="/docs/architecture" className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-md font-medium cursor-pointer">
-            <FileText className="w-4 h-4 text-emerald-500" /> Architecture Guide
-          </Link>
-        </div>
-        <div className="mt-6 space-y-1">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Folders</p>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-              <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> <Folder className="w-4 h-4 text-blue-400" /> Engineering
-            </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-              <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> <Folder className="w-4 h-4 text-orange-400" /> Marketing
-            </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-              <ChevronRight className="w-3.5 h-3.5 text-gray-400" /> <Folder className="w-4 h-4 text-purple-400" /> Design
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 function ChatSidebar() {
   return (

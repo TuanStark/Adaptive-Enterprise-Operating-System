@@ -8,5 +8,5 @@ export interface UploadedFileDto {
 
 export interface StoragePort {
   uploadFile(buffer: Buffer, fileName: string, mimeType: string): Promise<UploadedFileDto>;
-  getFileUrl(storageKey: string): Promise<string>;
+  getFileUrl(storageKey: string, mimeType?: string): Promise<string>;
 }

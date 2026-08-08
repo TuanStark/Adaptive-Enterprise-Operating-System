@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { Suspense } from "react";
 
-export default function InvitePage() {
+function InviteContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
@@ -174,5 +175,13 @@ export default function InvitePage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center p-4 bg-gray-50"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <InviteContent />
+    </Suspense>
   );
 }

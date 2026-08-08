@@ -16,7 +16,7 @@ export class GetFileUrlHandler {
       return Result.fail(new NotFoundError('File', query.fileId));
     }
 
-    const url = await this.storagePort.getFileUrl(file.storageKey);
+    const url = await this.storagePort.getFileUrl(file.storageKey, file.mimeType);
     return Result.ok(url);
   }
 }
