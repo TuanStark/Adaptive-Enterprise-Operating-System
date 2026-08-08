@@ -6,33 +6,11 @@ import { Folder, CheckSquare, FileText, Users, TrendingUp, GitMerge, Bell, Arrow
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
-import { useWorkspaceAnalytics } from "../hooks/useAnalytics";
+import { useBurndownChart, useVelocityChart, useWorkspaceAnalytics } from "../hooks/useAnalytics";
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import type { Notification } from "@/features/notifications/types";
 
-// ── Chart data — not returned by BE analytics endpoint, kept as static visualization ──
-const velocityData = [
-  { name: "Mon", tasks: 12, completed: 8 },
-  { name: "Tue", tasks: 15, completed: 11 },
-  { name: "Wed", tasks: 9, completed: 7 },
-  { name: "Thu", tasks: 18, completed: 14 },
-  { name: "Fri", tasks: 22, completed: 19 },
-  { name: "Sat", tasks: 6, completed: 5 },
-  { name: "Sun", tasks: 3, completed: 2 },
-];
 
-const burndownData = [
-  { day: "Day 1", remaining: 42, ideal: 42 },
-  { day: "Day 2", remaining: 39, ideal: 39 },
-  { day: "Day 3", remaining: 36, ideal: 36 },
-  { day: "Day 4", remaining: 34, ideal: 33 },
-  { day: "Day 5", remaining: 30, ideal: 30 },
-  { day: "Day 6", remaining: 28, ideal: 27 },
-  { day: "Day 7", remaining: 23, ideal: 24 },
-  { day: "Day 8", remaining: 22, ideal: 21 },
-  { day: "Day 9", remaining: 18, ideal: 18 },
-  { day: "Day 10", remaining: 14, ideal: 15 },
-];
 
 interface MetricConfig {
   title: string;
@@ -69,13 +47,15 @@ function timeAgo(dateStr: string): string {
 export function DashboardOverview() {
   const workspaceId = useAppStore((s) => s.activeWorkspaceId);
   const { data: analytics, isLoading: analyticsLoading } = useWorkspaceAnalytics(workspaceId);
+  const { data: velocityData, isLoading: velocityLoading } = useVelocityChart(workspaceId);
+  const { data: burndownData, isLoading: burndownLoading } = useBurndownChart(workspaceId);
   const { data: notificationsData } = useNotifications(1, 5);
 
   const metricValues: MetricValues = {
-    totalProjects: analytics?.totalProjects ?? 0,
-    totalTasks: analytics?.totalTasks ?? 0,
-    totalDocuments: 0, // Not in analytics response
-    totalMembers: analytics?.totalMembers ?? 0,
+    totalProjects: analytics?.overview?.totalProjects ?? 0,
+    totalTasks: analytics?.overview?.totalTasks ?? 0,
+    totalDocuments: analytics?.overview?.totalDocuments ?? 0,
+    totalMembers: analytics?.overview?.totalUsers ?? 0,
   };
 
   const notifications = notificationsData?.data ?? [];
@@ -124,26 +104,36 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={velocityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Area type="monotone" dataKey="tasks" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTasks)" name="Created" />
-                  <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCompleted)" name="Completed" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {velocityLoading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-pulse bg-gray-100 rounded-lg w-full h-full"></div>
+                </div>
+              ) : velocityData && velocityData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={velocityData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Area type="monotone" dataKey="tasks" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTasks)" name="Created" />
+                    <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCompleted)" name="Completed" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  No velocity data available
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -158,21 +148,31 @@ export function DashboardOverview() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="h-[220px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={burndownData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="burnGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="day" hide />
-                  <YAxis hide />
-                  <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 2px 8px rgb(0 0 0 / 0.08)', fontSize: '12px' }} />
-                  <Area type="monotone" dataKey="ideal" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="4 4" fill="none" name="Ideal" />
-                  <Area type="monotone" dataKey="remaining" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#burnGrad)" name="Remaining" />
-                </AreaChart>
-              </ResponsiveContainer>
+              {burndownLoading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-pulse bg-gray-100 rounded-lg w-full h-full"></div>
+                </div>
+              ) : burndownData && burndownData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={burndownData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="burnGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="day" hide />
+                    <YAxis hide />
+                    <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 2px 8px rgb(0 0 0 / 0.08)', fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="ideal" stroke="#d1d5db" strokeWidth={1.5} strokeDasharray="4 4" fill="none" name="Ideal" />
+                    <Area type="monotone" dataKey="remaining" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#burnGrad)" name="Remaining" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  No active sprint data
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,7 +1,25 @@
 export interface WorkspaceAnalytics {
-  totalProjects: number;
-  totalTasks: number;
-  totalMembers: number;
-  tasksByStatus: Record<string, number>;
-  tasksByPriority: Record<string, number>;
+  overview: {
+    totalProjects: number;
+    activeProjects: number;
+    totalTasks: number;
+    pendingTasks: number;
+    totalDocuments: number;
+    totalForms: number;
+    totalApprovals: number;
+    totalUsers: number;
+    totalComments: number;
+  };
+}
+
+export interface VelocityDataPoint {
+  name: string;
+  tasks: number;
+  completed: number;
+}
+
+export interface BurndownDataPoint {
+  day: string;
+  ideal: number;
+  remaining: number | null;
 }

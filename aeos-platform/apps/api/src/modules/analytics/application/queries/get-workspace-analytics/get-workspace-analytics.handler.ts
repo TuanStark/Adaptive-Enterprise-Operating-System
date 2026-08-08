@@ -3,11 +3,25 @@ import { PrismaService } from '@aeos/database';
 import { Result, DomainError } from '@aeos/errors';
 import { GetWorkspaceAnalyticsQuery } from './get-workspace-analytics.query';
 
+export interface WorkspaceAnalyticsResult {
+  overview: {
+    totalProjects: number;
+    activeProjects: number;
+    totalTasks: number;
+    pendingTasks: number;
+    totalDocuments: number;
+    totalForms: number;
+    totalApprovals: number;
+    totalUsers: number;
+    totalComments: number;
+  };
+}
+
 @Injectable()
 export class GetWorkspaceAnalyticsHandler {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  async execute(query: GetWorkspaceAnalyticsQuery): Promise<Result<any, DomainError>> {
+  async execute(query: GetWorkspaceAnalyticsQuery): Promise<Result<WorkspaceAnalyticsResult, DomainError>> {
     const { workspaceId } = query;
 
     let record = await this.prisma.workspaceAnalytics.findUnique({
@@ -15,8 +29,6 @@ export class GetWorkspaceAnalyticsHandler {
     });
 
     if (!record) {
-      // If projection doesn't exist yet, return zeros.
-      // The projection handler will populate it on the next event.
       record = {
         workspaceId,
         totalProjects: 0,
