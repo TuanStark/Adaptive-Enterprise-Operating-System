@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
-import { StoragePort, UploadedFileDto } from '../../application/ports/storage.port';
-import * as streamifier from 'streamifier';
+import { StoragePort, SignatureDto } from '../../application/ports/storage.port';
 
 @Injectable()
 export class CloudinaryService implements StoragePort {
@@ -30,35 +29,30 @@ export class CloudinaryService implements StoragePort {
     return 'raw';
   }
 
-  async uploadFile(buffer: Buffer, fileName: string, mimeType: string): Promise<UploadedFileDto> {
-    return new Promise((resolve, reject) => {
-      const folder = this.getFolderType(mimeType);
-      const publicId = `aeos/${this.env}/${folder}/${Date.now()}-${fileName}`;
-      const resourceType = this.getResourceType(mimeType) === 'raw' ? 'raw' : 'auto';
-
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: resourceType,
-          public_id: publicId,
-        },
-        (error, result) => {
-          if (error) {
-            this.logger.error('Failed to upload file to Cloudinary', error);
-            return reject(error);
-          }
-          resolve({
-            storageKey: result!.public_id,
-            url: result!.secure_url,
-            provider: 'CLOUDINARY',
-          });
-        },
-      );
-      streamifier.createReadStream(buffer).pipe(uploadStream);
-    });
-  }
-
   async getFileUrl(storageKey: string, mimeType?: string): Promise<string> {
     const resourceType = this.getResourceType(mimeType);
     return cloudinary.url(storageKey, { resource_type: resourceType, secure: true });
+  }
+
+  generateSignature(folderType: string): SignatureDto {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = `aeos/${this.env}/${folderType}`;
+    const paramsToSign = {
+      timestamp,
+      folder,
+    };
+
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET || 'demo'
+    );
+
+    return {
+      timestamp,
+      signature,
+      apiKey: process.env.CLOUDINARY_API_KEY || 'demo',
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+      folder,
+    };
   }
 }

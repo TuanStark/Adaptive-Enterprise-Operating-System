@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { uploadFileAction, publishDocumentVersionAction } from "../actions/document-actions";
+import { publishDocumentVersionAction } from "../actions/document-actions";
+import { uploadFileDirectly } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -36,10 +37,7 @@ export function DocumentEditor({ documentId, initialContent }: DocumentEditorPro
     startTransition(async () => {
       try {
         const file = new File([content], `doc-${documentId}.md`, { type: "text/markdown" });
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadResult = await uploadFileAction(formData);
+        const uploadResult = await uploadFileDirectly(file, "documents");
         if (uploadResult?.id) {
           await publishDocumentVersionAction(documentId, uploadResult.id);
           setSaveStatus("saved");

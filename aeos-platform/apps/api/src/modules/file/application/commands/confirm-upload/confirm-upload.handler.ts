@@ -1,27 +1,23 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
-import { UploadFileCommand } from './upload-file.command';
+import { ConfirmUploadCommand } from './confirm-upload.command';
 import { FileRepository, FILE_REPOSITORY } from '../../../domain/repositories/file.repository';
-import { StoragePort, STORAGE_PORT } from '../../ports/storage.port';
 import { File } from '../../../domain/aggregates/file.aggregate';
 
-export class UploadFileHandler {
+export class ConfirmUploadHandler {
   constructor(
     @Inject(FILE_REPOSITORY) private readonly fileRepo: FileRepository,
-    @Inject(STORAGE_PORT) private readonly storagePort: StoragePort,
   ) {}
 
-  async execute(command: UploadFileCommand): Promise<Result<string, DomainError>> {
-    const uploadResult = await this.storagePort.uploadFile(command.buffer, command.fileName, command.mimeType);
-
+  async execute(command: ConfirmUploadCommand): Promise<Result<string, DomainError>> {
     const fileOrError = File.create(
       command.tenantId,
-      uploadResult.provider,
-      uploadResult.storageKey,
+      command.provider,
+      command.storageKey,
       command.fileName,
       command.mimeType,
       command.size,
-      command.uploadedBy,
+      command.userId,
     );
 
     if (fileOrError.isFail) return Result.fail(fileOrError.error as DomainError);

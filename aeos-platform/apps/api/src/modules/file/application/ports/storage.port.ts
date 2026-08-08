@@ -6,7 +6,15 @@ export interface UploadedFileDto {
   provider: string;
 }
 
+export interface SignatureDto {
+  timestamp: number;
+  signature: string;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+}
+
 export interface StoragePort {
-  uploadFile(buffer: Buffer, fileName: string, mimeType: string): Promise<UploadedFileDto>;
   getFileUrl(storageKey: string, mimeType?: string): Promise<string>;
+  generateSignature(folderType: string): SignatureDto;
 }
