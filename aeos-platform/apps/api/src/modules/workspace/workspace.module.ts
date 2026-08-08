@@ -13,6 +13,7 @@ import { GetUserWorkspacesHandler } from './application/queries/get-user-workspa
 import { GetWorkspaceMembersHandler } from './application/queries/get-workspace-members/get-workspace-members.handler';
 import { GetWorkspaceInternalHandler } from './application/queries/get-workspace-internal/get-workspace-internal.handler';
 import { InviteMemberHandler } from './application/commands/invite-member/invite-member.handler';
+import { AcceptWorkspaceInviteHandler } from './application/commands/accept-workspace-invite/accept-workspace-invite.handler';
 import { WorkspaceController } from './presentation/controllers/workspace.controller';
 
 @Module({
@@ -29,6 +30,7 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
     GetWorkspaceMembersHandler,
     GetWorkspaceInternalHandler,
     InviteMemberHandler,
+    AcceptWorkspaceInviteHandler,
   ],
   exports: [WORKSPACE_REPOSITORY],
 })

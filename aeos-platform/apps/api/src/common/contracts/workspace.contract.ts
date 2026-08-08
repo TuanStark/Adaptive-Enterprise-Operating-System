@@ -30,3 +30,15 @@ export class WorkspaceMemberRemovedIntegrationEvent implements IIntegrationEvent
   }
   eventId: string; occurredOn: Date; memberId: string; workspaceId: string;
 }
+
+export class WorkspaceMemberInvitedIntegrationEvent implements IIntegrationEvent {
+  public static readonly EVENT_TYPE = 'WorkspaceMemberInvitedEvent';
+  constructor(payload: any) {
+    this.eventId = payload.eventId || '';
+    this.occurredOn = payload.occurredOn || new Date();
+    this.email = payload.email;
+    this.workspaceId = payload.workspaceId;
+    this.inviterId = payload.inviterId;
+  }
+  eventId: string; occurredOn: Date; email: string; workspaceId: string; inviterId: string;
+}

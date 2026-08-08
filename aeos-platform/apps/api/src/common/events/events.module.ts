@@ -12,7 +12,7 @@ import { DocumentCreatedIntegrationEvent, DocumentDeletedIntegrationEvent } from
 import { FormCreatedIntegrationEvent, FormDeletedIntegrationEvent } from '../contracts/form.contract';
 import { ApprovalCreatedIntegrationEvent, ApprovalDeletedIntegrationEvent } from '../contracts/approval.contract';
 import { CommentCreatedIntegrationEvent, CommentDeletedIntegrationEvent } from '../contracts/comment.contract';
-import { WorkspaceMemberAddedIntegrationEvent, WorkspaceMemberRemovedIntegrationEvent } from '../contracts/workspace.contract';
+import { WorkspaceMemberAddedIntegrationEvent, WorkspaceMemberRemovedIntegrationEvent, WorkspaceMemberInvitedIntegrationEvent } from '../contracts/workspace.contract';
 
 @Module({
   imports: [
@@ -46,5 +46,6 @@ export class EventsModule {
     EventRegistry.register(CommentDeletedIntegrationEvent.EVENT_TYPE, CommentDeletedIntegrationEvent);
     EventRegistry.register(WorkspaceMemberAddedIntegrationEvent.EVENT_TYPE, WorkspaceMemberAddedIntegrationEvent);
     EventRegistry.register(WorkspaceMemberRemovedIntegrationEvent.EVENT_TYPE, WorkspaceMemberRemovedIntegrationEvent);
+    EventRegistry.register(WorkspaceMemberInvitedIntegrationEvent.EVENT_TYPE, WorkspaceMemberInvitedIntegrationEvent);
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,17 +19,25 @@ import { clientApi } from "@/lib/api-client";
 export function InviteMemberButton() {
   const [open, setOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const workspaceId = useAppStore((s) => s.activeWorkspaceId);
+  const workspaceId = useAuthStore((s) => s.user?.workspaceId);
 
-  async function onSubmit(formData: FormData) {
-    if (!workspaceId) return;
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!workspaceId) {
+      alert("No active workspace selected");
+      return;
+    }
     setIsPending(true);
     try {
+      const formData = new FormData(e.currentTarget);
       const email = formData.get("email") as string;
       await clientApi.post(`/workspaces/${workspaceId}/invites`, { email });
       setOpen(false);
+      // Optional: add toast notification here
+      alert("Invitation sent successfully!");
     } catch (error) {
       console.error(error);
+      alert("Failed to send invitation. Check console for details.");
     } finally {
       setIsPending(false);
     }
@@ -47,7 +55,7 @@ export function InviteMemberButton() {
           <DialogTitle>Invite Team Member</DialogTitle>
           <DialogDescription>Send an invitation to join this workspace.</DialogDescription>
         </DialogHeader>
-        <form action={onSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-gray-700">Email Address</label>
             <Input id="email" name="email" type="email" placeholder="colleague@company.com" required autoFocus />
