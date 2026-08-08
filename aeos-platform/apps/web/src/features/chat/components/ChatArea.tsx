@@ -8,13 +8,14 @@ import { Message, User } from "../types";
 import { useChatSocket } from "../hooks/useChatSocket";
 
 interface ChatAreaProps {
+  channelId: string;
   channelName: string;
   messages: Message[];
   users: Record<string, User>;
-  currentUserId?: string;
+  currentUserId: string;
 }
 
-export function ChatArea({ channelName, messages: initialMessages, users, currentUserId = "u1" }: ChatAreaProps) {
+export function ChatArea({ channelId, channelName, messages: initialMessages, users, currentUserId }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
@@ -32,7 +33,7 @@ export function ChatArea({ channelName, messages: initialMessages, users, curren
   }, []);
 
   const { sendMessage, startTyping, stopTyping, isConnected } = useChatSocket({
-    channelId: channelName,
+    channelId,
     userId: currentUserId,
     onMessageReceived: handleMessageReceived,
     onTypingUpdate: handleTypingUpdate,

@@ -1,6 +1,7 @@
 import { ChatArea } from "@/features/chat/components/ChatArea";
 import { getChannels, getMessages } from "@/features/chat/api/queries";
 import { getTeamMembers } from "@/features/team/api/queries";
+import { getSessionContext } from "@/lib/api-server";
 import type { User } from "@/features/chat/types";
 
 export default async function ChatPage() {
@@ -8,6 +9,9 @@ export default async function ChatPage() {
     getChannels(),
     getTeamMembers(),
   ]);
+
+  const session = await getSessionContext();
+  const currentUserId = session.userId;
 
   const users: Record<string, User> = {};
   for (const m of members) {
@@ -21,11 +25,13 @@ export default async function ChatPage() {
 
   const activeChannel = channels[0] ?? null;
   const messages = activeChannel ? await getMessages(activeChannel.id) : [];
+  const channelId = activeChannel?.id ?? "";
   const channelName = activeChannel?.name ?? "general";
 
   return (
     <div className="h-full w-full">
-      <ChatArea channelName={channelName} messages={messages} users={users} />
+      <ChatArea channelId={channelId} channelName={channelName} messages={messages} users={users} currentUserId={currentUserId} />
+
     </div>
   );
 }

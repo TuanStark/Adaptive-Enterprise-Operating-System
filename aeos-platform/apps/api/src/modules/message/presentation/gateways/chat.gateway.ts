@@ -72,6 +72,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = this.connectedUsers.get(client.id);
     if (!user) return { event: 'error', data: { message: 'Not authenticated' } };
 
+    // Simple UUID regex check to prevent DB cast errors
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(data.channelId)) {
+      console.warn(`[ChatGateway] Invalid channelId format: ${data.channelId}`);
+      return { event: 'error', data: { message: 'Invalid channel ID format' } };
+    }
+
     const command = new SendMessageCommand(
       data.channelId,
       user.userId,
@@ -81,6 +88,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const result = await this.sendMessageHandler.execute(command);
     if (result.isFail) {
+      console.error(`[ChatGateway] Failed to send message: ${result.error}`);
       return { event: 'error', data: { message: String(result.error) } };
     }
 
