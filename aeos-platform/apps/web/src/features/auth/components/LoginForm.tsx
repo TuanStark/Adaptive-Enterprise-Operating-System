@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,8 @@ import { useLoginForm } from "../hooks/useLoginForm";
 
 export function LoginForm() {
   const { isPending, error, handleSubmit } = useLoginForm();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
 
   return (
     <Card className="w-full max-w-md mx-auto border-0 shadow-lg mt-20">
@@ -58,7 +61,7 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="justify-center border-t border-gray-100 pt-6">
         <p className="text-sm text-gray-500">
-          Don't have an account? <Link href="/register" className="text-primary font-medium hover:underline">Request access</Link>
+          Don't have an account? <Link href={callbackUrl ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"} className="text-primary font-medium hover:underline">Request access</Link>
         </p>
       </CardFooter>
     </Card>

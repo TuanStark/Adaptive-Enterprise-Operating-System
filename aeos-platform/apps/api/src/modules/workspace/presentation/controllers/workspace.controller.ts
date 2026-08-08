@@ -16,6 +16,9 @@ import { GetUserWorkspacesQuery } from '../../application/queries/get-user-works
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 import { GetWorkspaceMembersQuery } from '../../application/queries/get-workspace-members/get-workspace-members.query';
 import { GetWorkspaceMembersHandler } from '../../application/queries/get-workspace-members/get-workspace-members.handler';
+import { ValidateWorkspaceInviteQuery } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.query';
+import { ValidateWorkspaceInviteHandler } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.handler';
+import { Public } from '../../../identity/presentation/guards/public.decorator';
 import { IsString, IsEmail, MinLength, MaxLength, IsOptional } from 'class-validator';
 
 class InviteMemberRequestDto {
@@ -36,6 +39,7 @@ export class WorkspaceController {
     private readonly getWorkspaceMembersHandler: GetWorkspaceMembersHandler,
     private readonly inviteMemberHandler: InviteMemberHandler,
     private readonly acceptWorkspaceInviteHandler: AcceptWorkspaceInviteHandler,
+    private readonly validateWorkspaceInviteHandler: ValidateWorkspaceInviteHandler,
   ) {}
 
   @Get('me')
@@ -113,6 +117,20 @@ export class WorkspaceController {
     const result = await this.inviteMemberHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
     return { message: 'Invitation sent' };
+  }
+
+  @Public()
+  @Get('invites/validate')
+  async validateInvite(@Query('token') token: string) {
+    if (!token) {
+      throw new DomainError('Missing token', 'INVALID_INVITE', 400);
+    }
+    const query = new ValidateWorkspaceInviteQuery(token);
+    const result = await this.validateWorkspaceInviteHandler.execute(query);
+    if (result.isFail) {
+      throw new DomainError(result.error.message, 'INVALID_INVITE', 400);
+    }
+    return result.value;
   }
 
   @Post('invites/accept')

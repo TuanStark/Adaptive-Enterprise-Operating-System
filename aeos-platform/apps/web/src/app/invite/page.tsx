@@ -16,6 +16,27 @@ export default function InvitePage() {
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [inviteInfo, setInviteInfo] = useState<{ email: string; workspaceId: string } | null>(null);
+  const [isValidating, setIsValidating] = useState(true);
+
+  useEffect(() => {
+    if (!token) {
+      setIsValidating(false);
+      return;
+    }
+    const validateToken = async () => {
+      try {
+        const res = await clientApi.get(`/workspaces/invites/validate?token=${token}`);
+        setInviteInfo(res.data);
+      } catch (err: any) {
+        setErrorMessage(err.message || "The invitation link is invalid or has expired.");
+        setStatus("error");
+      } finally {
+        setIsValidating(false);
+      }
+    };
+    validateToken();
+  }, [token]);
 
   const handleAccept = async () => {
     if (!token) return;
@@ -65,6 +86,23 @@ export default function InvitePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isValidating ? (
+            <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+              <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+              <p>Validating invitation...</p>
+            </div>
+          ) : status === "error" && !inviteInfo ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-100 flex flex-col items-center text-center">
+              <XCircle className="w-8 h-8 mb-2" />
+              <p className="font-medium">{errorMessage}</p>
+            </div>
+          ) : (
+            <>
+              {inviteInfo && (
+                <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm border border-blue-100 text-center mb-4">
+                  <p>You have been invited as <strong>{inviteInfo.email}</strong></p>
+                </div>
+              )}
           {user ? (
             <div className="bg-gray-50 p-4 rounded-lg text-sm border border-gray-100">
               <p className="text-gray-500 mb-1">You will join this workspace as:</p>
@@ -76,49 +114,57 @@ export default function InvitePage() {
               <p>You must be logged in to accept this invitation.</p>
             </div>
           )}
-          
-          {status === "error" && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm flex items-start gap-2 border border-red-100">
-              <XCircle className="w-5 h-5 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
 
-          {status === "success" && (
-            <div className="bg-emerald-50 text-emerald-700 p-3 rounded-md text-sm flex items-start gap-2 border border-emerald-100">
-              <CheckCircle2 className="w-5 h-5 shrink-0" />
-              <span>Invitation accepted successfully! Redirecting...</span>
-            </div>
+              {status === "error" && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm flex items-start gap-2 border border-red-100">
+                  <XCircle className="w-5 h-5 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              {status === "success" && (
+                <div className="bg-emerald-50 text-emerald-700 p-3 rounded-md text-sm flex items-start gap-2 border border-emerald-100">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>Invitation accepted successfully! Redirecting...</span>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
         <CardFooter className="flex gap-3">
-          {!user ? (
-            <Button 
-              className="w-full bg-primary hover:bg-primary/90" 
+          {isValidating || (!inviteInfo && status === "error") ? (
+            <Button className="w-full" onClick={() => router.push("/")}>
+              Return to Home
+            </Button>
+          ) : !user ? (
+            <Button
+              className="w-full bg-primary hover:bg-primary/90"
               onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(`/invite?token=${token}`)}`)}
             >
-              Log In to Accept
+              Log In / Sign Up to Accept
             </Button>
           ) : (
             <>
-              <Button 
-                variant="outline" 
-                className="w-full" 
+              <Button
+                variant="outline"
+                className="w-full"
                 onClick={() => router.push("/")}
                 disabled={status === "loading" || status === "success"}
               >
                 Decline
               </Button>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90" 
+              <Button
+                className="w-full bg-primary hover:bg-primary/90"
                 onClick={handleAccept}
-                disabled={status === "loading" || status === "success"}
+                disabled={status === "loading" || status === "success" || user.email !== inviteInfo?.email}
               >
                 {status === "loading" ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Accepting...
                   </>
+                ) : user.email !== inviteInfo?.email ? (
+                  "Email Mismatch"
                 ) : (
                   "Accept Invitation"
                 )}
