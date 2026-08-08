@@ -76,6 +76,10 @@ export class UpdateTaskHandler {
       }
     }
 
+    if (command.remainingEstimate !== undefined) {
+      task.setRemainingEstimate(command.remainingEstimate);
+    }
+
     await this.taskRepository.save(task);
     return Result.ok(undefined);
   }

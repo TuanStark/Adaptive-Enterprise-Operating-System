@@ -22,6 +22,7 @@ export class GetUsersInternalHandler implements IQueryHandler<GetUsersInternalQu
         id: true,
         firstName: true,
         lastName: true,
+        email: true,
         avatarUrl: true,
       },
     });
@@ -30,6 +31,7 @@ export class GetUsersInternalHandler implements IQueryHandler<GetUsersInternalQu
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
+      email: user.email,
       avatarUrl: user.avatarUrl,
     }));
   }

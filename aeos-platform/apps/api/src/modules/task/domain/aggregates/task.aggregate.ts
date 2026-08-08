@@ -329,6 +329,11 @@ export class Task extends AggregateRoot<string> {
     this.touch();
   }
 
+  setRemainingEstimate(minutes: number | null): void {
+    this._remainingEstimate = minutes;
+    this.touch();
+  }
+
   logWork(minutes: number): void {
     this._timeSpent += minutes;
     this._remainingEstimate = Math.max(0, (this._remainingEstimate ?? 0) - minutes);

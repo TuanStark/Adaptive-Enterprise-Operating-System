@@ -261,6 +261,7 @@ export function SummaryView({ initialTasks, projectId }: SummaryViewProps) {
       <TaskDetailPanel
         taskId={selectedTaskId}
         onClose={() => setSelectedTaskId(null)}
+        onNavigateToTask={(id) => setSelectedTaskId(id)}
       />
     </div>
   );

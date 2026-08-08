@@ -258,6 +258,7 @@ export function BacklogView({ initialTasks, projectId, tenantId, workspaceId }: 
       <TaskDetailPanel
         taskId={selectedTaskId}
         onClose={() => setSelectedTaskId(null)}
+        onNavigateToTask={(id) => setSelectedTaskId(id)}
       />
     </div>
   );

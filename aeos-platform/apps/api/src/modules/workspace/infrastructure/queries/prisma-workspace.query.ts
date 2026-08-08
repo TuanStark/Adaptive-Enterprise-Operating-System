@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { WorkspaceQuery } from '../../application/queries/workspace-query.interface';
+import { WorkspaceQuery, PaginatedRawMembersResult } from '../../application/queries/workspace-query.interface';
 import { UserWorkspaceDto } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
-import { PaginatedMembersResult } from '../../application/queries/get-workspace-members/get-workspace-members.handler';
 
 @Injectable()
 export class PrismaWorkspaceQuery implements WorkspaceQuery {
@@ -33,35 +32,34 @@ export class PrismaWorkspaceQuery implements WorkspaceQuery {
       }));
   }
 
-  async getWorkspaceMembers(workspaceId: string, page: number, limit: number): Promise<PaginatedMembersResult> {
+  async getWorkspaceMembers(workspaceId: string, page: number, limit: number, filterUserIds?: string[]): Promise<PaginatedRawMembersResult> {
     const skip = (page - 1) * limit;
+
+    const where: any = { workspaceId };
+
+    if (filterUserIds && filterUserIds.length > 0) {
+      where.userId = { in: filterUserIds };
+    }
 
     const [members, total] = await Promise.all([
       this.prisma.workspaceMember.findMany({
-        where: { workspaceId },
+        where,
         include: {
-          user: { select: { id: true, email: true, firstName: true, lastName: true, avatarUrl: true } },
           role: { select: { name: true } },
         },
         skip,
         take: limit,
         orderBy: { joinedAt: 'asc' },
       }),
-      this.prisma.workspaceMember.count({ where: { workspaceId } }),
+      this.prisma.workspaceMember.count({ where }),
     ]);
 
     return {
       data: members.map((m) => {
-        const firstName = m.user?.firstName ?? '';
-        const lastName = m.user?.lastName ?? '';
-        const displayName = [firstName, lastName].filter(Boolean).join(' ') || m.user?.email || 'Unknown';
         return {
           id: m.id,
-          userId: m.userId,
-          name: displayName,
-          email: m.user?.email ?? '',
+          userId: m.userId!, // We assume userId is not null for members here
           role: m.role?.name ?? 'MEMBER',
-          avatarUrl: m.user?.avatarUrl ?? null,
           joinedAt: m.joinedAt?.toISOString() ?? null,
         };
       }),

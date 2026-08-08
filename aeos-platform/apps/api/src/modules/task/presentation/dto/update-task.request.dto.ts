@@ -14,4 +14,5 @@ export class UpdateTaskRequestDto {
   @IsOptional() @IsString() fixVersionId?: string | null;
   @IsOptional() @IsString() reporterId?: string | null;
   @IsOptional() @IsNumber() originalEstimate?: number | null;
+  @IsOptional() @IsNumber() remainingEstimate?: number | null;
 }

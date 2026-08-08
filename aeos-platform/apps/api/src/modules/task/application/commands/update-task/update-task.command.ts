@@ -14,5 +14,6 @@ export class UpdateTaskCommand {
     public readonly fixVersionId?: string | null,
     public readonly reporterId?: string | null,
     public readonly originalEstimate?: number | null,
+    public readonly remainingEstimate?: number | null,
   ) {}
 }

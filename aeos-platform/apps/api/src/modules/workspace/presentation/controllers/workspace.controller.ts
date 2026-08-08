@@ -83,11 +83,13 @@ export class WorkspaceController {
     @Param('id') workspaceId: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
     const query = new GetWorkspaceMembersQuery(
       workspaceId,
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '50', 10),
+      search,
     );
     return this.getWorkspaceMembersHandler.execute(query);
   }

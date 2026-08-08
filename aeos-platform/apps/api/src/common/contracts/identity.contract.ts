@@ -2,10 +2,15 @@ export class GetUsersInternalQuery {
   constructor(public readonly userIds: string[]) {}
 }
 
+export class SearchUsersInternalQuery {
+  constructor(public readonly search: string) {}
+}
+
 export interface UserInternalDto {
   id: string;
   firstName: string | null;
   lastName: string | null;
+  email: string;
   avatarUrl: string | null;
 }
 

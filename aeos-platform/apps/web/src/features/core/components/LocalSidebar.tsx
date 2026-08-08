@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash, Check } from "lucide-react";
+import { ChevronRight, Search, Plus, ListTodo, Columns, Calendar, FileText, Folder, Hash, Check, Timeline } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -40,20 +39,19 @@ function TasksSidebar() {
         <Button variant="ghost" size="icon" className="h-6 w-6"><Plus className="w-4 h-4" /></Button>
       </div>
       <div className="p-3">
-        <div className="relative mb-4">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <Input placeholder="Search tasks..." className="h-8 pl-8 text-sm bg-gray-50 border-transparent focus:bg-white" />
-        </div>
         <div className="space-y-1">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Views</p>
           <Link href="/tasks" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isActiveSprint ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
-            <Columns className={`w-4 h-4 ${isActiveSprint ? 'text-primary' : ''}`} /> Active Sprint
+            <Columns className={`w-4 h-4 ${isActiveSprint ? 'text-primary' : ''}`} /> Board
           </Link>
           <Link href="/tasks?view=backlog" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isBacklog ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
             <ListTodo className={`w-4 h-4 ${isBacklog ? 'text-primary' : ''}`} /> Backlog
           </Link>
-          <Link href="/tasks?view=roadmap" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isRoadmap ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
-            <Calendar className={`w-4 h-4 ${isRoadmap ? 'text-primary' : ''}`} /> Roadmap
+          <Link href="/tasks?view=calendar" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isRoadmap ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Calendar className={`w-4 h-4 ${isRoadmap ? 'text-primary' : ''}`} /> Calendar
+          </Link>
+          <Link href="/tasks?view=timeline" className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded-md cursor-pointer ${isRoadmap ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Timeline className={`w-4 h-4 ${isRoadmap ? 'text-primary' : ''}`} /> Timeline
           </Link>
         </div>
         <div className="mt-6 space-y-1">
@@ -129,13 +127,13 @@ function ChatSidebar() {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Direct Messages</p>
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-               <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Tony Stark
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Tony Stark
             </div>
             <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-               <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Peter Parker
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Peter Parker
             </div>
             <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer">
-               <div className="w-2 h-2 rounded-full bg-gray-300"></div> Bruce Banner
+              <div className="w-2 h-2 rounded-full bg-gray-300"></div> Bruce Banner
             </div>
           </div>
         </div>

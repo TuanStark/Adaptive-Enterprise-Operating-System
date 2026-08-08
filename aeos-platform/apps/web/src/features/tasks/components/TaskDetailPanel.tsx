@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown, X, Plus, Clock, Calendar, Tag, Pencil } from "lucide-react";
+import { MessageSquare, Paperclip, CheckSquare, Loader2, ChevronDown, X, Plus, Clock, Calendar, Tag, Pencil, Search, UserCircle2 } from "lucide-react";
 import { CommentSection } from "./CommentSection";
 import { useSession } from "next-auth/react";
 import {
@@ -22,6 +22,9 @@ import {
   getLabelColor,
   formatMinutes,
 } from "../hooks/useTaskDetailPanel";
+import { useTasks } from "../hooks/useTasks";
+import { useWorkspaceMembers } from "../../workspaces/hooks/useWorkspaceMembers";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useState } from "react";
 
 function EditableField({
@@ -85,9 +88,10 @@ function EditableField({
 interface TaskDetailPanelProps {
   taskId: string | null;
   onClose: () => void;
+  onNavigateToTask?: (taskId: string) => void;
 }
 
-export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
+export function TaskDetailPanel({ taskId, onClose, onNavigateToTask }: TaskDetailPanelProps) {
   const { data: session } = useSession();
   const tenantId = session?.user?.tenantId ?? "";
 
@@ -121,6 +125,32 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
     setIsEditingDescription,
   } = useTaskDetailPanel(taskId);
 
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
+  const { data: searchResults } = useTasks({ search: taskSearchQuery, limit: 5 });
+
+  const [assigneeSearch, setAssigneeSearch] = useState("");
+  const [reporterSearch, setReporterSearch] = useState("");
+  const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
+  const [isReporterDropdownOpen, setIsReporterDropdownOpen] = useState(false);
+
+  const debouncedAssigneeSearch = useDebounce(assigneeSearch, 300);
+  const debouncedReporterSearch = useDebounce(reporterSearch, 300);
+
+  const { data: assigneesResult } = useWorkspaceMembers({
+    workspaceId: task?.workspaceId ?? undefined,
+    search: debouncedAssigneeSearch,
+    limit: 10,
+  });
+
+  const { data: reportersResult } = useWorkspaceMembers({
+    workspaceId: task?.workspaceId ?? undefined,
+    search: debouncedReporterSearch,
+    limit: 10,
+  });
+
+  const assigneesList = assigneesResult?.data ?? [];
+  const reportersList = reportersResult?.data ?? [];
+
   if (!taskId) return null;
 
   const tabs = [
@@ -133,14 +163,41 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
     <Sheet open={!!taskId} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="sm:max-w-xl w-full p-0 overflow-y-auto">
         <div className="flex flex-col h-full bg-white">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
-              <CheckSquare className="w-4 h-4 text-primary" />
-              <span>{task?.key ?? taskId}</span>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 h-14">
+            <div className="flex items-center gap-3 w-2/3 relative">
+              <div className="flex items-center gap-2 text-sm text-gray-500 font-medium whitespace-nowrap bg-gray-50 px-2 py-1 rounded">
+                <CheckSquare className="w-4 h-4 text-primary" />
+                <span>{task?.key ?? taskId}</span>
+              </div>
+
+              <DropdownMenu open={taskSearchQuery.length > 0} onOpenChange={(open) => !open && setTaskSearchQuery("")}>
+                <DropdownMenuContent align="start" className="w-[350px] max-h-[300px] overflow-y-auto p-1" sideOffset={5}>
+                  {searchResults?.data && searchResults.data.length > 0 ? (
+                    searchResults.data.map(t => (
+                      <DropdownMenuItem
+                        key={t.id}
+                        className="flex flex-col items-start py-2 cursor-pointer"
+                        onClick={() => {
+                          setTaskSearchQuery("");
+                          onNavigateToTask?.(t.id);
+                        }}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <CheckSquare className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span className="text-xs font-semibold text-gray-500 shrink-0">{t.key}</span>
+                          <span className="text-sm text-gray-900 truncate font-medium">{t.title}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-sm text-gray-500">No issues found.</div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8"><Paperclip className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8"><MessageSquare className="w-4 h-4" /></Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500"><Paperclip className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 mr-4"><MessageSquare className="w-4 h-4" /></Button>
             </div>
           </div>
 
@@ -295,29 +352,125 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                 <div className="grid grid-cols-2 gap-4 border-y border-gray-100 py-4">
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Assignee</p>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-xs">
-                          {task.assignee?.displayName ? task.assignee.displayName.substring(0, 2).toUpperCase() : (task.assigneeId ? task.assigneeId.substring(0, 2).toUpperCase() : "??")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium text-gray-900">
-                        {task.assignee?.displayName ?? (task.assigneeId ? `User ${task.assigneeId.substring(0, 8)}` : "Unassigned")}
-                      </span>
-                    </div>
+                    <DropdownMenu open={isAssigneeDropdownOpen} onOpenChange={setIsAssigneeDropdownOpen}>
+                      <DropdownMenuTrigger>
+                        <div className="flex items-center gap-2 group cursor-pointer hover:bg-gray-50 p-1 -ml-1 rounded transition-colors w-fit">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs bg-gray-100 text-gray-600">
+                              {task.assignee?.displayName
+                                ? task.assignee.displayName.substring(0, 2).toUpperCase()
+                                : <UserCircle2 className="w-4 h-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {task.assignee?.displayName ? task.assignee.displayName : "Unassigned"}
+                          </span>
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[200px] p-0" align="start">
+                        <div className="p-2 border-b border-gray-100">
+                          <Input
+                            placeholder="Search user..."
+                            value={assigneeSearch}
+                            onChange={(e) => setAssigneeSearch(e.target.value)}
+                            className="h-8 text-sm focus-visible:ring-1"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-[200px] overflow-y-auto p-1">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleUpdateField({ assigneeId: null });
+                              setIsAssigneeDropdownOpen(false);
+                            }}
+                            className="flex items-center gap-2 text-gray-500 cursor-pointer"
+                          >
+                            <Avatar className="h-5 w-5"><AvatarFallback className="bg-gray-100"><UserCircle2 className="w-3 h-3" /></AvatarFallback></Avatar>
+                            Unassigned
+                          </DropdownMenuItem>
+                          {assigneesList.length > 0 ? assigneesList.map(u => (
+                            <DropdownMenuItem
+                              key={u.id}
+                              onClick={() => {
+                                handleUpdateField({ assigneeId: u.userId });
+                                setIsAssigneeDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback className="text-[10px]">
+                                  {u.name ? u.name.substring(0, 2).toUpperCase() : "??"}
+                                </AvatarFallback>
+                              </Avatar>
+                              {u.name}
+                            </DropdownMenuItem>
+                          )) : (
+                            <div className="p-2 text-center text-xs text-gray-400">No user found</div>
+                          )}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Reporter</p>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-xs">
-                          {task.reporter?.displayName ? task.reporter.displayName.substring(0, 2).toUpperCase() : (task.reporterId ? task.reporterId.substring(0, 2).toUpperCase() : (task.creator?.displayName ? task.creator.displayName.substring(0, 2).toUpperCase() : task.creatorId.substring(0, 2).toUpperCase()))}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium text-gray-900">
-                        {task.reporter?.displayName ?? (task.reporterId ? `User ${task.reporterId.substring(0, 8)}` : (task.creator?.displayName ?? `User ${task.creatorId.substring(0, 8)}`))}
-                      </span>
-                    </div>
+                    <DropdownMenu open={isReporterDropdownOpen} onOpenChange={setIsReporterDropdownOpen}>
+                      <DropdownMenuTrigger>
+                        <div className="flex items-center gap-2 group cursor-pointer hover:bg-gray-50 p-1 -ml-1 rounded transition-colors w-fit">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs bg-gray-100 text-gray-600">
+                              {task.reporter?.displayName
+                                ? task.reporter.displayName.substring(0, 2).toUpperCase()
+                                : <UserCircle2 className="w-4 h-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {task.reporter?.displayName ? task.reporter.displayName : "Unassigned"}
+                          </span>
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[200px] p-0" align="start">
+                        <div className="p-2 border-b border-gray-100">
+                          <Input
+                            placeholder="Search user..."
+                            value={reporterSearch}
+                            onChange={(e) => setReporterSearch(e.target.value)}
+                            className="h-8 text-sm focus-visible:ring-1"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-[200px] overflow-y-auto p-1">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleUpdateField({ reporterId: null });
+                              setIsReporterDropdownOpen(false);
+                            }}
+                            className="flex items-center gap-2 text-gray-500 cursor-pointer"
+                          >
+                            <Avatar className="h-5 w-5"><AvatarFallback className="bg-gray-100"><UserCircle2 className="w-3 h-3" /></AvatarFallback></Avatar>
+                            Unassigned
+                          </DropdownMenuItem>
+                          {reportersList.length > 0 ? reportersList.map(u => (
+                            <DropdownMenuItem
+                              key={u.id}
+                              onClick={() => {
+                                handleUpdateField({ reporterId: u.userId });
+                                setIsReporterDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback className="text-[10px]">
+                                  {u.name ? u.name.substring(0, 2).toUpperCase() : "??"}
+                                </AvatarFallback>
+                              </Avatar>
+                              {u.name}
+                            </DropdownMenuItem>
+                          )) : (
+                            <div className="p-2 text-center text-xs text-gray-400">No user found</div>
+                          )}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-2">Story Points</p>
@@ -495,8 +648,8 @@ export function TaskDetailPanel({ taskId, onClose }: TaskDetailPanelProps) {
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer border-none ${activeTab === tab.key
-                            ? "bg-gray-900 text-white"
-                            : "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                          ? "bg-gray-900 text-white"
+                          : "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                           }`}
                       >
                         {tab.label}
