@@ -13,6 +13,7 @@ import { SendMessageCommand } from '../../application/commands/send-message/send
 import { SendMessageHandler } from '../../application/commands/send-message/send-message.handler';
 import { ReactToMessageCommand, ReactToMessageHandler } from '../../application/commands/react-to-message/react-to-message.handler';
 import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
+import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
 import { JWT_TOKEN_SERVICE, JwtTokenService } from '../../../identity/infrastructure/auth/jwt-token.service';
 
 interface TypingPayload {
@@ -39,6 +40,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly reactHandler: ReactToMessageHandler,
     @Inject(MESSAGE_REPOSITORY)
     private readonly messageRepository: MessageRepository,
+    @Inject(CHANNEL_REPOSITORY)
+    private readonly channelRepository: ChannelRepository,
     @Inject(JWT_TOKEN_SERVICE)
     private readonly jwtTokenService: JwtTokenService,
   ) {}
@@ -80,11 +83,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('channel:join')
-  handleJoinChannel(
+  async handleJoinChannel(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { channelId: string },
   ) {
     if (data?.channelId) {
+      const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+      const channel = await this.channelRepository.findById(data.channelId);
+      
+      if (!channel) {
+        return { event: 'channel:join_failed', data: { channelId: data.channelId, reason: 'Channel not found' } };
+      }
+
+      if (channel.type !== 'PUBLIC' && !channel.isMember(userId)) {
+        console.warn(`[ChatGateway] Socket ${client.id} unauthorized join attempt to channel:${data.channelId}`);
+        return { event: 'channel:join_failed', data: { channelId: data.channelId, reason: 'Unauthorized' } };
+      }
+
       client.join(`channel:${data.channelId}`);
       console.log(`[ChatGateway] Socket ${client.id} joined channel:${data.channelId}`);
     }

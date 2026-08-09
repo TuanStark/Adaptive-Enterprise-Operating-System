@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, Inject } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, Inject, ForbiddenException } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { IsString, IsOptional, MaxLength, MinLength, IsEnum } from 'class-validator';
@@ -91,11 +91,13 @@ export class ChannelController {
   ) {
     const p = parseInt(page ?? '1', 10);
     const l = parseInt(limit ?? '50', 10);
-    let { data, total } = await this.channelRepository.findByWorkspaceId(workspaceId, p, l);
+    const user = (req as any)?.user;
+    const userId = user?.userId;
+
+    let { data, total } = await this.channelRepository.findByWorkspaceId(workspaceId, p, l, userId);
 
     if (total === 0 && workspaceId) {
-      const user = (req as any)?.user;
-      let creatorId = user?.userId;
+      let creatorId = userId;
       if (!creatorId) {
         const firstUser = await this.prisma.user.findFirst({ select: { id: true } });
         creatorId = firstUser?.id;
@@ -113,7 +115,7 @@ export class ChannelController {
         );
         const createResult = await this.createChannelHandler.execute(createCommand);
         if (createResult.isOk) {
-          const refreshed = await this.channelRepository.findByWorkspaceId(workspaceId, p, l);
+          const refreshed = await this.channelRepository.findByWorkspaceId(workspaceId, p, l, userId);
           data = refreshed.data;
           total = refreshed.total;
         }
@@ -132,9 +134,15 @@ export class ChannelController {
   }
 
   @Get(':id')
-  async getChannel(@Param('id') id: string) {
+  async getChannel(@Param('id') id: string, @Req() req: Request) {
+    const user = (req as any).user;
     const channel = await this.channelRepository.findById(id);
     if (!channel) throw new Error('Channel not found');
+
+    if (channel.type !== 'PUBLIC' && !channel.isMember(user.userId)) {
+      throw new ForbiddenException('You do not have access to this channel.');
+    }
+
     return {
       id: channel.id, name: channel.name, type: channel.type,
       description: channel.description, topic: channel.topic,
@@ -181,8 +189,13 @@ export class ChannelController {
 
   @Post(':id/members')
   @HttpCode(HttpStatus.CREATED)
-  async addMember(@Param('id') id: string, @Body() dto: AddMemberRequestDto) {
-    const result = await this.joinChannelHandler.execute(new JoinChannelCommand(id, dto.userId));
+  async addMember(
+    @Param('id') id: string,
+    @Body() dto: AddMemberRequestDto,
+    @Req() req: Request
+  ) {
+    const user = (req as any).user;
+    const result = await this.joinChannelHandler.execute(new JoinChannelCommand(id, dto.userId, user.userId));
     if (result.isFail) throw result.error as DomainError;
     return { message: 'Member added.' };
   }
@@ -208,6 +221,15 @@ export class ChannelController {
   ) {
     const l = parseInt(limit ?? '50', 10);
     const user = (req as any)?.user;
+    
+    if (user?.userId) {
+      const channel = await this.channelRepository.findById(channelId);
+      if (!channel) throw new Error('Channel not found');
+      if (channel.type !== 'PUBLIC' && !channel.isMember(user.userId)) {
+        throw new ForbiddenException('You do not have access to this channel.');
+      }
+    }
+
     const { data, nextCursor } = await this.messageRepository.findByChannelId(channelId, cursor ?? null, l);
     
     // Fetch read states for these messages
@@ -241,11 +263,23 @@ export class ChannelController {
 
   @Get(':channelId/messages/:msgId/thread')
   async getThread(
+    @Param('channelId') channelId: string,
     @Param('msgId') msgId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Req() req?: Request,
   ) {
     const l = parseInt(limit ?? '50', 10);
+    const user = (req as any)?.user;
+
+    if (user?.userId) {
+      const channel = await this.channelRepository.findById(channelId);
+      if (!channel) throw new Error('Channel not found');
+      if (channel.type !== 'PUBLIC' && !channel.isMember(user.userId)) {
+        throw new ForbiddenException('You do not have access to this channel.');
+      }
+    }
+
     const { data, nextCursor } = await this.messageRepository.findThreadReplies(msgId, cursor ?? null, l);
     const threadCount = await this.messageRepository.countThreadReplies(msgId);
     return {

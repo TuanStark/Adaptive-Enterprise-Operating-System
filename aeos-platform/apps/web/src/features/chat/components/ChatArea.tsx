@@ -208,6 +208,7 @@ export function ChatArea({
     <div className="flex h-full bg-white relative flex-1 min-w-0">
       <div className="flex flex-col h-full flex-1 min-w-0">
         <ChatHeader 
+          channelId={channelId}
           channelName={channelName} 
           memberCount={channelMembers ? channelMembers.length : Object.keys(users).length} 
           channelType={channelType}

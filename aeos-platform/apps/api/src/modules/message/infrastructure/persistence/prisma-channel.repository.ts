@@ -96,10 +96,23 @@ export class PrismaChannelRepository implements ChannelRepository {
   async findByWorkspaceId(
     workspaceId: string,
     page: number,
-    limit: number
+    limit: number,
+    userId?: string
   ): Promise<{ data: Channel[]; total: number }> {
     const skip = (page - 1) * limit;
-    const where = workspaceId ? { workspaceId } : {};
+    
+    // Filter by workspace
+    const baseWhere: any = workspaceId ? { workspaceId } : {};
+
+    // Filter by access (PUBLIC or member)
+    if (userId) {
+      baseWhere.OR = [
+        { type: 'PUBLIC' },
+        { members: { some: { userId } } },
+      ];
+    }
+    
+    const where = baseWhere;
 
     const [records, total] = await Promise.all([
       this.prisma.channel.findMany({
