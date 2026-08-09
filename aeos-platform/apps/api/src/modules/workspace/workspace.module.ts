@@ -15,6 +15,7 @@ import { GetWorkspaceInternalHandler } from './application/queries/get-workspace
 import { InviteMemberHandler } from './application/commands/invite-member/invite-member.handler';
 import { AcceptWorkspaceInviteHandler } from './application/commands/accept-workspace-invite/accept-workspace-invite.handler';
 import { ValidateWorkspaceInviteHandler } from './application/queries/validate-workspace-invite/validate-workspace-invite.handler';
+import { WorkspaceMemberRoleAssignmentHandler } from './application/events/workspace-member-role-assignment.handler';
 import { WorkspaceController } from './presentation/controllers/workspace.controller';
 
 @Module({
@@ -33,6 +34,7 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
     InviteMemberHandler,
     AcceptWorkspaceInviteHandler,
     ValidateWorkspaceInviteHandler,
+    WorkspaceMemberRoleAssignmentHandler,
   ],
   exports: [WORKSPACE_REPOSITORY],
 })

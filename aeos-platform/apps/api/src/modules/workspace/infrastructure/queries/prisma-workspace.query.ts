@@ -26,7 +26,7 @@ export class PrismaWorkspaceQuery implements WorkspaceQuery {
         status: m.workspace!.status,
         membership: {
           roleId: m.roleId,
-          roleName: m.role?.name ?? null,
+          roleName: m.role?.name ?? (m.workspace?.ownerId === userId ? 'OWNER' : 'MEMBER'),
           joinedAt: m.joinedAt,
         },
       }));

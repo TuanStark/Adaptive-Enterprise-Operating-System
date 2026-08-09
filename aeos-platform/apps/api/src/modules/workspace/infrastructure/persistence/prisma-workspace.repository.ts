@@ -41,7 +41,16 @@ export class PrismaWorkspaceRepository implements WorkspaceRepository {
 
       await tx.workspaceMember.deleteMany({ where: { workspaceId: ws.id } });
       if (data.members.length > 0) {
-        await tx.workspaceMember.createMany({ data: data.members });
+        await tx.workspaceMember.createMany({
+          data: data.members.map((m) => ({
+            id: m.id,
+            tenantId: m.tenantId,
+            workspaceId: m.workspaceId,
+            userId: m.userId,
+            roleId: m.roleId,
+            joinedAt: m.joinedAt,
+          })),
+        });
       }
 
       for (const event of domainEvents) {
