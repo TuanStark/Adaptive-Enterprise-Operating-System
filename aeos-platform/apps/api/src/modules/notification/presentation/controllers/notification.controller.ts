@@ -1,9 +1,18 @@
 import { Controller, Get, Patch, Param, Query, Req, Inject } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
-import { MarkAsReadCommand, MarkAsReadHandler } from '../../application/commands/mark-as-read/mark-as-read.handler';
-import { MarkAllAsReadCommand, MarkAllAsReadHandler } from '../../application/commands/mark-all-as-read/mark-all-as-read.handler';
-import { NotificationRepository, NOTIFICATION_REPOSITORY } from '../../domain/repositories/notification.repository';
+import {
+  MarkAsReadCommand,
+  MarkAsReadHandler,
+} from '../../application/commands/mark-as-read/mark-as-read.handler';
+import {
+  MarkAllAsReadCommand,
+  MarkAllAsReadHandler,
+} from '../../application/commands/mark-all-as-read/mark-all-as-read.handler';
+import {
+  NotificationRepository,
+  NOTIFICATION_REPOSITORY,
+} from '../../domain/repositories/notification.repository';
 
 @Controller('notifications')
 export class NotificationController {
@@ -23,8 +32,13 @@ export class NotificationController {
     const { data, total } = await this.notificationRepository.findByUserId(user.userId, p, l);
     return {
       data: data.map((n) => ({
-        id: n.id, type: n.type, title: n.title, content: n.content,
-        read: n.read, metadata: n.metadata, createdAt: n.createdAt,
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        content: n.content,
+        read: n.read,
+        metadata: n.metadata,
+        createdAt: n.createdAt,
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },
     };

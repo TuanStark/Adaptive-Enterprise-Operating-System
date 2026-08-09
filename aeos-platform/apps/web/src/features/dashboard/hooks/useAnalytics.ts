@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { clientApi } from "@/lib/api-client";
-import type { WorkspaceAnalytics, VelocityDataPoint, BurndownDataPoint } from "../types";
+import { useQuery } from '@tanstack/react-query';
+import { clientApi } from '@/lib/api-client';
+import type { WorkspaceAnalytics, VelocityDataPoint, BurndownDataPoint } from '../types';
 
 export function useWorkspaceAnalytics(workspaceId: string | null) {
   return useQuery({
-    queryKey: ["analytics", "workspace", workspaceId],
+    queryKey: ['analytics', 'workspace', workspaceId],
     queryFn: () =>
-      clientApi.get<WorkspaceAnalytics>("/analytics/workspace", { workspaceId: workspaceId! }),
+      clientApi.get<WorkspaceAnalytics>('/analytics/workspace', { workspaceId: workspaceId! }),
     enabled: !!workspaceId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -17,9 +17,11 @@ export function useWorkspaceAnalytics(workspaceId: string | null) {
 
 export function useVelocityChart(workspaceId: string | null) {
   return useQuery({
-    queryKey: ["analytics", "velocity", workspaceId],
+    queryKey: ['analytics', 'velocity', workspaceId],
     queryFn: () =>
-      clientApi.get<VelocityDataPoint[]>("/analytics/workspace/velocity", { workspaceId: workspaceId! }),
+      clientApi.get<VelocityDataPoint[]>('/analytics/workspace/velocity', {
+        workspaceId: workspaceId!,
+      }),
     enabled: !!workspaceId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -28,9 +30,11 @@ export function useVelocityChart(workspaceId: string | null) {
 
 export function useBurndownChart(workspaceId: string | null) {
   return useQuery({
-    queryKey: ["analytics", "burndown", workspaceId],
+    queryKey: ['analytics', 'burndown', workspaceId],
     queryFn: () =>
-      clientApi.get<BurndownDataPoint[]>("/analytics/workspace/burndown", { workspaceId: workspaceId! }),
+      clientApi.get<BurndownDataPoint[]>('/analytics/workspace/burndown', {
+        workspaceId: workspaceId!,
+      }),
     enabled: !!workspaceId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

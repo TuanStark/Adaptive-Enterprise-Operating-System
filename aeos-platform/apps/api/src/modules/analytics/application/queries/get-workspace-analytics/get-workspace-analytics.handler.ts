@@ -19,9 +19,11 @@ export interface WorkspaceAnalyticsResult {
 
 @Injectable()
 export class GetWorkspaceAnalyticsHandler {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async execute(query: GetWorkspaceAnalyticsQuery): Promise<Result<WorkspaceAnalyticsResult, DomainError>> {
+  async execute(
+    query: GetWorkspaceAnalyticsQuery,
+  ): Promise<Result<WorkspaceAnalyticsResult, DomainError>> {
     const { workspaceId } = query;
 
     let record = await this.prisma.workspaceAnalytics.findUnique({

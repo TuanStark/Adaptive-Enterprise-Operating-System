@@ -64,11 +64,21 @@ export class Project extends AggregateRoot<string> {
   private _members: ProjectMember[];
 
   private constructor(
-    id: string, tenantId: string, workspaceId: string, name: string,
-    description: string | null, ownerId: string, status: ProjectStatus,
-    priority: Priority, startDate: Date | null, endDate: Date | null,
-    version: number, createdAt?: Date, updatedAt?: Date,
-    deletedAt?: Date | null, members?: ProjectMember[],
+    id: string,
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    description: string | null,
+    ownerId: string,
+    status: ProjectStatus,
+    priority: Priority,
+    startDate: Date | null,
+    endDate: Date | null,
+    version: number,
+    createdAt?: Date,
+    updatedAt?: Date,
+    deletedAt?: Date | null,
+    members?: ProjectMember[],
   ) {
     super(id, version, createdAt, updatedAt);
     this._tenantId = tenantId;
@@ -84,21 +94,47 @@ export class Project extends AggregateRoot<string> {
     this._members = members ?? [];
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get name(): string { return this._name; }
-  get description(): string | null { return this._description; }
-  get ownerId(): string { return this._ownerId; }
-  get status(): ProjectStatus { return this._status; }
-  get priority(): Priority { return this._priority; }
-  get startDate(): Date | null { return this._startDate; }
-  get endDate(): Date | null { return this._endDate; }
-  get deletedAt(): Date | null { return this._deletedAt; }
-  get members(): ReadonlyArray<ProjectMember> { return this._members; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get name(): string {
+    return this._name;
+  }
+  get description(): string | null {
+    return this._description;
+  }
+  get ownerId(): string {
+    return this._ownerId;
+  }
+  get status(): ProjectStatus {
+    return this._status;
+  }
+  get priority(): Priority {
+    return this._priority;
+  }
+  get startDate(): Date | null {
+    return this._startDate;
+  }
+  get endDate(): Date | null {
+    return this._endDate;
+  }
+  get deletedAt(): Date | null {
+    return this._deletedAt;
+  }
+  get members(): ReadonlyArray<ProjectMember> {
+    return this._members;
+  }
 
   static create(
-    tenantId: string, workspaceId: string, name: string,
-    description: string | null, ownerId: string, priority: Priority = Priority.MEDIUM,
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    description: string | null,
+    ownerId: string,
+    priority: Priority = Priority.MEDIUM,
   ): Result<Project, ProjectNameRequiredError> {
     if (!name || name.trim().length === 0) {
       return Result.fail(new ProjectNameRequiredError());
@@ -106,8 +142,17 @@ export class Project extends AggregateRoot<string> {
 
     const id = generateId();
     const project = new Project(
-      id, tenantId, workspaceId, name.trim(), description, ownerId,
-      ProjectStatus.DRAFT, priority, null, null, 0,
+      id,
+      tenantId,
+      workspaceId,
+      name.trim(),
+      description,
+      ownerId,
+      ProjectStatus.DRAFT,
+      priority,
+      null,
+      null,
+      0,
     );
 
     project.addDomainEvent(new ProjectCreatedEvent(id, tenantId, workspaceId, name.trim()));
@@ -116,14 +161,27 @@ export class Project extends AggregateRoot<string> {
 
   static fromPersistence(props: ProjectProps): Project {
     return new Project(
-      props.id, props.tenantId, props.workspaceId, props.name,
-      props.description, props.ownerId, props.status, props.priority,
-      props.startDate, props.endDate, props.version, props.createdAt,
-      props.updatedAt, props.deletedAt, props.members,
+      props.id,
+      props.tenantId,
+      props.workspaceId,
+      props.name,
+      props.description,
+      props.ownerId,
+      props.status,
+      props.priority,
+      props.startDate,
+      props.endDate,
+      props.version,
+      props.createdAt,
+      props.updatedAt,
+      props.deletedAt,
+      props.members,
     );
   }
 
-  private transitionTo(newStatus: ProjectStatus): Result<void, InvalidProjectStatusTransitionError> {
+  private transitionTo(
+    newStatus: ProjectStatus,
+  ): Result<void, InvalidProjectStatusTransitionError> {
     const allowed = VALID_TRANSITIONS[this._status];
     if (!allowed.includes(newStatus)) {
       return Result.fail(new InvalidProjectStatusTransitionError(this._status, newStatus));
@@ -165,13 +223,24 @@ export class Project extends AggregateRoot<string> {
     this.touch();
   }
 
-  addMember(tenantId: string, userId: string, role: string): Result<void, ProjectMemberAlreadyExistsError> {
+  addMember(
+    tenantId: string,
+    userId: string,
+    role: string,
+  ): Result<void, ProjectMemberAlreadyExistsError> {
     if (this._members.find((m) => m.userId === userId)) {
       return Result.fail(new ProjectMemberAlreadyExistsError(userId));
     }
-    this._members.push(ProjectMember.create({
-      id: generateId(), tenantId, projectId: this.id, userId, role, joinedAt: new Date(),
-    }));
+    this._members.push(
+      ProjectMember.create({
+        id: generateId(),
+        tenantId,
+        projectId: this.id,
+        userId,
+        role,
+        joinedAt: new Date(),
+      }),
+    );
     this.touch();
     return Result.ok(undefined);
   }

@@ -32,13 +32,20 @@ import {
 } from '../../../../common/contracts/workspace.contract';
 
 @EventsHandler(
-  ProjectCreatedIntegrationEvent, ProjectDeletedIntegrationEvent,
-  TaskCreatedIntegrationEvent, TaskDeletedIntegrationEvent,
-  DocumentCreatedIntegrationEvent, DocumentDeletedIntegrationEvent,
-  FormCreatedIntegrationEvent, FormDeletedIntegrationEvent,
-  ApprovalCreatedIntegrationEvent, ApprovalDeletedIntegrationEvent,
-  CommentCreatedIntegrationEvent, CommentDeletedIntegrationEvent,
-  WorkspaceMemberAddedIntegrationEvent, WorkspaceMemberRemovedIntegrationEvent,
+  ProjectCreatedIntegrationEvent,
+  ProjectDeletedIntegrationEvent,
+  TaskCreatedIntegrationEvent,
+  TaskDeletedIntegrationEvent,
+  DocumentCreatedIntegrationEvent,
+  DocumentDeletedIntegrationEvent,
+  FormCreatedIntegrationEvent,
+  FormDeletedIntegrationEvent,
+  ApprovalCreatedIntegrationEvent,
+  ApprovalDeletedIntegrationEvent,
+  CommentCreatedIntegrationEvent,
+  CommentDeletedIntegrationEvent,
+  WorkspaceMemberAddedIntegrationEvent,
+  WorkspaceMemberRemovedIntegrationEvent,
 )
 @Injectable()
 export class WorkspaceAnalyticsProjectionHandler implements IEventHandler<any> {
@@ -114,7 +121,10 @@ export class WorkspaceAnalyticsProjectionHandler implements IEventHandler<any> {
         update: updateObj,
       });
     } catch (error) {
-      console.error(`Failed to update analytics projection for workspace ${event.workspaceId}:`, error);
+      console.error(
+        `Failed to update analytics projection for workspace ${event.workspaceId}:`,
+        error,
+      );
     }
   }
 }

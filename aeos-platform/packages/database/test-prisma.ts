@@ -4,4 +4,6 @@ async function main() {
   const members = await prisma.workspaceMember.findMany();
   console.log(members);
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

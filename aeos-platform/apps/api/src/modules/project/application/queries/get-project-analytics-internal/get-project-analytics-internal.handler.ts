@@ -1,7 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { GetProjectAnalyticsInternalQuery, ProjectAnalyticsDto } from '../../../../../common/contracts/project.contract';
+import {
+  GetProjectAnalyticsInternalQuery,
+  ProjectAnalyticsDto,
+} from '../../../../../common/contracts/project.contract';
 
 @QueryHandler(GetProjectAnalyticsInternalQuery)
 export class GetProjectAnalyticsInternalHandler implements IQueryHandler<GetProjectAnalyticsInternalQuery> {

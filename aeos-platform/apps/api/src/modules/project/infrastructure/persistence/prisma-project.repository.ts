@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
 import { ProjectRepository } from '../../domain/repositories/project.repository';
-import { Project, ProjectStatus, Priority, ProjectProps } from '../../domain/aggregates/project.aggregate';
+import {
+  Project,
+  ProjectStatus,
+  Priority,
+  ProjectProps,
+} from '../../domain/aggregates/project.aggregate';
 import { ProjectMember } from '../../domain/entities/project-member.entity';
 import { OutboxService } from '../../../../common/events/outbox.service';
 
@@ -79,7 +84,11 @@ export class PrismaProjectRepository implements ProjectRepository {
     return this.toDomain(record);
   }
 
-  async findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: Project[]; total: number }> {
+  async findByWorkspaceId(
+    workspaceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Project[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
         where: { workspaceId, deletedAt: null },

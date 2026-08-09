@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 
-import { SessionRepository, SESSION_REPOSITORY } from '../../../domain/repositories/session.repository';
+import {
+  SessionRepository,
+  SESSION_REPOSITORY,
+} from '../../../domain/repositories/session.repository';
 import { SessionNotFoundError } from '../../../domain/errors/identity.errors';
 import { LogoutCommand } from './logout.command';
 

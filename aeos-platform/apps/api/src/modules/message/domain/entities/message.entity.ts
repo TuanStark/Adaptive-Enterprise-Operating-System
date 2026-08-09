@@ -18,6 +18,7 @@ export interface MessageProps {
   replyCount: number;
   lastReplyAt: Date | null;
   reactions: MessageReaction[];
+  attachments: Array<{ id: string; url: string; name: string; type: string; size: number }>;
 }
 
 export class Message extends Entity<string> {
@@ -32,6 +33,13 @@ export class Message extends Entity<string> {
   private _replyCount: number;
   private _lastReplyAt: Date | null;
   private _reactions: MessageReaction[];
+  private _attachments: Array<{
+    id: string;
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  }>;
 
   private constructor(props: MessageProps) {
     super(props.id, props.createdAt);
@@ -46,27 +54,60 @@ export class Message extends Entity<string> {
     this._replyCount = props.replyCount;
     this._lastReplyAt = props.lastReplyAt;
     this._reactions = props.reactions;
+    this._attachments = props.attachments;
   }
 
-  get channelId(): string { return this._channelId; }
-  get senderId(): string { return this._senderId; }
-  get content(): string { return this._content; }
-  get parentMessageId(): string | null { return this._parentMessageId; }
-  get isPinned(): boolean { return this._isPinned; }
-  get isEdited(): boolean { return this._isEdited; }
-  get editedAt(): Date | null { return this._editedAt; }
-  get deletedAt(): Date | null { return this._deletedAt; }
-  get replyCount(): number { return this._replyCount; }
-  get lastReplyAt(): Date | null { return this._lastReplyAt; }
-  get reactions(): ReadonlyArray<MessageReaction> { return this._reactions; }
+  get channelId(): string {
+    return this._channelId;
+  }
+  get senderId(): string {
+    return this._senderId;
+  }
+  get content(): string {
+    return this._content;
+  }
+  get parentMessageId(): string | null {
+    return this._parentMessageId;
+  }
+  get isPinned(): boolean {
+    return this._isPinned;
+  }
+  get isEdited(): boolean {
+    return this._isEdited;
+  }
+  get editedAt(): Date | null {
+    return this._editedAt;
+  }
+  get deletedAt(): Date | null {
+    return this._deletedAt;
+  }
+  get replyCount(): number {
+    return this._replyCount;
+  }
+  get lastReplyAt(): Date | null {
+    return this._lastReplyAt;
+  }
+  get reactions(): ReadonlyArray<MessageReaction> {
+    return this._reactions;
+  }
+  get attachments(): ReadonlyArray<{
+    id: string;
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  }> {
+    return this._attachments;
+  }
 
   static create(
     channelId: string,
     senderId: string,
     content: string,
     parentMessageId: string | null = null,
+    attachmentIds: string[] = [],
   ): Result<Message, MessageContentRequiredError> {
-    if (!content || content.trim().length === 0) {
+    if ((!content || content.trim().length === 0) && attachmentIds.length === 0) {
       return Result.fail(new MessageContentRequiredError());
     }
 
@@ -84,6 +125,7 @@ export class Message extends Entity<string> {
       replyCount: 0,
       lastReplyAt: null,
       reactions: [],
+      attachments: attachmentIds.map((id) => ({ id, url: '', name: '', type: '', size: 0 })), // Placeholder, domain shouldn't care
     });
 
     return Result.ok(message);
@@ -128,13 +170,13 @@ export class Message extends Entity<string> {
   }
 
   addReaction(userId: string, emoji: string): void {
-    const existing = this._reactions.find(r => r.userId === userId && r.emoji === emoji);
+    const existing = this._reactions.find((r) => r.userId === userId && r.emoji === emoji);
     if (!existing) {
       this._reactions.push(MessageReaction.create(this.id, userId, emoji));
     }
   }
 
   removeReaction(userId: string, emoji: string): void {
-    this._reactions = this._reactions.filter(r => !(r.userId === userId && r.emoji === emoji));
+    this._reactions = this._reactions.filter((r) => !(r.userId === userId && r.emoji === emoji));
   }
 }

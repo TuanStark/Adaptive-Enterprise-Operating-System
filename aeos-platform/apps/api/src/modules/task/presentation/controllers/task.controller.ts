@@ -1,11 +1,32 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { CreateTaskCommand } from '../../application/commands/create-task/create-task.command';
 import { CreateTaskHandler } from '../../application/commands/create-task/create-task.handler';
-import { ChangeTaskStatusCommand, ChangeTaskStatusHandler } from '../../application/commands/change-task-status/change-task-status.handler';
-import { AssignTaskCommand, AssignTaskHandler } from '../../application/commands/assign-task/assign-task.handler';
-import { MoveTaskToSprintCommand, MoveTaskToSprintHandler } from '../../application/commands/move-task-to-sprint/move-task-to-sprint.handler';
+import {
+  ChangeTaskStatusCommand,
+  ChangeTaskStatusHandler,
+} from '../../application/commands/change-task-status/change-task-status.handler';
+import {
+  AssignTaskCommand,
+  AssignTaskHandler,
+} from '../../application/commands/assign-task/assign-task.handler';
+import {
+  MoveTaskToSprintCommand,
+  MoveTaskToSprintHandler,
+} from '../../application/commands/move-task-to-sprint/move-task-to-sprint.handler';
 import { UpdateTaskCommand } from '../../application/commands/update-task/update-task.command';
 import { UpdateTaskHandler } from '../../application/commands/update-task/update-task.handler';
 import { DeleteTaskHandler } from '../../application/commands/delete-task/delete-task.handler';
@@ -41,9 +62,15 @@ export class TaskController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateTaskRequestDto, @Req() req: AuthenticatedRequest) {
     const command = new CreateTaskCommand(
-      dto.tenantId, dto.workspaceId, dto.projectId, dto.title,
-      dto.description ?? null, req.user.userId, dto.priority ?? 'MEDIUM',
-      dto.type ?? 'TASK', dto.labels ?? [],
+      dto.tenantId,
+      dto.workspaceId,
+      dto.projectId,
+      dto.title,
+      dto.description ?? null,
+      req.user.userId,
+      dto.priority ?? 'MEDIUM',
+      dto.type ?? 'TASK',
+      dto.labels ?? [],
     );
     const result = await this.createHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -66,7 +93,18 @@ export class TaskController {
     @Query('limit') limit?: string,
   ) {
     const query = new GetTasksQuery(
-      { workspaceId, projectId, sprintId, status, assigneeId, reporterId, priority, type, fixVersionId, search },
+      {
+        workspaceId,
+        projectId,
+        sprintId,
+        status,
+        assigneeId,
+        reporterId,
+        priority,
+        type,
+        fixVersionId,
+        search,
+      },
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '20', 10),
     );
@@ -81,10 +119,20 @@ export class TaskController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateTaskRequestDto) {
     const command = new UpdateTaskCommand(
-      id, dto.title, dto.description, dto.priority,
-      dto.type, dto.storyPoints, dto.dueDate, dto.startDate,
-      dto.resolution, dto.labels, dto.environment,
-      dto.fixVersionId, dto.reporterId, dto.originalEstimate,
+      id,
+      dto.title,
+      dto.description,
+      dto.priority,
+      dto.type,
+      dto.storyPoints,
+      dto.dueDate,
+      dto.startDate,
+      dto.resolution,
+      dto.labels,
+      dto.environment,
+      dto.fixVersionId,
+      dto.reporterId,
+      dto.originalEstimate,
     );
     const result = await this.updateHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -99,7 +147,9 @@ export class TaskController {
 
   @Patch(':id/status')
   async changeStatus(@Param('id') id: string, @Body() dto: ChangeStatusRequestDto) {
-    const result = await this.changeStatusHandler.execute(new ChangeTaskStatusCommand(id, dto.status));
+    const result = await this.changeStatusHandler.execute(
+      new ChangeTaskStatusCommand(id, dto.status),
+    );
     if (result.isFail) throw result.error as DomainError;
     return { message: `Task status changed to ${dto.status}.` };
   }
@@ -113,7 +163,9 @@ export class TaskController {
 
   @Patch(':id/sprint')
   async moveToSprint(@Param('id') id: string, @Body() dto: MoveToSprintRequestDto) {
-    const result = await this.moveToSprintHandler.execute(new MoveTaskToSprintCommand(id, dto.sprintId ?? null));
+    const result = await this.moveToSprintHandler.execute(
+      new MoveTaskToSprintCommand(id, dto.sprintId ?? null),
+    );
     if (result.isFail) throw result.error as DomainError;
     return { message: dto.sprintId ? 'Task moved to sprint.' : 'Task removed from sprint.' };
   }

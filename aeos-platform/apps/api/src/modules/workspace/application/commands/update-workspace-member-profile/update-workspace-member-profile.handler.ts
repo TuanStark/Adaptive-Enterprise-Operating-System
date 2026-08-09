@@ -2,8 +2,14 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { UpdateWorkspaceMemberProfileCommand } from './update-workspace-member-profile.command';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
-import { WorkspaceNotFoundError, WorkspaceMemberNotFoundError } from '../../../domain/errors/workspace.errors';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceNotFoundError,
+  WorkspaceMemberNotFoundError,
+} from '../../../domain/errors/workspace.errors';
 
 @CommandHandler(UpdateWorkspaceMemberProfileCommand)
 export class UpdateWorkspaceMemberProfileHandler implements ICommandHandler<UpdateWorkspaceMemberProfileCommand> {
@@ -24,7 +30,7 @@ export class UpdateWorkspaceMemberProfileHandler implements ICommandHandler<Upda
       command.avatarUrl,
       command.title,
       command.department,
-      command.statusMessage
+      command.statusMessage,
     );
 
     if (updateResult.isFail) {

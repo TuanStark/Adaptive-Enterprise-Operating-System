@@ -99,7 +99,7 @@ export function ChatSidebar() {
       <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between group hover:bg-gray-100/50 dark:hover:bg-zinc-800/50 transition-colors">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex-1 text-left font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2 outline-none">
-            <span className="truncate max-w-[150px]">{currentWorkspace?.name || "Channels"}</span>
+            <span suppressHydrationWarning className="truncate max-w-[150px]">{currentWorkspace?.name || "Channels"}</span>
             <ChevronDown className="w-4 h-4 text-gray-500 opacity-50 group-hover:opacity-100 transition-opacity" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">

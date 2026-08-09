@@ -21,13 +21,23 @@ export class MeetingParticipant extends Entity<string> {
     this._status = props.status;
   }
 
-  get meetingId(): string { return this._meetingId; }
-  get userId(): string { return this._userId; }
-  get status(): string { return this._status; }
+  get meetingId(): string {
+    return this._meetingId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get status(): string {
+    return this._status;
+  }
 
   static create(meetingId: string, userId: string, status: string = 'PENDING'): MeetingParticipant {
     return new MeetingParticipant({
-      id: generateId(), meetingId, userId, status, createdAt: new Date(),
+      id: generateId(),
+      meetingId,
+      userId,
+      status,
+      createdAt: new Date(),
     });
   }
 

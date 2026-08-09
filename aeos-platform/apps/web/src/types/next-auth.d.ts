@@ -1,6 +1,6 @@
-import { DefaultSession } from "next-auth";
+import { DefaultSession } from 'next-auth';
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
@@ -9,9 +9,9 @@ declare module "next-auth" {
       organizationId: string;
       workspaceId: string;
       workspaceName: string;
-    } & DefaultSession["user"];
+    } & DefaultSession['user'];
     accessToken: string;
-    error?: "RefreshTokenError";
+    error?: 'RefreshTokenError';
   }
 
   interface User {
@@ -27,7 +27,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: string;
@@ -38,6 +38,6 @@ declare module "next-auth/jwt" {
     accessToken: string;
     refreshToken: string;
     expiresAt: number;
-    error?: "RefreshTokenError";
+    error?: 'RefreshTokenError';
   }
 }

@@ -19,18 +19,18 @@ export class IdentitySeeder implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Checking for admin account...');
-    
+
     const adminEmailResult = Email.create('admin@aeos.com');
     if (adminEmailResult.isFail) return;
-    
+
     const exists = await this.userRepository.existsByEmail(adminEmailResult.value);
-    
+
     if (!exists) {
       this.logger.log('No admin account found. Creating default admin account...');
-      
+
       // Ensure a default tenant exists
       let tenant = await this.prisma.tenant.findFirst({
-        where: { slug: 'system-root' }
+        where: { slug: 'system-root' },
       });
       if (!tenant) {
         tenant = await this.prisma.tenant.create({
@@ -38,7 +38,7 @@ export class IdentitySeeder implements OnModuleInit {
             name: 'System Root',
             slug: 'system-root',
             status: 'ACTIVE',
-          }
+          },
         });
       }
 
@@ -47,11 +47,11 @@ export class IdentitySeeder implements OnModuleInit {
         'admin@aeos.com',
         'admin',
         'System',
-        'Administrator'
+        'Administrator',
       );
-      
+
       const result = await this.registerUserHandler.execute(command);
-      
+
       if (result.isOk) {
         this.logger.log('Default admin account created successfully. (admin@aeos.com / admin)');
       } else {

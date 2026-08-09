@@ -1,10 +1,10 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { clientApi } from "@/lib/api-client";
-import { Message } from "../types";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { clientApi } from '@/lib/api-client';
+import { Message } from '../types';
 
 export function useChannelMessages(channelId: string, initialMessages?: Message[]) {
   const queryClient = useQueryClient();
-  const queryKey = ["channels", channelId, "messages"];
+  const queryKey = ['channels', channelId, 'messages'];
 
   const { data: messages = initialMessages || [], isLoading } = useQuery({
     queryKey,
@@ -19,7 +19,7 @@ export function useChannelMessages(channelId: string, initialMessages?: Message[
 
   const setMessages = (updater: Message[] | ((prev: Message[]) => Message[])) => {
     queryClient.setQueryData<Message[]>(queryKey, (old = []) => {
-      if (typeof updater === "function") {
+      if (typeof updater === 'function') {
         return updater(old);
       }
       return updater;

@@ -21,13 +21,23 @@ export class DocumentVersion extends Entity<string> {
     this._fileId = props.fileId;
   }
 
-  get documentId(): string { return this._documentId; }
-  get versionNumber(): number { return this._versionNumber; }
-  get fileId(): string { return this._fileId; }
+  get documentId(): string {
+    return this._documentId;
+  }
+  get versionNumber(): number {
+    return this._versionNumber;
+  }
+  get fileId(): string {
+    return this._fileId;
+  }
 
   static create(documentId: string, versionNumber: number, fileId: string): DocumentVersion {
     return new DocumentVersion({
-      id: generateId(), documentId, versionNumber, fileId, createdAt: new Date(),
+      id: generateId(),
+      documentId,
+      versionNumber,
+      fileId,
+      createdAt: new Date(),
     });
   }
 

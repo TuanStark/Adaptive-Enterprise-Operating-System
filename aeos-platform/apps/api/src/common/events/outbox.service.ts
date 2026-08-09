@@ -11,7 +11,7 @@ export interface OutboxEventInput {
 
 @Injectable()
 export class OutboxService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async saveEvent(tx: any, event: OutboxEventInput): Promise<void> {
     await tx.outboxEvent.create({

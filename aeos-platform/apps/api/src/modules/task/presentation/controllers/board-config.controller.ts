@@ -25,7 +25,17 @@ export class BoardConfigController {
   @HttpCode(HttpStatus.OK)
   async saveConfig(
     @Param('projectId') projectId: string,
-    @Body() body: { name?: string; columns: Array<{ id: string; name: string; statuses: string[]; order: number; wipLimit?: number }> },
+    @Body()
+    body: {
+      name?: string;
+      columns: Array<{
+        id: string;
+        name: string;
+        statuses: string[];
+        order: number;
+        wipLimit?: number;
+      }>;
+    },
     @Req() req: AuthenticatedRequest,
   ) {
     // Extract tenantId from JWT, workspaceId from body or fallback

@@ -15,7 +15,10 @@ export class DocumentCreatedIntegrationEvent implements IIntegrationEvent {
     this.documentId = payload.documentId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; documentId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  documentId: string;
+  workspaceId: string;
 }
 export class DocumentDeletedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'DocumentDeletedEvent';
@@ -25,5 +28,8 @@ export class DocumentDeletedIntegrationEvent implements IIntegrationEvent {
     this.documentId = payload.documentId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; documentId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  documentId: string;
+  workspaceId: string;
 }

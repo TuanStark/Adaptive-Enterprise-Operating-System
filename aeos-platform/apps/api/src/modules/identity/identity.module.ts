@@ -48,4 +48,4 @@ import { UserController } from './presentation/controllers/user.controller';
   ],
   exports: [USER_REPOSITORY, SESSION_REPOSITORY, JWT_TOKEN_SERVICE],
 })
-export class IdentityModule { }
+export class IdentityModule {}

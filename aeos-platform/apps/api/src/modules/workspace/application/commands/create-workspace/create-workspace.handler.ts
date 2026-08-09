@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Workspace } from '../../../domain/aggregates/workspace.aggregate';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
 import { CreateWorkspaceCommand } from './create-workspace.command';
 import { WorkspaceResponseDto } from '../../dto/workspace-response.dto';
 import { WorkspaceMapper } from '../../mappers/workspace.mapper';
@@ -12,7 +15,9 @@ export class CreateWorkspaceHandler {
     private readonly wsRepository: WorkspaceRepository,
   ) {}
 
-  async execute(command: CreateWorkspaceCommand): Promise<Result<WorkspaceResponseDto, DomainError>> {
+  async execute(
+    command: CreateWorkspaceCommand,
+  ): Promise<Result<WorkspaceResponseDto, DomainError>> {
     const createResult = Workspace.create(
       command.tenantId,
       command.organizationId,

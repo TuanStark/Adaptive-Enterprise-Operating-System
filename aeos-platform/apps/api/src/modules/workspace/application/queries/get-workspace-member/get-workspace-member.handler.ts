@@ -2,7 +2,10 @@ import { Injectable, Inject } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetWorkspaceMemberQuery } from './get-workspace-member.query';
 import { WORKSPACE_QUERY, WorkspaceQuery } from '../workspace-query.interface';
-import { GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 import { WorkspaceMemberDto } from '../get-workspace-members/get-workspace-members.handler';
 import { Result, NotFoundError } from '@aeos/errors';
 
@@ -12,15 +15,14 @@ export class GetWorkspaceMemberHandler {
     @Inject(WORKSPACE_QUERY)
     private readonly workspaceQuery: WorkspaceQuery,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
-  async execute(query: GetWorkspaceMemberQuery): Promise<Result<WorkspaceMemberDto, NotFoundError>> {
-    const rawResult = await this.workspaceQuery.getWorkspaceMembers(
-      query.workspaceId,
-      1,
-      1,
-      [query.userId]
-    );
+  async execute(
+    query: GetWorkspaceMemberQuery,
+  ): Promise<Result<WorkspaceMemberDto, NotFoundError>> {
+    const rawResult = await this.workspaceQuery.getWorkspaceMembers(query.workspaceId, 1, 1, [
+      query.userId,
+    ]);
 
     if (rawResult.data.length === 0) {
       return Result.fail(new NotFoundError('WorkspaceMember', query.userId));
@@ -29,7 +31,7 @@ export class GetWorkspaceMemberHandler {
     const m = rawResult.data[0];
 
     const usersInfo: UserInternalDto[] = await this.queryBus.execute(
-      new GetUsersInternalQuery([m.userId])
+      new GetUsersInternalQuery([m.userId]),
     );
 
     const user = usersInfo[0];

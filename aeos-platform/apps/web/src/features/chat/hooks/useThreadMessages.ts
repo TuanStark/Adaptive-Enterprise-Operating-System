@@ -1,15 +1,17 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { clientApi } from "@/lib/api-client";
-import { Message } from "../types";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { clientApi } from '@/lib/api-client';
+import { Message } from '../types';
 
 export function useThreadMessages(channelId: string, parentMessageId: string) {
   const queryClient = useQueryClient();
-  const queryKey = ["channels", channelId, "messages", parentMessageId, "thread"];
+  const queryKey = ['channels', channelId, 'messages', parentMessageId, 'thread'];
 
   const { data: replies = [], isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
-      const res: any = await clientApi.get(`/channels/${channelId}/messages/${parentMessageId}/thread`);
+      const res: any = await clientApi.get(
+        `/channels/${channelId}/messages/${parentMessageId}/thread`,
+      );
       const list = Array.isArray(res) ? res : res?.data || [];
       return [...list].reverse();
     },
@@ -18,7 +20,7 @@ export function useThreadMessages(channelId: string, parentMessageId: string) {
 
   const setReplies = (updater: Message[] | ((prev: Message[]) => Message[])) => {
     queryClient.setQueryData<Message[]>(queryKey, (old = []) => {
-      if (typeof updater === "function") {
+      if (typeof updater === 'function') {
         return updater(old);
       }
       return updater;

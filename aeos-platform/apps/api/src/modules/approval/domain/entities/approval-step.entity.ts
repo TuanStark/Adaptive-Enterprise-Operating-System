@@ -30,17 +30,35 @@ export class ApprovalStep extends Entity<string> {
     this._actedAt = props.actedAt;
   }
 
-  get approvalRequestId(): string { return this._approvalRequestId; }
-  get reviewerId(): string { return this._reviewerId; }
-  get status(): string { return this._status; }
-  get comment(): string | null { return this._comment; }
-  get stepOrder(): number { return this._stepOrder; }
-  get actedAt(): Date | null { return this._actedAt; }
+  get approvalRequestId(): string {
+    return this._approvalRequestId;
+  }
+  get reviewerId(): string {
+    return this._reviewerId;
+  }
+  get status(): string {
+    return this._status;
+  }
+  get comment(): string | null {
+    return this._comment;
+  }
+  get stepOrder(): number {
+    return this._stepOrder;
+  }
+  get actedAt(): Date | null {
+    return this._actedAt;
+  }
 
   static create(approvalRequestId: string, reviewerId: string, stepOrder: number): ApprovalStep {
     return new ApprovalStep({
-      id: generateId(), approvalRequestId, reviewerId,
-      status: 'PENDING', comment: null, stepOrder, actedAt: null, createdAt: new Date(),
+      id: generateId(),
+      approvalRequestId,
+      reviewerId,
+      status: 'PENDING',
+      comment: null,
+      stepOrder,
+      actedAt: null,
+      createdAt: new Date(),
     });
   }
 

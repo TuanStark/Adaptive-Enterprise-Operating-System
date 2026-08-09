@@ -15,7 +15,10 @@ export class ApprovalCreatedIntegrationEvent implements IIntegrationEvent {
     this.approvalId = payload.approvalId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; approvalId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  approvalId: string;
+  workspaceId: string;
 }
 export class ApprovalDeletedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'ApprovalDeletedEvent';
@@ -25,5 +28,8 @@ export class ApprovalDeletedIntegrationEvent implements IIntegrationEvent {
     this.approvalId = payload.approvalId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; approvalId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  approvalId: string;
+  workspaceId: string;
 }

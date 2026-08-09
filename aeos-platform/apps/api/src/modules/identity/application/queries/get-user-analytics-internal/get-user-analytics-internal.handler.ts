@@ -1,7 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { GetUserAnalyticsInternalQuery, UserAnalyticsDto } from '../../../../../common/contracts/identity.contract';
+import {
+  GetUserAnalyticsInternalQuery,
+  UserAnalyticsDto,
+} from '../../../../../common/contracts/identity.contract';
 
 @QueryHandler(GetUserAnalyticsInternalQuery)
 export class GetUserAnalyticsInternalHandler implements IQueryHandler<GetUserAnalyticsInternalQuery> {
@@ -12,7 +15,9 @@ export class GetUserAnalyticsInternalHandler implements IQueryHandler<GetUserAna
     // Assuming workspace members are mapped via WorkspaceMember or similar.
     // For now, if user table doesn't have workspaceId, we count users linked to the workspace.
     // Let's check schema/prisma structure or simply return 0 if not immediately possible.
-    const totalUsers = await this.prisma.workspaceMember.count({ where: { workspaceId: query.workspaceId } }).catch(() => 0);
+    const totalUsers = await this.prisma.workspaceMember
+      .count({ where: { workspaceId: query.workspaceId } })
+      .catch(() => 0);
     return { totalUsers };
   }
 }

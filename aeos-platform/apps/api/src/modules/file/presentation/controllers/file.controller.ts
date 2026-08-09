@@ -9,14 +9,13 @@ import { ConfirmUploadHandler } from '../../application/commands/confirm-upload/
 import { ConfirmUploadCommand } from '../../application/commands/confirm-upload/confirm-upload.command';
 import { ConfirmUploadDto } from '../dtos/confirm-upload.dto';
 
-
 @Controller('files')
 export class FileController {
   constructor(
     private readonly getFileUrlHandler: GetFileUrlHandler,
     private readonly generateSignatureHandler: GenerateSignatureHandler,
     private readonly confirmUploadHandler: ConfirmUploadHandler,
-  ) { }
+  ) {}
 
   @Get(':id/url')
   async getFileUrl(@Param('id') id: string) {

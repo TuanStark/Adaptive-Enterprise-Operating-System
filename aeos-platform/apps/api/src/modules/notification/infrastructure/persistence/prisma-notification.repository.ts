@@ -32,7 +32,11 @@ export class PrismaNotificationRepository implements NotificationRepository {
     return this.toDomain(record);
   }
 
-  async findByUserId(userId: string, page: number, limit: number): Promise<{ data: Notification[]; total: number }> {
+  async findByUserId(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Notification[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.notification.findMany({
         where: { userId },

@@ -1,9 +1,26 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, HttpCode, HttpStatus, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
 import { DomainError } from '@aeos/errors';
 import { CreateSprintCommand } from '../../application/commands/create-sprint/create-sprint.command';
 import { CreateSprintHandler } from '../../application/commands/create-sprint/create-sprint.handler';
-import { StartSprintCommand, StartSprintHandler } from '../../application/commands/start-sprint/start-sprint.handler';
-import { CompleteSprintCommand, CompleteSprintHandler } from '../../application/commands/complete-sprint/complete-sprint.handler';
+import {
+  StartSprintCommand,
+  StartSprintHandler,
+} from '../../application/commands/start-sprint/start-sprint.handler';
+import {
+  CompleteSprintCommand,
+  CompleteSprintHandler,
+} from '../../application/commands/complete-sprint/complete-sprint.handler';
 import { SprintRepository, SPRINT_REPOSITORY } from '../../domain/repositories/sprint.repository';
 import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
 
@@ -30,8 +47,12 @@ export class SprintController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateSprintRequestDto) {
     const command = new CreateSprintCommand(
-      dto.tenantId, dto.projectId, dto.name,
-      dto.goal ?? null, dto.startDate ?? null, dto.endDate ?? null,
+      dto.tenantId,
+      dto.projectId,
+      dto.name,
+      dto.goal ?? null,
+      dto.startDate ?? null,
+      dto.endDate ?? null,
     );
     const result = await this.createHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -42,8 +63,12 @@ export class SprintController {
   async list(@Query('projectId') projectId: string) {
     const sprints = await this.sprintRepository.findByProjectId(projectId);
     return sprints.map((s) => ({
-      id: s.id, name: s.name, goal: s.goal, status: s.status,
-      startDate: s.startDate, endDate: s.endDate,
+      id: s.id,
+      name: s.name,
+      goal: s.goal,
+      status: s.status,
+      startDate: s.startDate,
+      endDate: s.endDate,
     }));
   }
 

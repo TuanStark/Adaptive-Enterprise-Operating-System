@@ -43,7 +43,9 @@ export class GetTasksHandler {
 
   async execute(query: GetTasksQuery): Promise<PaginatedTasksDto> {
     const { data, total } = await this.taskRepository.findAll(
-      query.filters, query.page, query.limit,
+      query.filters,
+      query.page,
+      query.limit,
     );
 
     return {

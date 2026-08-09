@@ -8,7 +8,9 @@ export class WorkspaceArchivedEventHandler implements IEventHandler<WorkspaceArc
   constructor(private readonly chatGateway: ChatGateway) {}
 
   handle(event: WorkspaceArchivedEvent) {
-    console.log(`[MessageModule] Handling WorkspaceArchivedEvent for workspace ${event.workspaceId}`);
+    console.log(
+      `[MessageModule] Handling WorkspaceArchivedEvent for workspace ${event.workspaceId}`,
+    );
     this.chatGateway.broadcastWorkspaceArchived(event.workspaceId);
   }
 }
@@ -18,7 +20,9 @@ export class WorkspaceMemberRemovedEventHandler implements IEventHandler<Workspa
   constructor(private readonly chatGateway: ChatGateway) {}
 
   handle(event: WorkspaceMemberRemovedEvent) {
-    console.log(`[MessageModule] Handling WorkspaceMemberRemovedEvent for user ${event.memberId} in workspace ${event.workspaceId}`);
+    console.log(
+      `[MessageModule] Handling WorkspaceMemberRemovedEvent for user ${event.memberId} in workspace ${event.workspaceId}`,
+    );
     this.chatGateway.broadcastWorkspaceMemberRemoved(event.workspaceId, event.memberId);
   }
 }

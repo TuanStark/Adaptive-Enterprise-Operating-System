@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, NotFoundError, DomainError } from '@aeos/errors';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
 import { UpdateWorkspaceCommand } from './update-workspace.command';
 
 export class UpdateWorkspaceHandler {
@@ -16,7 +19,10 @@ export class UpdateWorkspaceHandler {
     }
 
     if (command.name !== undefined) {
-      const updateResult = workspace.updateDetails(command.name, command.description !== undefined ? command.description : workspace.description);
+      const updateResult = workspace.updateDetails(
+        command.name,
+        command.description !== undefined ? command.description : workspace.description,
+      );
       if (updateResult.isFail) return Result.fail(updateResult.error);
     } else if (command.description !== undefined) {
       const updateResult = workspace.updateDetails(workspace.name, command.description);

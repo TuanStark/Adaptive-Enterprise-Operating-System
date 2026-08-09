@@ -37,7 +37,7 @@ export class UserController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
   @Get('me')
   async getMe(@CurrentUser() user: any): Promise<UserResponseDto> {
@@ -51,10 +51,7 @@ export class UserController {
   }
 
   @Patch('profile')
-  async updateProfile(
-    @CurrentUser() user: any,
-    @Body() dto: UpdateProfileDto,
-  ): Promise<void> {
+  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto): Promise<void> {
     const result = await this.commandBus.execute(
       new UpdateUserProfileCommand(
         user.userId,
@@ -64,7 +61,7 @@ export class UserController {
         dto.bio ?? null,
         dto.timezone ?? null,
         dto.phone ?? null,
-      )
+      ),
     );
 
     if (result.isFail) {

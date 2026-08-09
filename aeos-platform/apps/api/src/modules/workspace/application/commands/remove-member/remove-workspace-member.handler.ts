@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
 import { RemoveWorkspaceMemberCommand } from './remove-workspace-member.command';
 
 export class RemoveWorkspaceMemberHandler {
@@ -18,7 +21,7 @@ export class RemoveWorkspaceMemberHandler {
     // Additional check: requester must be owner or admin. For now, we assume owner or basic permission check.
     // Assuming simple owner logic for demonstration
     if (workspace.ownerId !== command.requesterUserId) {
-       return Result.fail({
+      return Result.fail({
         code: 'FORBIDDEN',
         message: 'Only workspace owner can remove members',
         httpStatus: 403,

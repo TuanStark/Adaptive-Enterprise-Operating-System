@@ -13,7 +13,7 @@ export class TaskCreatedIntegrationEvent implements IIntegrationEvent {
 
   eventId: string;
   occurredOn: Date;
-  
+
   taskId: string;
   title: string;
   creatorId: string;
@@ -36,5 +36,8 @@ export class TaskDeletedIntegrationEvent implements IIntegrationEvent {
     this.taskId = payload.taskId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; taskId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  taskId: string;
+  workspaceId: string;
 }

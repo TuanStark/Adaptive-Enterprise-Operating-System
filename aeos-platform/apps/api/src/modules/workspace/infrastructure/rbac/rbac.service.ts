@@ -13,7 +13,13 @@ export interface RoleWithPermissions {
 export interface RbacService {
   findRoleById(roleId: string): Promise<RoleWithPermissions | null>;
   findRolesByWorkspaceId(workspaceId: string): Promise<RoleWithPermissions[]>;
-  createRole(tenantId: string, workspaceId: string, name: string, description: string | null, permissionIds: string[]): Promise<RoleWithPermissions>;
+  createRole(
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    description: string | null,
+    permissionIds: string[],
+  ): Promise<RoleWithPermissions>;
   hasPermission(roleId: string, resource: string, action: string): Promise<boolean>;
 }
 

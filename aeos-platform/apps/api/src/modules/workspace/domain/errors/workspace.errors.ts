@@ -20,13 +20,21 @@ export class WorkspaceAlreadyArchivedError extends DomainError {
 
 export class WorkspaceArchivedCannotAddMemberError extends DomainError {
   constructor() {
-    super('WORKSPACE_ARCHIVED_CANNOT_ADD_MEMBER', 'Cannot add member to an archived workspace.', 400);
+    super(
+      'WORKSPACE_ARCHIVED_CANNOT_ADD_MEMBER',
+      'Cannot add member to an archived workspace.',
+      400,
+    );
   }
 }
 
 export class WorkspaceMemberAlreadyExistsError extends DomainError {
   constructor(userId: string) {
-    super('WORKSPACE_MEMBER_ALREADY_EXISTS', `User "${userId}" is already a member of this workspace.`, 409);
+    super(
+      'WORKSPACE_MEMBER_ALREADY_EXISTS',
+      `User "${userId}" is already a member of this workspace.`,
+      409,
+    );
   }
 }
 

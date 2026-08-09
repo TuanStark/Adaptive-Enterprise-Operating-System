@@ -11,6 +11,11 @@ export class ProjectCreatedEvent extends DomainEvent {
   }
 
   toPayload(): Record<string, unknown> {
-    return { projectId: this.projectId, tenantId: this.tenantId, workspaceId: this.workspaceId, name: this.name };
+    return {
+      projectId: this.projectId,
+      tenantId: this.tenantId,
+      workspaceId: this.workspaceId,
+      name: this.name,
+    };
   }
 }

@@ -25,11 +25,21 @@ export class ProjectMember extends Entity<string> {
     this._joinedAt = props.joinedAt;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get projectId(): string { return this._projectId; }
-  get userId(): string { return this._userId; }
-  get role(): string { return this._role; }
-  get joinedAt(): Date { return this._joinedAt; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get projectId(): string {
+    return this._projectId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get role(): string {
+    return this._role;
+  }
+  get joinedAt(): Date {
+    return this._joinedAt;
+  }
 
   changeRole(newRole: string): void {
     this._role = newRole;

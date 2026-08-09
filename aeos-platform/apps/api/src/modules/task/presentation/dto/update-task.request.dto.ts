@@ -1,4 +1,12 @@
-import { IsString, IsOptional, MaxLength, MinLength, IsNumber, IsDateString, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  MinLength,
+  IsNumber,
+  IsDateString,
+  IsArray,
+} from 'class-validator';
 
 export class UpdateTaskRequestDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) title?: string;

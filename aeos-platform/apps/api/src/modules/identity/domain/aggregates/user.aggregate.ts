@@ -210,12 +210,12 @@ export class User extends AggregateRoot<string> {
   }
 
   updateProfile(
-    firstName: string | null, 
-    lastName: string | null, 
+    firstName: string | null,
+    lastName: string | null,
     avatarUrl: string | null,
     bio: string | null = null,
     timezone: string | null = null,
-    phone: string | null = null
+    phone: string | null = null,
   ): void {
     this._firstName = firstName;
     this._lastName = lastName;

@@ -5,7 +5,7 @@ import { GetWorkspaceBurndownQuery } from './get-workspace-burndown.query';
 
 @Injectable()
 export class GetWorkspaceBurndownHandler {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetWorkspaceBurndownQuery): Promise<Result<any, DomainError>> {
     const { workspaceId } = query;
@@ -45,11 +45,11 @@ export class GetWorkspaceBurndownHandler {
         const currentDay = new Date(startDate);
         currentDay.setDate(startDate.getDate() + i);
 
-        let ideal = Math.max(0, Math.round(totalTasks - (idealDecrease * i)));
+        let ideal = Math.max(0, Math.round(totalTasks - idealDecrease * i));
 
         let remaining = 0;
 
-        activeSprint.tasks.forEach(task => {
+        activeSprint.tasks.forEach((task) => {
           const taskCreatedAt = new Date(task.createdAt);
           if (taskCreatedAt <= currentDay) {
             if (task.status !== 'DONE') {
@@ -81,18 +81,14 @@ export class GetWorkspaceBurndownHandler {
     const now = new Date();
 
     try {
-      const createdCounts = await this.prisma.$queryRaw<
-        { date: Date; count: bigint }[]
-      >`
+      const createdCounts = await this.prisma.$queryRaw<{ date: Date; count: bigint }[]>`
         SELECT DATE(created_at) as date, COUNT(*) as count 
         FROM tasks 
         WHERE workspace_id = ${workspaceId}::uuid
         GROUP BY DATE(created_at)
       `;
 
-      const completedCounts = await this.prisma.$queryRaw<
-        { date: Date; count: bigint }[]
-      >`
+      const completedCounts = await this.prisma.$queryRaw<{ date: Date; count: bigint }[]>`
         SELECT DATE(updated_at) as date, COUNT(*) as count 
         FROM tasks 
         WHERE workspace_id = ${workspaceId}::uuid AND status = 'DONE'
@@ -112,8 +108,8 @@ export class GetWorkspaceBurndownHandler {
         currentDay.setDate(now.getDate() - (totalDays - i));
         currentDay.setHours(23, 59, 59, 999);
 
-        let ideal = Math.max(0, Math.round(totalTasksCount - (idealDecrease * i)));
-        
+        let ideal = Math.max(0, Math.round(totalTasksCount - idealDecrease * i));
+
         let cumulativeCreated = 0;
         let cumulativeCompleted = 0;
 

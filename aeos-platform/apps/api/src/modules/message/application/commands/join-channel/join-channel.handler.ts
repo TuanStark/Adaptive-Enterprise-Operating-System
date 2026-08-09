@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
-import { ChannelRepository, CHANNEL_REPOSITORY } from '../../../domain/repositories/channel.repository';
+import {
+  ChannelRepository,
+  CHANNEL_REPOSITORY,
+} from '../../../domain/repositories/channel.repository';
 import { ChannelNotFoundError, NotChannelMemberError } from '../../../domain/errors/message.errors';
 
 export class JoinChannelCommand {

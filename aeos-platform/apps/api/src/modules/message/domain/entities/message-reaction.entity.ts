@@ -21,13 +21,23 @@ export class MessageReaction extends Entity<string> {
     this._emoji = props.emoji;
   }
 
-  get messageId(): string { return this._messageId; }
-  get userId(): string { return this._userId; }
-  get emoji(): string { return this._emoji; }
+  get messageId(): string {
+    return this._messageId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get emoji(): string {
+    return this._emoji;
+  }
 
   static create(messageId: string, userId: string, emoji: string): MessageReaction {
     return new MessageReaction({
-      id: generateId(), messageId, userId, emoji, createdAt: new Date(),
+      id: generateId(),
+      messageId,
+      userId,
+      emoji,
+      createdAt: new Date(),
     });
   }
 

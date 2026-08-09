@@ -4,5 +4,6 @@ export class SendMessageCommand {
     public readonly senderId: string,
     public readonly content: string,
     public readonly parentMessageId: string | null = null,
+    public readonly attachmentIds: string[] = [],
   ) {}
 }

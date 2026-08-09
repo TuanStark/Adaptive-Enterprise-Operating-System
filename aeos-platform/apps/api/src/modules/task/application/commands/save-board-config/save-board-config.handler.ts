@@ -5,9 +5,7 @@ import { SaveBoardConfigCommand } from './save-board-config.command';
 import type { BoardConfigResult } from '../../queries/get-board-config/get-board-config.handler';
 
 export class SaveBoardConfigHandler {
-  constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-  ) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async execute(command: SaveBoardConfigCommand): Promise<BoardConfigResult> {
     const config = await this.prisma.boardConfig.upsert({

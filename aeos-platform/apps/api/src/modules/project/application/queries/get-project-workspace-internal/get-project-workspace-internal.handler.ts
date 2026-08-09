@@ -1,7 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { GetProjectWorkspaceInternalQuery, ProjectWorkspaceDto } from '../../../../../common/contracts/project.contract';
+import {
+  GetProjectWorkspaceInternalQuery,
+  ProjectWorkspaceDto,
+} from '../../../../../common/contracts/project.contract';
 
 @QueryHandler(GetProjectWorkspaceInternalQuery)
 export class GetProjectWorkspaceInternalHandler implements IQueryHandler<GetProjectWorkspaceInternalQuery> {
@@ -12,7 +15,7 @@ export class GetProjectWorkspaceInternalHandler implements IQueryHandler<GetProj
       where: { id: query.projectId },
       select: { workspaceId: true },
     });
-    
+
     if (!project) return null;
     return { workspaceId: project.workspaceId };
   }

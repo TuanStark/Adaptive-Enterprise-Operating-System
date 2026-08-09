@@ -762,6 +762,7 @@ model File {
 
   tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   taskAttachments TaskAttachment[]
+  messageAttachments MessageAttachment[]
 
   @@map("files")
 }
@@ -1111,6 +1112,7 @@ model ChatMessage {
   replies       ChatMessage[]     @relation("ThreadReplies")
   reactions     MessageReaction[]
   threadReaders ThreadParticipant[]
+  attachments   MessageAttachment[]
 
   @@index([channelId, createdAt])
   @@index([parentMessageId])
@@ -1142,6 +1144,19 @@ model ThreadParticipant {
   @@id([threadId, userId])
   @@index([userId])
   @@map("thread_participants")
+}
+
+model MessageAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  fileId    String   @map("file_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  file      File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, fileId])
+  @@map("message_attachments")
 }
 
 model ProcessedMessage {

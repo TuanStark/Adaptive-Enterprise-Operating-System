@@ -1,5 +1,5 @@
-import { serverApi, getSessionContext } from "@/lib/api-server";
-import type { TeamMember } from "../types";
+import { serverApi, getSessionContext } from '@/lib/api-server';
+import type { TeamMember } from '../types';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -14,7 +14,7 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     );
     return response.data;
   } catch (error) {
-    console.error("Failed to fetch team members:", error);
+    console.error('Failed to fetch team members:', error);
     return [];
   }
 }

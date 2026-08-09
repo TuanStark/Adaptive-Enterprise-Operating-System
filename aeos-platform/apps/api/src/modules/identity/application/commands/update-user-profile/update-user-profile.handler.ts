@@ -9,8 +9,8 @@ import { UserNotFoundError } from '../../../domain/errors/identity.errors';
 export class UpdateUserProfileHandler implements ICommandHandler<UpdateUserProfileCommand> {
   constructor(
     @Inject(USER_REPOSITORY)
-    private readonly userRepository: UserRepository
-  ) { }
+    private readonly userRepository: UserRepository,
+  ) {}
 
   async execute(command: UpdateUserProfileCommand): Promise<Result<void, UserNotFoundError>> {
     const user = await this.userRepository.findById(command.userId);
@@ -24,7 +24,7 @@ export class UpdateUserProfileHandler implements ICommandHandler<UpdateUserProfi
       command.avatarUrl,
       command.bio,
       command.timezone,
-      command.phone
+      command.phone,
     );
 
     await this.userRepository.save(user);

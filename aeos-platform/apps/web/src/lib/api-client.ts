@@ -3,11 +3,11 @@
 // Lấy accessToken từ NextAuth session thay vì localStorage
 // ──────────────────────────────────────────────────────────────
 
-import type { ApiEnvelope } from "@/types/api";
-import { getSession } from "next-auth/react";
+import type { ApiEnvelope } from '@/types/api';
+import { getSession } from 'next-auth/react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const API_PREFIX = "/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_PREFIX = '/api/v1';
 
 class ApiClientError extends Error {
   constructor(
@@ -16,7 +16,7 @@ class ApiClientError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = "ApiClientError";
+    this.name = 'ApiClientError';
   }
 }
 
@@ -25,7 +25,7 @@ class ApiClientError extends Error {
  * NextAuth tự động quản lý cookie httpOnly nên ta chỉ cần gọi getSession().
  */
 async function getClientToken(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const session = await getSession();
     return session?.accessToken ?? null;
@@ -37,20 +37,20 @@ async function getClientToken(): Promise<string | null> {
 let isRedirecting = false;
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401 && !response.url.includes("/auth/login")) {
-    if (typeof window !== "undefined" && !isRedirecting) {
+  if (response.status === 401 && !response.url.includes('/auth/login')) {
+    if (typeof window !== 'undefined' && !isRedirecting) {
       isRedirecting = true;
       // Dùng next-auth signOut thay vì clear localStorage
-      const { signOut } = await import("next-auth/react");
-      await signOut({ callbackUrl: "/login" });
+      const { signOut } = await import('next-auth/react');
+      await signOut({ callbackUrl: '/login' });
     }
-    throw new ApiClientError(401, "UNAUTHORIZED", "Session expired");
+    throw new ApiClientError(401, 'UNAUTHORIZED', 'Session expired');
   }
 
   const body = await response.json();
 
   if (!response.ok || !body.success) {
-    const error = body.error ?? { code: "UNKNOWN", message: "An error occurred" };
+    const error = body.error ?? { code: 'UNKNOWN', message: 'An error occurred' };
     throw new ApiClientError(response.status, error.code, error.message);
   }
 
@@ -59,13 +59,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 async function buildHeaders(): Promise<HeadersInit> {
   const token = await getClientToken();
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
 }
 
 export const clientApi = {
-  get: async <T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> => {
+  get: async <T>(
+    path: string,
+    params?: Record<string, string | number | undefined>,
+  ): Promise<T> => {
     const url = new URL(`${API_PREFIX}${path}`, API_BASE);
 
     if (params) {
@@ -77,14 +80,14 @@ export const clientApi = {
     }
 
     const headers = await buildHeaders();
-    const response = await fetch(url.toString(), { method: "GET", headers });
+    const response = await fetch(url.toString(), { method: 'GET', headers });
     return handleResponse<T>(response);
   },
 
   post: async <T>(path: string, body?: unknown): Promise<T> => {
     const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "POST",
+      method: 'POST',
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -94,7 +97,7 @@ export const clientApi = {
   patch: async <T>(path: string, body?: unknown): Promise<T> => {
     const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "PATCH",
+      method: 'PATCH',
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -104,7 +107,7 @@ export const clientApi = {
   put: async <T>(path: string, body?: unknown): Promise<T> => {
     const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "PUT",
+      method: 'PUT',
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -114,7 +117,7 @@ export const clientApi = {
   delete: async <T>(path: string): Promise<T> => {
     const headers = await buildHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "DELETE",
+      method: 'DELETE',
       headers,
     });
     return handleResponse<T>(response);

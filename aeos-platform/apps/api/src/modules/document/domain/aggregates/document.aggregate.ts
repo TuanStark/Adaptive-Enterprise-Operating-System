@@ -29,9 +29,16 @@ export class Document extends AggregateRoot<string> {
   private _versions: DocumentVersion[];
 
   private constructor(
-    id: string, tenantId: string, workspaceId: string, name: string,
-    ownerId: string, visibility: string, version: number,
-    createdAt?: Date, updatedAt?: Date, deletedAt?: Date | null,
+    id: string,
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    ownerId: string,
+    visibility: string,
+    version: number,
+    createdAt?: Date,
+    updatedAt?: Date,
+    deletedAt?: Date | null,
     versions?: DocumentVersion[],
   ) {
     super(id, version, createdAt, updatedAt);
@@ -44,33 +51,57 @@ export class Document extends AggregateRoot<string> {
     this._versions = versions ?? [];
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get name(): string { return this._name; }
-  get ownerId(): string { return this._ownerId; }
-  get visibility(): string { return this._visibility; }
-  get deletedAt(): Date | null { return this._deletedAt; }
-  get versions(): ReadonlyArray<DocumentVersion> { return this._versions; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get name(): string {
+    return this._name;
+  }
+  get ownerId(): string {
+    return this._ownerId;
+  }
+  get visibility(): string {
+    return this._visibility;
+  }
+  get deletedAt(): Date | null {
+    return this._deletedAt;
+  }
+  get versions(): ReadonlyArray<DocumentVersion> {
+    return this._versions;
+  }
 
   static create(
-    tenantId: string, workspaceId: string, name: string, ownerId: string, visibility: string = 'PRIVATE',
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    ownerId: string,
+    visibility: string = 'PRIVATE',
   ): Result<Document, DocumentNameRequiredError> {
     if (!name || name.trim().length === 0) {
       return Result.fail(new DocumentNameRequiredError());
     }
     const id = generateId();
-    const document = new Document(
-      id, tenantId, workspaceId, name.trim(), ownerId, visibility, 0,
-    );
+    const document = new Document(id, tenantId, workspaceId, name.trim(), ownerId, visibility, 0);
     document.addDomainEvent(new DocumentCreatedEvent(document.id, document.workspaceId));
     return Result.ok(document);
   }
 
   static fromPersistence(props: DocumentProps): Document {
     return new Document(
-      props.id, props.tenantId, props.workspaceId, props.name,
-      props.ownerId, props.visibility, props.version, props.createdAt,
-      props.updatedAt, props.deletedAt, props.versions,
+      props.id,
+      props.tenantId,
+      props.workspaceId,
+      props.name,
+      props.ownerId,
+      props.visibility,
+      props.version,
+      props.createdAt,
+      props.updatedAt,
+      props.deletedAt,
+      props.versions,
     );
   }
 

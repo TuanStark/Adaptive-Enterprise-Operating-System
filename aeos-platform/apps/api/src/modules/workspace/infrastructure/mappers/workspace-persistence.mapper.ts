@@ -1,8 +1,9 @@
+import { Workspace as PrismaWorkspace, WorkspaceMember as PrismaWsMember } from '@aeos/database';
 import {
-  Workspace as PrismaWorkspace,
-  WorkspaceMember as PrismaWsMember,
-} from '@aeos/database';
-import { Workspace, WorkspaceStatus, WorkspaceProps } from '../../domain/aggregates/workspace.aggregate';
+  Workspace,
+  WorkspaceStatus,
+  WorkspaceProps,
+} from '../../domain/aggregates/workspace.aggregate';
 import { WorkspaceMember } from '../../domain/entities/workspace-member.entity';
 
 type PrismaWsWithMembers = PrismaWorkspace & { members: PrismaWsMember[] };

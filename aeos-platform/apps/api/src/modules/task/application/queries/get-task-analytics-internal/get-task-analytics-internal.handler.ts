@@ -1,7 +1,10 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { GetTaskAnalyticsInternalQuery, TaskAnalyticsDto } from '../../../../../common/contracts/task.contract';
+import {
+  GetTaskAnalyticsInternalQuery,
+  TaskAnalyticsDto,
+} from '../../../../../common/contracts/task.contract';
 
 @QueryHandler(GetTaskAnalyticsInternalQuery)
 export class GetTaskAnalyticsInternalHandler implements IQueryHandler<GetTaskAnalyticsInternalQuery> {
@@ -10,7 +13,12 @@ export class GetTaskAnalyticsInternalHandler implements IQueryHandler<GetTaskAna
   async execute(query: GetTaskAnalyticsInternalQuery): Promise<TaskAnalyticsDto> {
     const [totalTasks, pendingTasks] = await Promise.all([
       this.prisma.task.count({ where: { project: { workspaceId: query.workspaceId } } }),
-      this.prisma.task.count({ where: { project: { workspaceId: query.workspaceId }, status: { in: ['TODO', 'IN_PROGRESS'] } } }),
+      this.prisma.task.count({
+        where: {
+          project: { workspaceId: query.workspaceId },
+          status: { in: ['TODO', 'IN_PROGRESS'] },
+        },
+      }),
     ]);
 
     return { totalTasks, pendingTasks };

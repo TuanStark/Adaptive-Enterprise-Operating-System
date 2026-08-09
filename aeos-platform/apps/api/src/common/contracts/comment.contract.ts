@@ -15,7 +15,10 @@ export class CommentCreatedIntegrationEvent implements IIntegrationEvent {
     this.commentId = payload.commentId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; commentId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  commentId: string;
+  workspaceId: string;
 }
 export class CommentDeletedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'CommentDeletedEvent';
@@ -25,5 +28,8 @@ export class CommentDeletedIntegrationEvent implements IIntegrationEvent {
     this.commentId = payload.commentId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; commentId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  commentId: string;
+  workspaceId: string;
 }

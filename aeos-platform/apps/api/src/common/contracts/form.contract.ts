@@ -15,7 +15,10 @@ export class FormCreatedIntegrationEvent implements IIntegrationEvent {
     this.formId = payload.formId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; formId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  formId: string;
+  workspaceId: string;
 }
 export class FormDeletedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'FormDeletedEvent';
@@ -25,5 +28,8 @@ export class FormDeletedIntegrationEvent implements IIntegrationEvent {
     this.formId = payload.formId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; formId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  formId: string;
+  workspaceId: string;
 }

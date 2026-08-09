@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
 import { InviteMemberCommand } from './invite-member.command';
 
 export class InviteMemberHandler {
@@ -25,7 +28,10 @@ export class InviteMemberHandler {
         code: 'WORKSPACE_NOT_BELONG_TO_TENANT',
         message: 'Workspace does not belong to this tenant',
         httpStatus: 403,
-        toJSON: () => ({ code: 'WORKSPACE_NOT_BELONG_TO_TENANT', message: 'Workspace does not belong to this tenant' }),
+        toJSON: () => ({
+          code: 'WORKSPACE_NOT_BELONG_TO_TENANT',
+          message: 'Workspace does not belong to this tenant',
+        }),
       });
     }
 

@@ -2,7 +2,11 @@ import { AggregateRoot } from '@aeos/shared-kernel';
 import { Result } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 import { ChannelMember } from '../entities/channel-member.entity';
-import { ChannelCreatedEvent, MemberJoinedChannelEvent, MemberLeftChannelEvent } from '../events/message.events';
+import {
+  ChannelCreatedEvent,
+  MemberJoinedChannelEvent,
+  MemberLeftChannelEvent,
+} from '../events/message.events';
 import {
   ChannelNameRequiredError,
   ChannelMemberAlreadyExistsError,
@@ -56,15 +60,33 @@ export class Channel extends AggregateRoot<string> {
     this._members = props.members;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get name(): string { return this._name; }
-  get description(): string | null { return this._description; }
-  get type(): ChannelType { return this._type; }
-  get creatorId(): string { return this._creatorId; }
-  get isArchived(): boolean { return this._isArchived; }
-  get topic(): string | null { return this._topic; }
-  get members(): ReadonlyArray<ChannelMember> { return this._members; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get name(): string {
+    return this._name;
+  }
+  get description(): string | null {
+    return this._description;
+  }
+  get type(): ChannelType {
+    return this._type;
+  }
+  get creatorId(): string {
+    return this._creatorId;
+  }
+  get isArchived(): boolean {
+    return this._isArchived;
+  }
+  get topic(): string | null {
+    return this._topic;
+  }
+  get members(): ReadonlyArray<ChannelMember> {
+    return this._members;
+  }
 
   static create(
     tenantId: string,
@@ -136,11 +158,14 @@ export class Channel extends AggregateRoot<string> {
 
   // ── Membership ──
 
-  addMember(userId: string, role: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'): Result<void, ChannelMemberAlreadyExistsError | ChannelArchivedError> {
+  addMember(
+    userId: string,
+    role: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER',
+  ): Result<void, ChannelMemberAlreadyExistsError | ChannelArchivedError> {
     if (this._isArchived) {
       return Result.fail(new ChannelArchivedError());
     }
-    if (this._members.find(m => m.userId === userId)) {
+    if (this._members.find((m) => m.userId === userId)) {
       return Result.fail(new ChannelMemberAlreadyExistsError(userId));
     }
     this._members.push(ChannelMember.create(this.id, userId, role));
@@ -150,7 +175,7 @@ export class Channel extends AggregateRoot<string> {
   }
 
   removeMember(userId: string): Result<void, ChannelMemberNotFoundError> {
-    const idx = this._members.findIndex(m => m.userId === userId);
+    const idx = this._members.findIndex((m) => m.userId === userId);
     if (idx === -1) {
       return Result.fail(new ChannelMemberNotFoundError(userId));
     }
@@ -161,11 +186,14 @@ export class Channel extends AggregateRoot<string> {
   }
 
   isMember(userId: string): boolean {
-    return this._members.some(m => m.userId === userId);
+    return this._members.some((m) => m.userId === userId);
   }
 
-  updateReadCursor(userId: string, lastReadMessageId: string): Result<void, ChannelMemberNotFoundError> {
-    const member = this._members.find(m => m.userId === userId);
+  updateReadCursor(
+    userId: string,
+    lastReadMessageId: string,
+  ): Result<void, ChannelMemberNotFoundError> {
+    const member = this._members.find((m) => m.userId === userId);
     if (!member) {
       return Result.fail(new ChannelMemberNotFoundError(userId));
     }

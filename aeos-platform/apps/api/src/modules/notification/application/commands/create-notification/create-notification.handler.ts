@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Notification } from '../../../domain/entities/notification.entity';
-import { NotificationRepository, NOTIFICATION_REPOSITORY } from '../../../domain/repositories/notification.repository';
+import {
+  NotificationRepository,
+  NOTIFICATION_REPOSITORY,
+} from '../../../domain/repositories/notification.repository';
 
 export class CreateNotificationCommand {
   constructor(
@@ -22,8 +25,12 @@ export class CreateNotificationHandler {
 
   async execute(command: CreateNotificationCommand): Promise<Result<string, DomainError>> {
     const notification = Notification.create(
-      command.tenantId, command.userId, command.type,
-      command.title, command.content, command.metadata,
+      command.tenantId,
+      command.userId,
+      command.type,
+      command.title,
+      command.content,
+      command.metadata,
     );
     await this.notificationRepository.save(notification);
     return Result.ok(notification.id);

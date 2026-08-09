@@ -1,9 +1,19 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Message } from '../../../domain/entities/message.entity';
-import { ChannelRepository, CHANNEL_REPOSITORY } from '../../../domain/repositories/channel.repository';
-import { MessageRepository, MESSAGE_REPOSITORY } from '../../../domain/repositories/message.repository';
-import { ChannelNotFoundError, NotChannelMemberError, ChannelArchivedError } from '../../../domain/errors/message.errors';
+import {
+  ChannelRepository,
+  CHANNEL_REPOSITORY,
+} from '../../../domain/repositories/channel.repository';
+import {
+  MessageRepository,
+  MESSAGE_REPOSITORY,
+} from '../../../domain/repositories/message.repository';
+import {
+  ChannelNotFoundError,
+  NotChannelMemberError,
+  ChannelArchivedError,
+} from '../../../domain/errors/message.errors';
 import { SendMessageCommand } from './send-message.command';
 
 import { ChannelType } from '../../../domain/aggregates/channel.aggregate';
@@ -14,7 +24,7 @@ export class SendMessageHandler {
     private readonly channelRepository: ChannelRepository,
     @Inject(MESSAGE_REPOSITORY)
     private readonly messageRepository: MessageRepository,
-  ) { }
+  ) {}
 
   async execute(command: SendMessageCommand): Promise<Result<string, DomainError>> {
     const channel = await this.channelRepository.findById(command.channelId);
@@ -36,6 +46,7 @@ export class SendMessageHandler {
       command.senderId,
       command.content,
       command.parentMessageId,
+      command.attachmentIds,
     );
 
     if (messageResult.isFail) return Result.fail(messageResult.error);

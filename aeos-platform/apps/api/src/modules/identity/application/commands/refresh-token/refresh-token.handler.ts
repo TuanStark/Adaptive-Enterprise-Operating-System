@@ -3,7 +3,10 @@ import { Result, DomainError } from '@aeos/errors';
 import { generateId } from '@aeos/common';
 
 import { UserRepository, USER_REPOSITORY } from '../../../domain/repositories/user.repository';
-import { SessionRepository, SESSION_REPOSITORY } from '../../../domain/repositories/session.repository';
+import {
+  SessionRepository,
+  SESSION_REPOSITORY,
+} from '../../../domain/repositories/session.repository';
 import { Session } from '../../../domain/entities/session.entity';
 import {
   InvalidRefreshTokenError,
@@ -29,9 +32,7 @@ export class RefreshTokenHandler {
     private readonly jwtService: JwtTokenService,
   ) {}
 
-  async execute(
-    command: RefreshTokenCommand,
-  ): Promise<Result<RefreshTokenResult, DomainError>> {
+  async execute(command: RefreshTokenCommand): Promise<Result<RefreshTokenResult, DomainError>> {
     const session = await this.sessionRepository.findByRefreshToken(command.refreshToken);
 
     if (!session) {

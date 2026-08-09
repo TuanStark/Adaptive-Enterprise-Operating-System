@@ -22,7 +22,9 @@ export function useWorkspaceMemberProfile(workspaceId?: string) {
   const query = useQuery({
     queryKey: ['workspace', workspaceId, 'member', 'me'],
     queryFn: async () => {
-      const data = await clientApi.get<WorkspaceMemberProfile>(`/workspaces/${workspaceId}/members/me`);
+      const data = await clientApi.get<WorkspaceMemberProfile>(
+        `/workspaces/${workspaceId}/members/me`,
+      );
       return data;
     },
     enabled: !!workspaceId,

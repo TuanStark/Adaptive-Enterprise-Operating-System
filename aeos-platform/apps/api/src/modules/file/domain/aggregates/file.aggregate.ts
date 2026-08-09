@@ -40,7 +40,16 @@ export class File extends AggregateRoot<string> {
     uploadedBy: string,
   ): Result<File, DomainError> {
     if (!fileName) return Result.fail(new FileCreationError('File name is required'));
-    const file = new File(generateId(), tenantId, storageProvider, storageKey, fileName, mimeType, size, uploadedBy);
+    const file = new File(
+      generateId(),
+      tenantId,
+      storageProvider,
+      storageKey,
+      fileName,
+      mimeType,
+      size,
+      uploadedBy,
+    );
     return Result.ok(file);
   }
 

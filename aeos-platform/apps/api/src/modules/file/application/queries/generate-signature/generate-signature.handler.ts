@@ -4,9 +4,7 @@ import { GenerateSignatureQuery } from './generate-signature.query';
 import { StoragePort, STORAGE_PORT, SignatureDto } from '../../ports/storage.port';
 
 export class GenerateSignatureHandler {
-  constructor(
-    @Inject(STORAGE_PORT) private readonly storagePort: StoragePort,
-  ) {}
+  constructor(@Inject(STORAGE_PORT) private readonly storagePort: StoragePort) {}
 
   async execute(query: GenerateSignatureQuery): Promise<Result<SignatureDto, DomainError>> {
     try {

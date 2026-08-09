@@ -1,8 +1,14 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler, QueryBus } from '@nestjs/cqrs';
-import { CommentRepository, COMMENT_REPOSITORY } from '../../../domain/repositories/comment.repository';
+import {
+  CommentRepository,
+  COMMENT_REPOSITORY,
+} from '../../../domain/repositories/comment.repository';
 import { GetCommentsByTaskQuery } from './get-comments-by-task.query';
-import { GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 
 export interface CommentUserDto {
   id: string;
@@ -29,12 +35,12 @@ export class GetCommentsByTaskHandler implements IQueryHandler<GetCommentsByTask
 
   async execute(query: GetCommentsByTaskQuery): Promise<CommentDetailDto[]> {
     const comments = await this.commentRepository.findByTaskId(query.taskId);
-    
+
     if (comments.length === 0) {
       return [];
     }
 
-    const dtos: CommentDetailDto[] = comments.map(c => ({
+    const dtos: CommentDetailDto[] = comments.map((c) => ({
       id: c.id,
       userId: c.userId,
       content: c.content,
@@ -42,12 +48,14 @@ export class GetCommentsByTaskHandler implements IQueryHandler<GetCommentsByTask
     }));
 
     // Extract unique user IDs
-    const userIds = Array.from(new Set(dtos.map(c => c.userId).filter(Boolean)));
+    const userIds = Array.from(new Set(dtos.map((c) => c.userId).filter(Boolean)));
 
     if (userIds.length > 0) {
       // Dispatch query to Identity module via QueryBus
-      const users: UserInternalDto[] = await this.queryBus.execute(new GetUsersInternalQuery(userIds));
-      
+      const users: UserInternalDto[] = await this.queryBus.execute(
+        new GetUsersInternalQuery(userIds),
+      );
+
       const userMap = new Map<string, CommentUserDto>();
       for (const u of users) {
         userMap.set(u.id, {

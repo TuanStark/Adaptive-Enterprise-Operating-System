@@ -5,9 +5,7 @@ import { FileRepository, FILE_REPOSITORY } from '../../../domain/repositories/fi
 import { File } from '../../../domain/aggregates/file.aggregate';
 
 export class ConfirmUploadHandler {
-  constructor(
-    @Inject(FILE_REPOSITORY) private readonly fileRepo: FileRepository,
-  ) {}
+  constructor(@Inject(FILE_REPOSITORY) private readonly fileRepo: FileRepository) {}
 
   async execute(command: ConfirmUploadCommand): Promise<Result<string, DomainError>> {
     const fileOrError = File.create(

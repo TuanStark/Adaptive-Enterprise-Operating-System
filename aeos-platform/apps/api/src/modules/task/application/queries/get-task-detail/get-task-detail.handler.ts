@@ -2,14 +2,16 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { TaskRepository, TASK_REPOSITORY } from '../../../domain/repositories/task.repository';
 import { GetTaskDetailQuery } from './get-task-detail.query';
-import { GetUsersInternalQuery, UserInternalDto } from 'apps/api/src/common/contracts/identity.contract';
+import {
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from 'apps/api/src/common/contracts/identity.contract';
 
 export interface TaskUserDto {
   id: string;
   displayName: string | null;
   avatarUrl: string | null;
 }
-
 
 export interface TaskDetailDto {
   id: string;
@@ -50,7 +52,7 @@ export class GetTaskDetailHandler {
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepository,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
   async execute(query: GetTaskDetailQuery): Promise<TaskDetailDto> {
     const task = await this.taskRepository.findById(query.taskId);
@@ -93,15 +95,19 @@ export class GetTaskDetailHandler {
     const userIds = [task.creatorId, task.reporterId, task.assigneeId].filter(Boolean) as string[];
 
     if (userIds.length > 0) {
-      const users: UserInternalDto[] = await this.queryBus.execute(new GetUsersInternalQuery(userIds));
-      const userMap = new Map(users.map((u) => [
-        u.id,
-        {
-          id: u.id,
-          displayName: [u.firstName, u.lastName].filter(Boolean).join(' ') || null,
-          avatarUrl: u.avatarUrl,
-        }
-      ]));
+      const users: UserInternalDto[] = await this.queryBus.execute(
+        new GetUsersInternalQuery(userIds),
+      );
+      const userMap = new Map(
+        users.map((u) => [
+          u.id,
+          {
+            id: u.id,
+            displayName: [u.firstName, u.lastName].filter(Boolean).join(' ') || null,
+            avatarUrl: u.avatarUrl,
+          },
+        ]),
+      );
 
       if (task.creatorId && userMap.has(task.creatorId)) {
         dto.creator = userMap.get(task.creatorId);

@@ -1,6 +1,9 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
-import { GetWorkspaceInternalQuery, WorkspaceInternalDto } from '../../../../../common/contracts/workspace.contract';
+import {
+  GetWorkspaceInternalQuery,
+  WorkspaceInternalDto,
+} from '../../../../../common/contracts/workspace.contract';
 
 @QueryHandler(GetWorkspaceInternalQuery)
 export class GetWorkspaceInternalHandler implements IQueryHandler<GetWorkspaceInternalQuery> {

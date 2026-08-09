@@ -1,13 +1,13 @@
-import { create } from "zustand";
-import type { Session } from "next-auth";
-import type { UserProfile } from "../hooks/useProfile";
-import type { WorkspaceMemberProfile } from "../../workspace/hooks/useWorkspaceMemberProfile";
+import { create } from 'zustand';
+import type { Session } from 'next-auth';
+import type { UserProfile } from '../hooks/useProfile';
+import type { WorkspaceMemberProfile } from '../../workspace/hooks/useWorkspaceMemberProfile';
 
 interface AuthState {
-  user: Session["user"] | null;
+  user: Session['user'] | null;
   profile: UserProfile | null;
   workspaceMemberProfile: WorkspaceMemberProfile | null;
-  setUser: (user: Session["user"] | null) => void;
+  setUser: (user: Session['user'] | null) => void;
   setProfile: (profile: UserProfile | null) => void;
   setWorkspaceMemberProfile: (profile: WorkspaceMemberProfile | null) => void;
   clearUser: () => void;

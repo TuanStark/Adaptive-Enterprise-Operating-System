@@ -2,14 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
 import { OutboxService } from '../../../../common/events/outbox.service';
 import { TaskRepository, TaskFilters } from '../../domain/repositories/task.repository';
-import { Task, TaskStatus, TaskPriority, TaskType, TaskProps } from '../../domain/aggregates/task.aggregate';
+import {
+  Task,
+  TaskStatus,
+  TaskPriority,
+  TaskType,
+  TaskProps,
+} from '../../domain/aggregates/task.aggregate';
 
 @Injectable()
 export class PrismaTaskRepository implements TaskRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly outboxService: OutboxService,
-  ) { }
+  ) {}
 
   async save(task: Task): Promise<void> {
     const domainEvents = task.pullDomainEvents();
@@ -93,7 +99,11 @@ export class PrismaTaskRepository implements TaskRepository {
     return this.toDomain(record);
   }
 
-  async findAll(filters: TaskFilters, page: number, limit: number): Promise<{ data: Task[]; total: number }> {
+  async findAll(
+    filters: TaskFilters,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Task[]; total: number }> {
     const where: any = { deletedAt: null };
     if (filters.workspaceId) where.workspaceId = filters.workspaceId;
     if (filters.projectId) where.projectId = filters.projectId;

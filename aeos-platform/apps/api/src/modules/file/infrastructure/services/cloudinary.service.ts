@@ -44,7 +44,7 @@ export class CloudinaryService implements StoragePort {
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
-      process.env.CLOUDINARY_API_SECRET || 'demo'
+      process.env.CLOUDINARY_API_SECRET || 'demo',
     );
 
     return {

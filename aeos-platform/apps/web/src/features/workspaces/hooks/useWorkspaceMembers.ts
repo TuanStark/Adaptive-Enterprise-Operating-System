@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { clientApi } from "@/lib/api-client";
-import { PaginatedResponse } from "@/types/api";
+import { useQuery } from '@tanstack/react-query';
+import { clientApi } from '@/lib/api-client';
+import { PaginatedResponse } from '@/types/api';
 
 export interface WorkspaceMember {
   id: string;
@@ -19,9 +19,14 @@ interface UseWorkspaceMembersParams {
   limit?: number;
 }
 
-export function useWorkspaceMembers({ workspaceId, search, page = 1, limit = 50 }: UseWorkspaceMembersParams) {
+export function useWorkspaceMembers({
+  workspaceId,
+  search,
+  page = 1,
+  limit = 50,
+}: UseWorkspaceMembersParams) {
   return useQuery({
-    queryKey: ["workspace-members", workspaceId, { search, page, limit }],
+    queryKey: ['workspace-members', workspaceId, { search, page, limit }],
     queryFn: () =>
       clientApi.get<PaginatedResponse<WorkspaceMember>>(`/workspaces/${workspaceId}/members`, {
         search,

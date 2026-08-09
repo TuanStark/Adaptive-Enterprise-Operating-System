@@ -4,7 +4,10 @@ import { generateId } from '@aeos/common';
 
 import { Email } from '../../../domain/value-objects/email.vo';
 import { UserRepository, USER_REPOSITORY } from '../../../domain/repositories/user.repository';
-import { SessionRepository, SESSION_REPOSITORY } from '../../../domain/repositories/session.repository';
+import {
+  SessionRepository,
+  SESSION_REPOSITORY,
+} from '../../../domain/repositories/session.repository';
 import {
   PasswordHasher,
   PASSWORD_HASHER,
@@ -35,9 +38,7 @@ export class LoginHandler {
     private readonly jwtService: JwtTokenService,
   ) {}
 
-  async execute(
-    command: LoginCommand,
-  ): Promise<Result<LoginResult, DomainError>> {
+  async execute(command: LoginCommand): Promise<Result<LoginResult, DomainError>> {
     const emailResult = Email.create(command.email);
     if (emailResult.isFail) {
       return Result.fail(new InvalidCredentialsError());

@@ -35,8 +35,12 @@ export class PrismaDocumentRepository implements DocumentRepository {
         },
       });
 
-      const existingVersions = await tx.documentVersion.findMany({ where: { documentId: document.id } });
-      const newVersions = document.versions.filter((v) => !existingVersions.find((ev) => ev.id === v.id));
+      const existingVersions = await tx.documentVersion.findMany({
+        where: { documentId: document.id },
+      });
+      const newVersions = document.versions.filter(
+        (v) => !existingVersions.find((ev) => ev.id === v.id),
+      );
 
       if (newVersions.length > 0) {
         await tx.documentVersion.createMany({
@@ -71,7 +75,11 @@ export class PrismaDocumentRepository implements DocumentRepository {
     return this.toDomain(record);
   }
 
-  async findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: Document[]; total: number }> {
+  async findByWorkspaceId(
+    workspaceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Document[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.document.findMany({
         where: { workspaceId, deletedAt: null },

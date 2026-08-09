@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { clientApi } from "@/lib/api-client";
-import { InviteInfo } from "../types/invite.types";
+import { useState, useEffect } from 'react';
+import { clientApi } from '@/lib/api-client';
+import { InviteInfo } from '../types/invite.types';
 
 interface UseValidateInviteTokenResult {
   inviteInfo: InviteInfo | null;
@@ -29,7 +29,8 @@ export function useValidateInviteToken(token: string | null): UseValidateInviteT
         }
       } catch (err: unknown) {
         if (isMounted) {
-          const msg = err instanceof Error ? err.message : "The invitation link is invalid or has expired.";
+          const msg =
+            err instanceof Error ? err.message : 'The invitation link is invalid or has expired.';
           setValidateError(msg);
         }
       } finally {

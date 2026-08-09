@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Document } from '../../../domain/aggregates/document.aggregate';
-import { DocumentRepository, DOCUMENT_REPOSITORY } from '../../../domain/repositories/document.repository';
+import {
+  DocumentRepository,
+  DOCUMENT_REPOSITORY,
+} from '../../../domain/repositories/document.repository';
 import { CreateDocumentCommand } from './create-document.command';
 
 export class CreateDocumentHandler {
@@ -12,8 +15,11 @@ export class CreateDocumentHandler {
 
   async execute(command: CreateDocumentCommand): Promise<Result<string, DomainError>> {
     const createResult = Document.create(
-      command.tenantId, command.workspaceId, command.name,
-      command.ownerId, command.visibility,
+      command.tenantId,
+      command.workspaceId,
+      command.name,
+      command.ownerId,
+      command.visibility,
     );
     if (createResult.isFail) return Result.fail(createResult.error);
 

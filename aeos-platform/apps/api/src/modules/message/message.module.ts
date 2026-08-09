@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
 import { IdentityModule } from '../identity/identity.module';
 import { CHANNEL_REPOSITORY } from './domain/repositories/channel.repository';
@@ -12,10 +13,13 @@ import { ReactToMessageHandler } from './application/commands/react-to-message/r
 import { GetOrCreateDirectChannelHandler } from './application/commands/get-or-create-dm/get-or-create-dm.handler';
 import { ChannelController } from './presentation/controllers/channel.controller';
 import { ChatGateway } from './presentation/gateways/chat.gateway';
-import { WorkspaceArchivedEventHandler, WorkspaceMemberRemovedEventHandler } from './application/events/workspace-events.handler';
+import {
+  WorkspaceArchivedEventHandler,
+  WorkspaceMemberRemovedEventHandler,
+} from './application/events/workspace-events.handler';
 
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, CqrsModule],
   controllers: [ChannelController],
   providers: [
     PrismaService,

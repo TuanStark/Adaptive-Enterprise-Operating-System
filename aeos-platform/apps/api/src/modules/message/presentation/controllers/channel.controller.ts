@@ -1,14 +1,37 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, Inject, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
 import { IsString, IsOptional, MaxLength, MinLength, IsEnum } from 'class-validator';
 import { CreateChannelCommand } from '../../application/commands/create-channel/create-channel.command';
 import { CreateChannelHandler } from '../../application/commands/create-channel/create-channel.handler';
-import { JoinChannelCommand, JoinChannelHandler } from '../../application/commands/join-channel/join-channel.handler';
+import {
+  JoinChannelCommand,
+  JoinChannelHandler,
+} from '../../application/commands/join-channel/join-channel.handler';
 import { GetOrCreateDirectChannelCommand } from '../../application/commands/get-or-create-dm/get-or-create-dm.command';
 import { GetOrCreateDirectChannelHandler } from '../../application/commands/get-or-create-dm/get-or-create-dm.handler';
-import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
-import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
+import {
+  ChannelRepository,
+  CHANNEL_REPOSITORY,
+} from '../../domain/repositories/channel.repository';
+import {
+  MessageRepository,
+  MESSAGE_REPOSITORY,
+} from '../../domain/repositories/message.repository';
 import { ChatGateway } from '../gateways/chat.gateway';
 
 // ── Request DTOs ──
@@ -62,8 +85,12 @@ export class ChannelController {
   async createChannel(@Body() dto: CreateChannelRequestDto, @Req() req: Request) {
     const user = (req as any).user;
     const command = new CreateChannelCommand(
-      dto.tenantId, dto.workspaceId, dto.name,
-      user.userId, dto.type ?? 'PUBLIC', dto.description ?? null,
+      dto.tenantId,
+      dto.workspaceId,
+      dto.name,
+      user.userId,
+      dto.type ?? 'PUBLIC',
+      dto.description ?? null,
     );
     const result = await this.createChannelHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -75,7 +102,10 @@ export class ChannelController {
   async createDirectMessage(@Body() dto: CreateDmRequestDto, @Req() req: Request) {
     const user = (req as any).user;
     const command = new GetOrCreateDirectChannelCommand(
-      dto.tenantId, dto.workspaceId, user.userId, dto.targetUserId
+      dto.tenantId,
+      dto.workspaceId,
+      user.userId,
+      dto.targetUserId,
     );
     const result = await this.getOrCreateDmHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
@@ -115,7 +145,12 @@ export class ChannelController {
         );
         const createResult = await this.createChannelHandler.execute(createCommand);
         if (createResult.isOk) {
-          const refreshed = await this.channelRepository.findByWorkspaceId(workspaceId, p, l, userId);
+          const refreshed = await this.channelRepository.findByWorkspaceId(
+            workspaceId,
+            p,
+            l,
+            userId,
+          );
           data = refreshed.data;
           total = refreshed.total;
         }
@@ -123,10 +158,15 @@ export class ChannelController {
     }
 
     return {
-      data: data.map(ch => ({
-        id: ch.id, name: ch.name, type: ch.type, description: ch.description,
-        topic: ch.topic, isArchived: ch.isArchived, memberCount: ch.members.length,
-        members: ch.members.map(m => ({ userId: m.userId, role: m.role, joinedAt: m.joinedAt })),
+      data: data.map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        type: ch.type,
+        description: ch.description,
+        topic: ch.topic,
+        isArchived: ch.isArchived,
+        memberCount: ch.members.length,
+        members: ch.members.map((m) => ({ userId: m.userId, role: m.role, joinedAt: m.joinedAt })),
         createdAt: ch.createdAt,
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },
@@ -144,10 +184,17 @@ export class ChannelController {
     }
 
     return {
-      id: channel.id, name: channel.name, type: channel.type,
-      description: channel.description, topic: channel.topic,
+      id: channel.id,
+      name: channel.name,
+      type: channel.type,
+      description: channel.description,
+      topic: channel.topic,
       isArchived: channel.isArchived,
-      members: channel.members.map(m => ({ userId: m.userId, role: m.role, joinedAt: m.createdAt })),
+      members: channel.members.map((m) => ({
+        userId: m.userId,
+        role: m.role,
+        joinedAt: m.createdAt,
+      })),
       createdAt: channel.createdAt,
     };
   }
@@ -174,7 +221,7 @@ export class ChannelController {
   async updateReadCursor(
     @Param('id') id: string,
     @Body() dto: { lastReadMessageId: string },
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     const user = (req as any).user;
     const channel = await this.channelRepository.findById(id);
@@ -189,13 +236,11 @@ export class ChannelController {
 
   @Post(':id/members')
   @HttpCode(HttpStatus.CREATED)
-  async addMember(
-    @Param('id') id: string,
-    @Body() dto: AddMemberRequestDto,
-    @Req() req: Request
-  ) {
+  async addMember(@Param('id') id: string, @Body() dto: AddMemberRequestDto, @Req() req: Request) {
     const user = (req as any).user;
-    const result = await this.joinChannelHandler.execute(new JoinChannelCommand(id, dto.userId, user.userId));
+    const result = await this.joinChannelHandler.execute(
+      new JoinChannelCommand(id, dto.userId, user.userId),
+    );
     if (result.isFail) throw result.error as DomainError;
     return { message: 'Member added.' };
   }
@@ -221,7 +266,7 @@ export class ChannelController {
   ) {
     const l = parseInt(limit ?? '50', 10);
     const user = (req as any)?.user;
-    
+
     if (user?.userId) {
       const channel = await this.channelRepository.findById(channelId);
       if (!channel) throw new Error('Channel not found');
@@ -230,26 +275,40 @@ export class ChannelController {
       }
     }
 
-    const { data, nextCursor } = await this.messageRepository.findByChannelId(channelId, cursor ?? null, l);
-    
+    const { data, nextCursor } = await this.messageRepository.findByChannelId(
+      channelId,
+      cursor ?? null,
+      l,
+    );
+
     // Fetch read states for these messages
     let readStates: Record<string, Date> = {};
     if (user?.userId) {
-      const threadIds = data.filter(m => m.replyCount > 0).map(m => m.id);
+      const threadIds = data.filter((m) => m.replyCount > 0).map((m) => m.id);
       readStates = await this.messageRepository.getThreadReadStates(threadIds, user.userId);
     }
 
     return {
-      data: data.map(m => {
+      data: data.map((m) => {
         const lastRead = readStates[m.id];
         const isThreadUnread = m.lastReplyAt && (!lastRead || new Date(m.lastReplyAt) > lastRead);
 
         return {
-          id: m.id, channelId: m.channelId, senderId: m.senderId, content: m.content,
-          parentMessageId: m.parentMessageId, isPinned: m.isPinned, isEdited: m.isEdited,
-          replyCount: m.replyCount, lastReplyAt: m.lastReplyAt, isThreadUnread,
-          reactions: m.reactions.map(r => ({ userId: r.userId, emoji: r.emoji })),
-          createdAt: m.createdAt, editedAt: m.editedAt, deletedAt: m.deletedAt,
+          id: m.id,
+          channelId: m.channelId,
+          senderId: m.senderId,
+          content: m.content,
+          parentMessageId: m.parentMessageId,
+          isPinned: m.isPinned,
+          isEdited: m.isEdited,
+          replyCount: m.replyCount,
+          lastReplyAt: m.lastReplyAt,
+          isThreadUnread,
+          reactions: m.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+          attachments: m.attachments,
+          createdAt: m.createdAt,
+          editedAt: m.editedAt,
+          deletedAt: m.deletedAt,
         };
       }),
       meta: { nextCursor },
@@ -280,13 +339,23 @@ export class ChannelController {
       }
     }
 
-    const { data, nextCursor } = await this.messageRepository.findThreadReplies(msgId, cursor ?? null, l);
+    const { data, nextCursor } = await this.messageRepository.findThreadReplies(
+      msgId,
+      cursor ?? null,
+      l,
+    );
     const threadCount = await this.messageRepository.countThreadReplies(msgId);
     return {
-      data: data.map(m => ({
-        id: m.id, channelId: m.channelId, senderId: m.senderId, content: m.content,
-        parentMessageId: m.parentMessageId, isPinned: m.isPinned, isEdited: m.isEdited,
-        reactions: m.reactions.map(r => ({ userId: r.userId, emoji: r.emoji })),
+      data: data.map((m) => ({
+        id: m.id,
+        channelId: m.channelId,
+        senderId: m.senderId,
+        content: m.content,
+        parentMessageId: m.parentMessageId,
+        isPinned: m.isPinned,
+        isEdited: m.isEdited,
+        reactions: m.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+        attachments: m.attachments,
         createdAt: m.createdAt,
       })),
       meta: { nextCursor, threadCount },

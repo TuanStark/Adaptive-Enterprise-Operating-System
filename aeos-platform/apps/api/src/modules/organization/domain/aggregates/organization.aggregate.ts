@@ -66,7 +66,11 @@ export class Organization extends AggregateRoot<string> {
 
   // ── Factory Methods ──
 
-  static create(tenantId: string, name: string, ownerId: string): Result<Organization, OrganizationNameRequiredError> {
+  static create(
+    tenantId: string,
+    name: string,
+    ownerId: string,
+  ): Result<Organization, OrganizationNameRequiredError> {
     if (!name || name.trim().length === 0) {
       return Result.fail(new OrganizationNameRequiredError());
     }
@@ -114,7 +118,11 @@ export class Organization extends AggregateRoot<string> {
     return Result.ok(undefined);
   }
 
-  addMember(tenantId: string, userId: string, role: string): Result<void, MemberAlreadyExistsError> {
+  addMember(
+    tenantId: string,
+    userId: string,
+    role: string,
+  ): Result<void, MemberAlreadyExistsError> {
     const existing = this._members.find((m) => m.userId === userId);
     if (existing) {
       return Result.fail(new MemberAlreadyExistsError(userId));

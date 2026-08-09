@@ -11,10 +11,22 @@ import { Server, Socket } from 'socket.io';
 import { Inject } from '@nestjs/common';
 import { SendMessageCommand } from '../../application/commands/send-message/send-message.command';
 import { SendMessageHandler } from '../../application/commands/send-message/send-message.handler';
-import { ReactToMessageCommand, ReactToMessageHandler } from '../../application/commands/react-to-message/react-to-message.handler';
-import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
-import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
-import { JWT_TOKEN_SERVICE, JwtTokenService } from '../../../identity/infrastructure/auth/jwt-token.service';
+import {
+  ReactToMessageCommand,
+  ReactToMessageHandler,
+} from '../../application/commands/react-to-message/react-to-message.handler';
+import {
+  MessageRepository,
+  MESSAGE_REPOSITORY,
+} from '../../domain/repositories/message.repository';
+import {
+  ChannelRepository,
+  CHANNEL_REPOSITORY,
+} from '../../domain/repositories/channel.repository';
+import {
+  JWT_TOKEN_SERVICE,
+  JwtTokenService,
+} from '../../../identity/infrastructure/auth/jwt-token.service';
 
 interface TypingPayload {
   channelId: string;
@@ -49,7 +61,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       const authHeader = client.handshake.auth?.token || client.handshake.headers?.authorization;
-      const token = authHeader?.replace(/^Bearer\s+/i, '') || (client.handshake.query?.token as string);
+      const token =
+        authHeader?.replace(/^Bearer\s+/i, '') || (client.handshake.query?.token as string);
       const queryUserId = client.handshake.query?.userId as string;
 
       let userId: string | undefined = queryUserId;
@@ -61,7 +74,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             userId = payload.userId;
           }
         } catch (err) {
-          console.warn(`[ChatGateway] Token verify failed for ${client.id}, falling back to query userId`, err);
+          console.warn(
+            `[ChatGateway] Token verify failed for ${client.id}, falling back to query userId`,
+            err,
+          );
         }
       }
 
@@ -88,16 +104,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { channelId: string },
   ) {
     if (data?.channelId) {
-      const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+      const userId =
+        this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
       const channel = await this.channelRepository.findById(data.channelId);
-      
+
       if (!channel) {
-        return { event: 'channel:join_failed', data: { channelId: data.channelId, reason: 'Channel not found' } };
+        return {
+          event: 'channel:join_failed',
+          data: { channelId: data.channelId, reason: 'Channel not found' },
+        };
       }
 
       if (channel.type !== 'PUBLIC' && !channel.isMember(userId)) {
-        console.warn(`[ChatGateway] Socket ${client.id} unauthorized join attempt to channel:${data.channelId}`);
-        return { event: 'channel:join_failed', data: { channelId: data.channelId, reason: 'Unauthorized' } };
+        console.warn(
+          `[ChatGateway] Socket ${client.id} unauthorized join attempt to channel:${data.channelId}`,
+        );
+        return {
+          event: 'channel:join_failed',
+          data: { channelId: data.channelId, reason: 'Unauthorized' },
+        };
       }
 
       client.join(`channel:${data.channelId}`);
@@ -143,16 +168,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { channelId: string; content: string; parentMessageId?: string },
+    @MessageBody()
+    data: {
+      channelId: string;
+      content: string;
+      parentMessageId?: string;
+      attachmentIds?: string[];
+    },
   ) {
-    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    const userId =
+      this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId) {
       console.warn(`[ChatGateway] Message reject: Not authenticated for socket ${client.id}`);
       return { status: 'error', message: 'Not authenticated' };
     }
 
-    if (!data?.channelId || !data?.content) {
-      return { status: 'error', message: 'Channel ID and content are required' };
+    if (
+      !data?.channelId ||
+      (!data?.content && (!data?.attachmentIds || data.attachmentIds.length === 0))
+    ) {
+      return { status: 'error', message: 'Channel ID and content or attachments are required' };
     }
 
     const command = new SendMessageCommand(
@@ -160,6 +195,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       data.content,
       data.parentMessageId ?? null,
+      data.attachmentIds ?? [],
     );
 
     const result = await this.sendMessageHandler.execute(command);
@@ -168,17 +204,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { status: 'error', message: String(result.error) };
     }
 
+    const message = await this.messageRepository.findById(result.value);
+    if (!message) {
+      return { status: 'error', message: 'Failed to fetch created message' };
+    }
+
     const messagePayload = {
-      id: result.value,
-      channelId: data.channelId,
-      senderId: userId,
-      content: data.content,
-      parentMessageId: data.parentMessageId ?? null,
-      isPinned: false,
-      isEdited: false,
+      id: message.id,
+      channelId: message.channelId,
+      senderId: message.senderId,
+      content: message.content,
+      parentMessageId: message.parentMessageId,
+      isPinned: message.isPinned,
+      isEdited: message.isEdited,
       reactions: [],
-      createdAt: new Date().toISOString(),
-      editedAt: null,
+      attachments: message.attachments,
+      createdAt: message.createdAt.toISOString(),
+      editedAt: message.editedAt?.toISOString() || null,
       deletedAt: null,
     };
 
@@ -284,15 +326,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { channelId: string; messageId: string; emoji: string },
   ) {
     console.log(`[ChatGateway] reaction:add received from ${client.id}:`, data);
-    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    const userId =
+      this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId) {
-      console.warn(`[ChatGateway] reaction:add rejected - Not authenticated for socket ${client.id}`);
+      console.warn(
+        `[ChatGateway] reaction:add rejected - Not authenticated for socket ${client.id}`,
+      );
       return { status: 'error', message: 'Not authenticated' };
     }
     if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
     const result = await this.reactHandler.execute(
-      new ReactToMessageCommand(data.messageId, userId, data.emoji)
+      new ReactToMessageCommand(data.messageId, userId, data.emoji),
     );
     if (result.isFail) {
       console.error(`[ChatGateway] reaction:add failed:`, result.error);
@@ -315,7 +360,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { channelId: string; messageId: string; emoji: string },
   ) {
-    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    const userId =
+      this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId) return { status: 'error', message: 'Not authenticated' };
     if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
@@ -334,10 +380,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:start')
-  handleTypingStart(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: TypingPayload,
-  ) {
+  handleTypingStart(@ConnectedSocket() client: Socket, @MessageBody() data: TypingPayload) {
     client.to(`channel:${data.channelId}`).emit('typing:update', {
       userId: data.userId,
       userName: data.userName,
@@ -346,10 +389,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:stop')
-  handleTypingStop(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: TypingPayload,
-  ) {
+  handleTypingStop(@ConnectedSocket() client: Socket, @MessageBody() data: TypingPayload) {
     client.to(`channel:${data.channelId}`).emit('typing:update', {
       userId: data.userId,
       userName: data.userName,
@@ -362,7 +402,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { threadId: string },
   ) {
-    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    const userId =
+      this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId || !data.threadId) return { status: 'error' };
 
     await this.messageRepository.markThreadAsRead(data.threadId, userId);
@@ -388,7 +429,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
-  broadcastReactionUpdated(channelId: string, messageId: string, reactions: { userId: string; emoji: string }[]) {
+  broadcastReactionUpdated(
+    channelId: string,
+    messageId: string,
+    reactions: { userId: string; emoji: string }[],
+  ) {
     this.server.to(`channel:${channelId}`).emit('reaction:updated', {
       messageId,
       channelId,

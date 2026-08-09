@@ -1,7 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Result, NotFoundError } from '@aeos/errors';
 import { GetWorkspaceQuery } from './get-workspace.query';
-import { WORKSPACE_REPOSITORY, WorkspaceRepository } from '../../../domain/repositories/workspace.repository';
+import {
+  WORKSPACE_REPOSITORY,
+  WorkspaceRepository,
+} from '../../../domain/repositories/workspace.repository';
 
 export interface WorkspaceResponseDto {
   id: string;
@@ -15,7 +18,7 @@ export interface WorkspaceResponseDto {
 export class GetWorkspaceHandler {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
-    private readonly workspaceRepository: WorkspaceRepository
+    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   async execute(query: GetWorkspaceQuery): Promise<Result<WorkspaceResponseDto, NotFoundError>> {

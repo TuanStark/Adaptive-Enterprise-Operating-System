@@ -29,7 +29,7 @@ export class AuthController {
     private readonly logoutHandler: LogoutHandler,
     private readonly getCurrentUserHandler: GetCurrentUserHandler,
     private readonly getSystemTenantHandler: GetSystemTenantHandler,
-  ) { }
+  ) {}
 
   @Public()
   @Post('register')

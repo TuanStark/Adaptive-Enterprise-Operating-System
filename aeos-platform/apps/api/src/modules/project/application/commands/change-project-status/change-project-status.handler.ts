@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
-import { ProjectRepository, PROJECT_REPOSITORY } from '../../../domain/repositories/project.repository';
+import {
+  ProjectRepository,
+  PROJECT_REPOSITORY,
+} from '../../../domain/repositories/project.repository';
 import { ChangeProjectStatusCommand } from './change-project-status.command';
 
 export class ChangeProjectStatusHandler {

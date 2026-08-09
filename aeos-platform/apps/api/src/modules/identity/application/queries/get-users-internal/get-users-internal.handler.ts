@@ -1,6 +1,9 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
-import { GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 
 @QueryHandler(GetUsersInternalQuery)
 export class GetUsersInternalHandler implements IQueryHandler<GetUsersInternalQuery> {

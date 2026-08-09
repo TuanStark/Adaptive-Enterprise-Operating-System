@@ -1,13 +1,15 @@
-import { serverApi, getSessionContext } from "@/lib/api-server";
-import { Project } from "../types";
+import { serverApi, getSessionContext } from '@/lib/api-server';
+import { Project } from '../types';
 
 export async function getProjects(): Promise<Project[]> {
   try {
     const { workspaceId } = await getSessionContext();
-    const response = await serverApi.get<{ data: Project[]; meta: unknown }>("/projects", { workspaceId });
+    const response = await serverApi.get<{ data: Project[]; meta: unknown }>('/projects', {
+      workspaceId,
+    });
     return response.data;
   } catch (error) {
-    console.error("Failed to fetch projects:", error);
+    console.error('Failed to fetch projects:', error);
     return [];
   }
 }

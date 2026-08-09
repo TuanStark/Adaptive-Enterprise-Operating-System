@@ -1,5 +1,5 @@
-import Credentials from "next-auth/providers/credentials";
-import type { NextAuthConfig } from "next-auth";
+import Credentials from 'next-auth/providers/credentials';
+import type { NextAuthConfig } from 'next-auth';
 import {
   TOKEN_REFRESH_BUFFER_SECONDS,
   ACCESS_TOKEN_EXPIRY_SECONDS,
@@ -7,10 +7,10 @@ import {
   ERROR_PAGE,
   PUBLIC_ROUTES,
   AUTH_ROUTES,
-} from "./constants";
+} from './constants';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const API_PREFIX = "/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_PREFIX = '/api/v1';
 
 interface BackendLoginResponse {
   accessToken: string;
@@ -50,14 +50,11 @@ interface UserWorkspace {
 
 // ── Backend API Helpers ──────────────────────────────────────
 
-async function backendLogin(
-  email: string,
-  password: string,
-): Promise<BackendLoginResponse | null> {
+async function backendLogin(email: string, password: string): Promise<BackendLoginResponse | null> {
   try {
     const res = await fetch(`${API_BASE}${API_PREFIX}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
@@ -67,17 +64,15 @@ async function backendLogin(
       return body.data as BackendLoginResponse;
     }
 
-    console.error("[auth] Login failed:", body.error?.message ?? res.statusText);
+    console.error('[auth] Login failed:', body.error?.message ?? res.statusText);
     return null;
   } catch (error) {
-    console.error("[auth] Login network error:", error);
+    console.error('[auth] Login network error:', error);
     return null;
   }
 }
 
-async function backendGetProfile(
-  accessToken: string,
-): Promise<BackendUserProfile | null> {
+async function backendGetProfile(accessToken: string): Promise<BackendUserProfile | null> {
   try {
     const res = await fetch(`${API_BASE}${API_PREFIX}/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -93,9 +88,7 @@ async function backendGetProfile(
   }
 }
 
-async function backendGetUserWorkspaces(
-  accessToken: string,
-): Promise<UserWorkspace[]> {
+async function backendGetUserWorkspaces(accessToken: string): Promise<UserWorkspace[]> {
   try {
     const res = await fetch(`${API_BASE}${API_PREFIX}/workspaces/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -111,13 +104,11 @@ async function backendGetUserWorkspaces(
   }
 }
 
-async function backendRefreshToken(
-  refreshToken: string,
-): Promise<BackendRefreshResponse | null> {
+async function backendRefreshToken(refreshToken: string): Promise<BackendRefreshResponse | null> {
   try {
     const res = await fetch(`${API_BASE}${API_PREFIX}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
 
@@ -126,10 +117,10 @@ async function backendRefreshToken(
       return body.data as BackendRefreshResponse;
     }
 
-    console.error("[auth] Refresh token failed:", body.error?.message ?? res.statusText);
+    console.error('[auth] Refresh token failed:', body.error?.message ?? res.statusText);
     return null;
   } catch (error) {
-    console.error("[auth] Refresh token network error:", error);
+    console.error('[auth] Refresh token network error:', error);
     return null;
   }
 }
@@ -142,9 +133,7 @@ async function backendRefreshToken(
 let inflightRefresh: Promise<BackendRefreshResponse | null> | null = null;
 let inflightRefreshKey: string | null = null;
 
-async function dedupRefreshToken(
-  refreshToken: string,
-): Promise<BackendRefreshResponse | null> {
+async function dedupRefreshToken(refreshToken: string): Promise<BackendRefreshResponse | null> {
   if (inflightRefreshKey === refreshToken && inflightRefresh) {
     return inflightRefresh;
   }
@@ -162,8 +151,8 @@ export const authOptions: NextAuthConfig = {
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         const email = credentials?.email as string | undefined;
@@ -179,17 +168,17 @@ export const authOptions: NextAuthConfig = {
         const profile = await backendGetProfile(loginData.accessToken);
 
         const displayName = profile
-          ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || email
+          ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') || email
           : email;
 
         // 3. Lấy danh sách workspace → auto-select workspace đầu tiên
         const workspaces = await backendGetUserWorkspaces(loginData.accessToken);
         const activeWorkspace = workspaces[0] ?? null;
 
-        const role = activeWorkspace?.membership.roleName ?? "USER";
-        const workspaceId = activeWorkspace?.id ?? "";
-        const workspaceName = activeWorkspace?.name ?? "";
-        const organizationId = activeWorkspace?.organizationId ?? "";
+        const role = activeWorkspace?.membership.roleName ?? 'USER';
+        const workspaceId = activeWorkspace?.id ?? '';
+        const workspaceName = activeWorkspace?.name ?? '';
+        const organizationId = activeWorkspace?.organizationId ?? '';
 
         console.log(
           `[auth] User ${email} logged in → org: ${organizationId}, workspace: "${workspaceName}" (${workspaceId}), role: ${role}`,
@@ -200,7 +189,7 @@ export const authOptions: NextAuthConfig = {
           email: loginData.email,
           name: displayName,
           role,
-          tenantId: profile?.tenantId ?? "",
+          tenantId: profile?.tenantId ?? '',
           organizationId,
           workspaceId,
           workspaceName,
@@ -217,16 +206,16 @@ export const authOptions: NextAuthConfig = {
     error: ERROR_PAGE,
   },
 
-  session: { strategy: "jwt" },
+  session: { strategy: 'jwt' },
 
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === 'development',
 
   callbacks: {
     // ── JWT Callback: Token Rotation ──
     async jwt({ token, user, trigger, session }) {
-      if (trigger === "update" && session) {
+      if (trigger === 'update' && session) {
         if (session.workspaceId !== undefined) token.workspaceId = session.workspaceId;
         if (session.workspaceName !== undefined) token.workspaceName = session.workspaceName;
         if (session.organizationId !== undefined) token.organizationId = session.organizationId;
@@ -256,15 +245,15 @@ export const authOptions: NextAuthConfig = {
       }
 
       // Token sắp hết hạn → gọi refresh (deduped)
-      console.log("[auth] Access token expiring, attempting refresh…");
+      console.log('[auth] Access token expiring, attempting refresh…');
       const refreshed = await dedupRefreshToken(token.refreshToken as string);
 
       if (!refreshed) {
-        console.error("[auth] Refresh token failed — marking session as errored");
-        return { ...token, error: "RefreshTokenError" as const };
+        console.error('[auth] Refresh token failed — marking session as errored');
+        return { ...token, error: 'RefreshTokenError' as const };
       }
 
-      console.log("[auth] Token refreshed successfully");
+      console.log('[auth] Token refreshed successfully');
       return {
         ...token,
         accessToken: refreshed.accessToken,
@@ -285,7 +274,7 @@ export const authOptions: NextAuthConfig = {
       session.accessToken = token.accessToken as string;
 
       if (token.error) {
-        session.error = token.error as "RefreshTokenError";
+        session.error = token.error as 'RefreshTokenError';
       }
 
       return session;
@@ -296,7 +285,7 @@ export const authOptions: NextAuthConfig = {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
       const isPublicRoute = PUBLIC_ROUTES.some(
-        (route) => pathname === route || pathname.startsWith(route + "/"),
+        (route) => pathname === route || pathname.startsWith(route + '/'),
       );
 
       // Chưa login + route bảo vệ → redirect về login
@@ -306,10 +295,10 @@ export const authOptions: NextAuthConfig = {
 
       // Đã login + đang ở trang auth (login/register) → redirect về dashboard
       const isAuthRoute = AUTH_ROUTES.some(
-        (route) => pathname === route || pathname.startsWith(route + "/"),
+        (route) => pathname === route || pathname.startsWith(route + '/'),
       );
       if (isLoggedIn && isAuthRoute) {
-        return Response.redirect(new URL("/", nextUrl));
+        return Response.redirect(new URL('/', nextUrl));
       }
 
       return true;
@@ -318,10 +307,12 @@ export const authOptions: NextAuthConfig = {
 
   events: {
     async signIn({ user }) {
-      console.log(`[auth:event] User signed in: ${user.email} (${user.id}) → workspace: ${user.workspaceId}`);
+      console.log(
+        `[auth:event] User signed in: ${user.email} (${user.id}) → workspace: ${user.workspaceId}`,
+      );
     },
     async signOut(message) {
-      console.log("[auth:event] User signed out:", "token" in message ? "JWT session" : "");
+      console.log('[auth:event] User signed out:', 'token' in message ? 'JWT session' : '');
     },
   },
 };

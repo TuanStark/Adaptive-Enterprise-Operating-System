@@ -24,15 +24,33 @@ export class ChannelMember extends Entity<string> {
     this._lastReadMessageId = props.lastReadMessageId || null;
   }
 
-  get channelId(): string { return this._channelId; }
-  get userId(): string { return this._userId; }
-  get role(): 'OWNER' | 'ADMIN' | 'MEMBER' { return this._role; }
-  get lastReadMessageId(): string | null { return this._lastReadMessageId; }
-  get joinedAt(): Date { return this.createdAt; }
+  get channelId(): string {
+    return this._channelId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get role(): 'OWNER' | 'ADMIN' | 'MEMBER' {
+    return this._role;
+  }
+  get lastReadMessageId(): string | null {
+    return this._lastReadMessageId;
+  }
+  get joinedAt(): Date {
+    return this.createdAt;
+  }
 
-  static create(channelId: string, userId: string, role: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'): ChannelMember {
+  static create(
+    channelId: string,
+    userId: string,
+    role: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER',
+  ): ChannelMember {
     return new ChannelMember({
-      id: generateId(), channelId, userId, role, joinedAt: new Date(),
+      id: generateId(),
+      channelId,
+      userId,
+      role,
+      joinedAt: new Date(),
     });
   }
 

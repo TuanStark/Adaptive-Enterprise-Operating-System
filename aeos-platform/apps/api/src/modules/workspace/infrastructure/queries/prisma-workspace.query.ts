@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
-import { WorkspaceQuery, PaginatedRawMembersResult } from '../../application/queries/workspace-query.interface';
+import {
+  WorkspaceQuery,
+  PaginatedRawMembersResult,
+} from '../../application/queries/workspace-query.interface';
 import { UserWorkspaceDto } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 
 @Injectable()
@@ -32,7 +35,12 @@ export class PrismaWorkspaceQuery implements WorkspaceQuery {
       }));
   }
 
-  async getWorkspaceMembers(workspaceId: string, page: number, limit: number, filterUserIds?: string[]): Promise<PaginatedRawMembersResult> {
+  async getWorkspaceMembers(
+    workspaceId: string,
+    page: number,
+    limit: number,
+    filterUserIds?: string[],
+  ): Promise<PaginatedRawMembersResult> {
     const skip = (page - 1) * limit;
 
     const where: any = { workspaceId };

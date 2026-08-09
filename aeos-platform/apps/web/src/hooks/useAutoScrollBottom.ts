@@ -1,12 +1,9 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
-export function useAutoScrollBottom(
-  ref: React.RefObject<HTMLElement | null>,
-  dependencies: any[]
-) {
+export function useAutoScrollBottom(ref: React.RefObject<HTMLElement | null>, dependencies: any[]) {
   useEffect(() => {
     if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "smooth" });
+      ref.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, dependencies);
 }

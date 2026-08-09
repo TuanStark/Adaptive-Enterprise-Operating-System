@@ -9,7 +9,6 @@ export interface Meeting {
   createdAt?: string;
 }
 
-
 export interface CreateMeetingInput {
   tenantId: string;
   workspaceId: string;

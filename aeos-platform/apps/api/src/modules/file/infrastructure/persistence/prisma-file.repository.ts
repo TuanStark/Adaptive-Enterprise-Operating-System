@@ -45,4 +45,23 @@ export class PrismaFileRepository implements FileRepository {
       createdAt: record.createdAt,
     });
   }
+
+  async findByIds(ids: string[]): Promise<File[]> {
+    const records = await this.prisma.file.findMany({
+      where: { id: { in: ids } },
+    });
+    return records.map((record) =>
+      File.fromPersistence({
+        id: record.id,
+        tenantId: record.tenantId ?? '',
+        storageProvider: record.storageProvider ?? '',
+        storageKey: record.storageKey ?? '',
+        fileName: record.fileName ?? '',
+        mimeType: record.mimeType ?? '',
+        size: Number(record.size ?? 0),
+        uploadedBy: record.uploadedBy ?? '',
+        createdAt: record.createdAt,
+      }),
+    );
+  }
 }

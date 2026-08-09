@@ -33,13 +33,27 @@ export class Notification extends Entity<string> {
     this._metadata = props.metadata;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get userId(): string { return this._userId; }
-  get type(): string { return this._type; }
-  get title(): string { return this._title; }
-  get content(): string | null { return this._content; }
-  get read(): boolean { return this._read; }
-  get metadata(): Record<string, any> | null { return this._metadata; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get type(): string {
+    return this._type;
+  }
+  get title(): string {
+    return this._title;
+  }
+  get content(): string | null {
+    return this._content;
+  }
+  get read(): boolean {
+    return this._read;
+  }
+  get metadata(): Record<string, any> | null {
+    return this._metadata;
+  }
 
   static create(
     tenantId: string,

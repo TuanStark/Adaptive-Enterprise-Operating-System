@@ -1,5 +1,3 @@
 export class GetWorkspaceAnalyticsQuery {
-  constructor(
-    public readonly workspaceId: string,
-  ) {}
+  constructor(public readonly workspaceId: string) {}
 }

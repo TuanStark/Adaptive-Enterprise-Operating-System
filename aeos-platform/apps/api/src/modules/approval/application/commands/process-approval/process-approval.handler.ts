@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
-import { ApprovalRepository, APPROVAL_REPOSITORY } from '../../../domain/repositories/approval.repository';
+import {
+  ApprovalRepository,
+  APPROVAL_REPOSITORY,
+} from '../../../domain/repositories/approval.repository';
 
 export class ProcessApprovalCommand {
   constructor(

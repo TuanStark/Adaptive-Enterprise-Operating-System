@@ -10,10 +10,14 @@ export class TaskCreatedNotificationHandler extends IdempotentEventHandler<TaskC
   }
 
   protected async process(event: TaskCreatedIntegrationEvent): Promise<void> {
-    this.logger.log(`[Notification Service] Processing TaskCreatedIntegrationEvent for Task: ${event.title}`);
+    this.logger.log(
+      `[Notification Service] Processing TaskCreatedIntegrationEvent for Task: ${event.title}`,
+    );
 
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    this.logger.log(`[Notification Service] Successfully sent notification for Task ${event.taskId} to Creator ${event.creatorId}.`);
+    this.logger.log(
+      `[Notification Service] Successfully sent notification for Task ${event.taskId} to Creator ${event.creatorId}.`,
+    );
   }
 }

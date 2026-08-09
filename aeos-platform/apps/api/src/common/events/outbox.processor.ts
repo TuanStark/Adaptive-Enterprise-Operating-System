@@ -1,7 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@aeos/database';
-import { IIntegrationEventBus, INTEGRATION_EVENT_BUS, IIntegrationEvent } from '@aeos/shared-kernel';
+import {
+  IIntegrationEventBus,
+  INTEGRATION_EVENT_BUS,
+  IIntegrationEvent,
+} from '@aeos/shared-kernel';
 
 // A simple registry to map eventType strings from DB to actual Typescript classes.
 export class EventRegistry {
@@ -27,7 +31,7 @@ export class OutboxProcessor {
     private readonly prisma: PrismaService,
     @Inject(INTEGRATION_EVENT_BUS)
     private readonly integrationEventBus: IIntegrationEventBus,
-  ) { }
+  ) {}
 
   @Cron(CronExpression.EVERY_5_SECONDS)
   async processOutboxEvents() {
@@ -54,12 +58,19 @@ export class OutboxProcessor {
 
           if (!integrationEvent) {
             // Fallback for events not registered (or create a generic one if needed)
-            this.logger.warn(`No registered event class for type ${event.eventType}. Skipping or using fallback.`);
+            this.logger.warn(
+              `No registered event class for type ${event.eventType}. Skipping or using fallback.`,
+            );
             // You can optionally create a generic integration event here if desired
-            const safePayload = typeof event.payload === 'object' && event.payload !== null 
-              ? (event.payload as Record<string, unknown>) 
-              : {};
-            integrationEvent = { eventId: event.id, occurredOn: event.createdAt, ...safePayload } as IIntegrationEvent;
+            const safePayload =
+              typeof event.payload === 'object' && event.payload !== null
+                ? (event.payload as Record<string, unknown>)
+                : {};
+            integrationEvent = {
+              eventId: event.id,
+              occurredOn: event.createdAt,
+              ...safePayload,
+            } as IIntegrationEvent;
           }
 
           if (integrationEvent) {

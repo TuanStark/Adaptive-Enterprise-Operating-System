@@ -39,11 +39,11 @@ export class PrismaFormRepository implements FormRepository {
       // In real scenario, we might need a way to track which submissions are new
       // For now, we just bulk create missing ones.
       const existing = await tx.formSubmission.findMany({ where: { formId: form.id } });
-      const newSubmissions = form.submissions.filter(s => !existing.find(e => e.id === s.id));
-      
+      const newSubmissions = form.submissions.filter((s) => !existing.find((e) => e.id === s.id));
+
       if (newSubmissions.length > 0) {
         await tx.formSubmission.createMany({
-          data: newSubmissions.map(s => ({
+          data: newSubmissions.map((s) => ({
             id: s.id,
             formId: form.id,
             submitterId: s.submitterId,
@@ -74,7 +74,11 @@ export class PrismaFormRepository implements FormRepository {
     return this.toDomain(record);
   }
 
-  async findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: DynamicForm[]; total: number }> {
+  async findByWorkspaceId(
+    workspaceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: DynamicForm[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.dynamicForm.findMany({
         where: { workspaceId },

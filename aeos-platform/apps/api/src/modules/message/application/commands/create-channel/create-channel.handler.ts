@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
 import { Channel, ChannelType } from '../../../domain/aggregates/channel.aggregate';
-import { ChannelRepository, CHANNEL_REPOSITORY } from '../../../domain/repositories/channel.repository';
+import {
+  ChannelRepository,
+  CHANNEL_REPOSITORY,
+} from '../../../domain/repositories/channel.repository';
 import { CreateChannelCommand } from './create-channel.command';
 
 export class CreateChannelHandler {

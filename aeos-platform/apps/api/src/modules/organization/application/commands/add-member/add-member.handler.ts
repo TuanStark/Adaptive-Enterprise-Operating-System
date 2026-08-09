@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
-import { OrganizationRepository, ORGANIZATION_REPOSITORY } from '../../../domain/repositories/organization.repository';
+import {
+  OrganizationRepository,
+  ORGANIZATION_REPOSITORY,
+} from '../../../domain/repositories/organization.repository';
 import { AddMemberCommand } from './add-member.command';
 
 export class AddMemberHandler {

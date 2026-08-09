@@ -3,7 +3,11 @@ import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { IMailService, SendEmailOptions, SendTemplateEmailOptions } from '../../application/ports/mail.service.interface';
+import {
+  IMailService,
+  SendEmailOptions,
+  SendTemplateEmailOptions,
+} from '../../application/ports/mail.service.interface';
 
 @Injectable()
 export class NodemailerService implements IMailService {
@@ -44,13 +48,30 @@ export class NodemailerService implements IMailService {
 
   async sendTemplateEmail(options: SendTemplateEmailOptions): Promise<void> {
     try {
-      const templatePath = path.join(__dirname, '..', '..', '..', '..', 'infrastructure', 'templates', `${options.template}.hbs`);
-      
+      const templatePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'infrastructure',
+        'templates',
+        `${options.template}.hbs`,
+      );
+
       // Wait, let's make the template path robust.
       // Dist folder structure might change. So we should probably put templates in a well known folder or load them reliably.
       // For now, let's use process.cwd() to find the src folder
-      const srcPath = path.join(process.cwd(), 'src', 'common', 'mail', 'infrastructure', 'templates', `${options.template}.hbs`);
-      
+      const srcPath = path.join(
+        process.cwd(),
+        'src',
+        'common',
+        'mail',
+        'infrastructure',
+        'templates',
+        `${options.template}.hbs`,
+      );
+
       const templateFile = await fs.readFile(srcPath, 'utf-8');
       const compiledTemplate = handlebars.compile(templateFile);
       const html = compiledTemplate(options.context);

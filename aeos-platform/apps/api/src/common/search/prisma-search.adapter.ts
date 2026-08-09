@@ -4,7 +4,7 @@ import { SearchService, SearchQuery, SearchResult } from './search.service';
 
 @Injectable()
 export class PrismaSearchAdapter implements SearchService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async index(indexName: string, id: string, document: any): Promise<void> {
     // For Prisma adapter, indexing is implicitly handled by the standard repositories

@@ -1,8 +1,14 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
 import { DomainEvent } from '@aeos/shared-kernel';
-import { CreateNotificationHandler, CreateNotificationCommand } from '../commands/create-notification/create-notification.handler';
-import { NotificationRepository, NOTIFICATION_REPOSITORY } from '../../domain/repositories/notification.repository';
+import {
+  CreateNotificationHandler,
+  CreateNotificationCommand,
+} from '../commands/create-notification/create-notification.handler';
+import {
+  NotificationRepository,
+  NOTIFICATION_REPOSITORY,
+} from '../../domain/repositories/notification.repository';
 import { TaskAssignedEvent } from '../../../task/domain/events/task.events';
 
 @EventsHandler(DomainEvent)

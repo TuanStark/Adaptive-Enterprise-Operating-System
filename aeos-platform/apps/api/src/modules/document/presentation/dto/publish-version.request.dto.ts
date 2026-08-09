@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
 export class PublishVersionRequestDto {
-  @IsString() 
+  @IsString()
   fileId!: string;
 }

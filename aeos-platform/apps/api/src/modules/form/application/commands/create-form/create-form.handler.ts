@@ -12,7 +12,11 @@ export class CreateFormHandler {
 
   async execute(command: CreateFormCommand): Promise<Result<string, DomainError>> {
     const createResult = DynamicForm.create(
-      command.tenantId, command.workspaceId, command.name, command.description ?? null, command.schema,
+      command.tenantId,
+      command.workspaceId,
+      command.name,
+      command.description ?? null,
+      command.schema,
     );
     if (createResult.isFail) return Result.fail(createResult.error);
 

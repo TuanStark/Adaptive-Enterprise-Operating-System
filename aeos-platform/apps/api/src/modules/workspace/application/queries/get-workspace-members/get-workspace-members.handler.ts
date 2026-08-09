@@ -2,7 +2,11 @@ import { Injectable, Inject } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetWorkspaceMembersQuery } from './get-workspace-members.query';
 import { WORKSPACE_QUERY, WorkspaceQuery } from '../workspace-query.interface';
-import { SearchUsersInternalQuery, GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  SearchUsersInternalQuery,
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 
 export interface WorkspaceMemberDto {
   id: string;
@@ -29,16 +33,16 @@ export class GetWorkspaceMembersHandler {
     @Inject(WORKSPACE_QUERY)
     private readonly workspaceQuery: WorkspaceQuery,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
   async execute(query: GetWorkspaceMembersQuery): Promise<PaginatedMembersResult> {
     let filterUserIds: string[] | undefined = undefined;
 
     if (query.search) {
       const searchUsersResult: UserInternalDto[] = await this.queryBus.execute(
-        new SearchUsersInternalQuery(query.search)
+        new SearchUsersInternalQuery(query.search),
       );
-      filterUserIds = searchUsersResult.map(u => u.id);
+      filterUserIds = searchUsersResult.map((u) => u.id);
 
       if (filterUserIds.length === 0) {
         return {
@@ -52,7 +56,7 @@ export class GetWorkspaceMembersHandler {
       query.workspaceId,
       query.page,
       query.limit,
-      filterUserIds
+      filterUserIds,
     );
 
     if (rawResult.data.length === 0) {
@@ -62,9 +66,9 @@ export class GetWorkspaceMembersHandler {
       };
     }
 
-    const userIdsToFetch = rawResult.data.map(m => m.userId);
+    const userIdsToFetch = rawResult.data.map((m) => m.userId);
     const usersInfo: UserInternalDto[] = await this.queryBus.execute(
-      new GetUsersInternalQuery(userIdsToFetch)
+      new GetUsersInternalQuery(userIdsToFetch),
     );
 
     const userMap = new Map<string, UserInternalDto>();
@@ -76,7 +80,8 @@ export class GetWorkspaceMembersHandler {
       const user = userMap.get(m.userId);
       const firstName = user?.firstName ?? '';
       const lastName = user?.lastName ?? '';
-      const displayName = [firstName, lastName].filter(Boolean).join(' ') || user?.email || 'Unknown';
+      const displayName =
+        [firstName, lastName].filter(Boolean).join(' ') || user?.email || 'Unknown';
 
       // "Effective Profile" concept: fallback to User profile if WorkspaceMember profile is null
       const effectiveAvatarUrl = m.avatarUrl ?? user?.avatarUrl ?? null;

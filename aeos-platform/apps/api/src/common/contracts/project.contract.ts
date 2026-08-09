@@ -24,7 +24,10 @@ export class ProjectDeletedIntegrationEvent implements IIntegrationEvent {
     this.projectId = payload.projectId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; projectId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  projectId: string;
+  workspaceId: string;
 }
 export class ProjectCreatedIntegrationEvent implements IIntegrationEvent {
   public static readonly EVENT_TYPE = 'ProjectCreatedEvent';
@@ -34,5 +37,8 @@ export class ProjectCreatedIntegrationEvent implements IIntegrationEvent {
     this.projectId = payload.projectId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; projectId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  projectId: string;
+  workspaceId: string;
 }

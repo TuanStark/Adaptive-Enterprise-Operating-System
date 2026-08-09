@@ -31,6 +31,14 @@ export interface MessageReaction {
   emoji: string;
 }
 
+export interface MessageAttachment {
+  id: string;
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface Message {
   id: string;
   channelId: string;
@@ -40,6 +48,7 @@ export interface Message {
   isPinned: boolean;
   isEdited: boolean;
   reactions: MessageReaction[];
+  attachments?: MessageAttachment[];
   replyCount?: number;
   lastReplyAt?: string | null;
   isThreadUnread?: boolean;

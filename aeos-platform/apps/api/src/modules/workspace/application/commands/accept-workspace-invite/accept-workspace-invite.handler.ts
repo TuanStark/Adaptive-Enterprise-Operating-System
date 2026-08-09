@@ -2,9 +2,15 @@ import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler, QueryBus } from '@nestjs/cqrs';
 import * as jwt from 'jsonwebtoken';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
-import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repositories/workspace.repository';
+import {
+  WorkspaceRepository,
+  WORKSPACE_REPOSITORY,
+} from '../../../domain/repositories/workspace.repository';
 import { AcceptWorkspaceInviteCommand } from './accept-workspace-invite.command';
-import { GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  GetUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 
 interface AcceptInviteJwtPayload {
   email?: string;
@@ -22,16 +28,21 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
 
   async execute(command: AcceptWorkspaceInviteCommand): Promise<Result<void, DomainError>> {
     const secret = process.env.JWT_SECRET || 'fallback-dev-secret-min-32-chars!!';
-    
+
     let decoded: AcceptInviteJwtPayload;
     try {
-      decoded = jwt.verify(command.token, secret, { issuer: 'aeos-platform' }) as AcceptInviteJwtPayload;
+      decoded = jwt.verify(command.token, secret, {
+        issuer: 'aeos-platform',
+      }) as AcceptInviteJwtPayload;
     } catch {
       return Result.fail({
         code: 'INVALID_INVITE_TOKEN',
         message: 'The invitation link is invalid or has expired.',
         httpStatus: 400,
-        toJSON: () => ({ code: 'INVALID_INVITE_TOKEN', message: 'The invitation link is invalid or has expired.' }),
+        toJSON: () => ({
+          code: 'INVALID_INVITE_TOKEN',
+          message: 'The invitation link is invalid or has expired.',
+        }),
       });
     }
 
@@ -41,20 +52,31 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
         code: 'INVALID_INVITE_TOKEN',
         message: 'The invitation link contains invalid data payload.',
         httpStatus: 400,
-        toJSON: () => ({ code: 'INVALID_INVITE_TOKEN', message: 'The invitation link contains invalid data payload.' }),
+        toJSON: () => ({
+          code: 'INVALID_INVITE_TOKEN',
+          message: 'The invitation link contains invalid data payload.',
+        }),
       });
     }
 
     // Verify current user's email matches the invited email (case-insensitive)
-    const users: UserInternalDto[] = await this.queryBus.execute(new GetUsersInternalQuery([command.currentUserId]));
+    const users: UserInternalDto[] = await this.queryBus.execute(
+      new GetUsersInternalQuery([command.currentUserId]),
+    );
     const currentUser = users?.[0];
 
-    if (!currentUser || currentUser.email.toLowerCase().trim() !== invitedEmail.toLowerCase().trim()) {
+    if (
+      !currentUser ||
+      currentUser.email.toLowerCase().trim() !== invitedEmail.toLowerCase().trim()
+    ) {
       return Result.fail({
         code: 'EMAIL_MISMATCH',
         message: 'This invitation was sent to a different email address.',
         httpStatus: 403,
-        toJSON: () => ({ code: 'EMAIL_MISMATCH', message: 'This invitation was sent to a different email address.' }),
+        toJSON: () => ({
+          code: 'EMAIL_MISMATCH',
+          message: 'This invitation was sent to a different email address.',
+        }),
       });
     }
 
@@ -77,4 +99,3 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
     return Result.ok(undefined);
   }
 }
-

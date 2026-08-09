@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
-import type { ApiEnvelope } from "@/types/api";
-import { auth } from "@/auth";
+import { redirect } from 'next/navigation';
+import type { ApiEnvelope } from '@/types/api';
+import { auth } from '@/auth';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const API_PREFIX = "/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_PREFIX = '/api/v1';
 
 interface SessionContext {
   workspaceId: string;
@@ -15,7 +15,7 @@ interface SessionContext {
 export async function getSessionContext(): Promise<SessionContext> {
   const session = await auth();
   if (!session?.user?.workspaceId || !session?.user?.tenantId) {
-    throw new Error("No active workspace. Please select a workspace.");
+    throw new Error('No active workspace. Please select a workspace.');
   }
   return {
     workspaceId: session.user.workspaceId,
@@ -32,7 +32,7 @@ class ApiClientError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = "ApiClientError";
+    this.name = 'ApiClientError';
   }
 }
 
@@ -41,33 +41,35 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   const token = session?.accessToken;
 
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   };
 
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   return headers;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (response.status === 401 && !response.url.includes("/auth/login")) {
-    redirect("/api/auth/clear");
+  if (response.status === 401 && !response.url.includes('/auth/login')) {
+    redirect('/api/auth/clear');
   }
 
   const body = await response.json();
 
   if (!response.ok || !body.success) {
-    let errorMessage = "An error occurred";
-    let errorCode = "UNKNOWN";
+    let errorMessage = 'An error occurred';
+    let errorCode = 'UNKNOWN';
 
     if (body.error && typeof body.error === 'object' && body.error.message) {
-      errorMessage = Array.isArray(body.error.message) ? body.error.message.join(", ") : body.error.message;
-      errorCode = body.error.code || "UNKNOWN";
+      errorMessage = Array.isArray(body.error.message)
+        ? body.error.message.join(', ')
+        : body.error.message;
+      errorCode = body.error.code || 'UNKNOWN';
     } else if (body.message) {
-      errorMessage = Array.isArray(body.message) ? body.message.join(", ") : body.message;
-      errorCode = typeof body.error === 'string' ? body.error : "UNKNOWN";
+      errorMessage = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+      errorCode = typeof body.error === 'string' ? body.error : 'UNKNOWN';
     }
 
     throw new ApiClientError(response.status, errorCode, errorMessage);
@@ -77,7 +79,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const serverApi = {
-  get: async <T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> => {
+  get: async <T>(
+    path: string,
+    params?: Record<string, string | number | undefined>,
+  ): Promise<T> => {
     const url = new URL(`${API_PREFIX}${path}`, API_BASE);
 
     if (params) {
@@ -90,9 +95,9 @@ export const serverApi = {
 
     const headers = await getAuthHeaders();
     const response = await fetch(url.toString(), {
-      method: "GET",
+      method: 'GET',
       headers,
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     return handleResponse<T>(response);
@@ -101,7 +106,7 @@ export const serverApi = {
   post: async <T>(path: string, body?: unknown): Promise<T> => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "POST",
+      method: 'POST',
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -112,7 +117,7 @@ export const serverApi = {
   patch: async <T>(path: string, body?: unknown): Promise<T> => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "PATCH",
+      method: 'PATCH',
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -123,7 +128,7 @@ export const serverApi = {
   delete: async <T>(path: string): Promise<T> => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "DELETE",
+      method: 'DELETE',
       headers,
     });
 
@@ -136,11 +141,11 @@ export const serverApi = {
 
     const headers: HeadersInit = {};
     if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE}${API_PREFIX}${path}`, {
-      method: "POST",
+      method: 'POST',
       headers,
       body: formData,
     });

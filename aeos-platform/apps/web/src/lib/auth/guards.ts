@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
-import { auth } from "./index";
-import { LOGIN_PAGE, type UserRole } from "./constants";
+import { redirect } from 'next/navigation';
+import { auth } from './index';
+import { LOGIN_PAGE, type UserRole } from './constants';
 
 export async function requireAuth() {
   const session = await auth();
@@ -16,7 +16,7 @@ export async function requireRole(allowedRoles: UserRole[]) {
   const session = await requireAuth();
 
   if (!allowedRoles.includes(session.user.role as UserRole)) {
-    redirect("/");
+    redirect('/');
   }
 
   return session;

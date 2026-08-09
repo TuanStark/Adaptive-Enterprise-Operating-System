@@ -1,7 +1,7 @@
 import { IsString, IsEmail } from 'class-validator';
 
 export class InviteMemberRequestDto {
-  @IsString() 
-  @IsEmail() 
+  @IsString()
+  @IsEmail()
   email!: string;
 }

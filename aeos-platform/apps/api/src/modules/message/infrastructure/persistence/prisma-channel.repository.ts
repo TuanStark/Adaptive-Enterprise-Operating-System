@@ -79,7 +79,8 @@ export class PrismaChannelRepository implements ChannelRepository {
       name: record.name,
       description: record.description,
       type: record.type as ChannelType,
-      creatorId: record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
+      creatorId:
+        record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
       isArchived: record.isArchived,
       topic: record.topic,
       version: record.version,
@@ -97,21 +98,18 @@ export class PrismaChannelRepository implements ChannelRepository {
     workspaceId: string,
     page: number,
     limit: number,
-    userId?: string
+    userId?: string,
   ): Promise<{ data: Channel[]; total: number }> {
     const skip = (page - 1) * limit;
-    
+
     // Filter by workspace
     const baseWhere: any = workspaceId ? { workspaceId } : {};
 
     // Filter by access (PUBLIC or member)
     if (userId) {
-      baseWhere.OR = [
-        { type: 'PUBLIC' },
-        { members: { some: { userId } } },
-      ];
+      baseWhere.OR = [{ type: 'PUBLIC' }, { members: { some: { userId } } }];
     }
-    
+
     const where = baseWhere;
 
     const [records, total] = await Promise.all([
@@ -133,7 +131,8 @@ export class PrismaChannelRepository implements ChannelRepository {
         name: record.name,
         description: record.description,
         type: record.type as ChannelType,
-        creatorId: record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
+        creatorId:
+          record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
         isArchived: record.isArchived,
         topic: record.topic,
         version: record.version,
@@ -144,7 +143,7 @@ export class PrismaChannelRepository implements ChannelRepository {
           if (m.lastReadMessageId) member.updateReadCursor(m.lastReadMessageId);
           return member;
         }),
-      })
+      }),
     );
 
     return { data, total };
@@ -167,7 +166,10 @@ export class PrismaChannelRepository implements ChannelRepository {
           name: record.name,
           description: record.description,
           type: record.type as ChannelType,
-          creatorId: record.members.find((mem) => mem.role === 'OWNER')?.userId || record.members[0]?.userId || '',
+          creatorId:
+            record.members.find((mem) => mem.role === 'OWNER')?.userId ||
+            record.members[0]?.userId ||
+            '',
           isArchived: record.isArchived,
           topic: record.topic,
           version: record.version,
@@ -197,7 +199,8 @@ export class PrismaChannelRepository implements ChannelRepository {
       name: record.name,
       description: record.description,
       type: record.type as ChannelType,
-      creatorId: record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
+      creatorId:
+        record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
       isArchived: record.isArchived,
       topic: record.topic,
       version: record.version,

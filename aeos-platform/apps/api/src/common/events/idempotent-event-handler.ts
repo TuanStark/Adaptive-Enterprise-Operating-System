@@ -7,7 +7,9 @@ import { IIntegrationEvent } from '@aeos/shared-kernel';
  * Base class for Event Handlers to ensure Exactly-Once processing.
  * Checks the ProcessedMessage table before handling the event.
  */
-export abstract class IdempotentEventHandler<TEvent extends IIntegrationEvent> implements IEventHandler<TEvent> {
+export abstract class IdempotentEventHandler<
+  TEvent extends IIntegrationEvent,
+> implements IEventHandler<TEvent> {
   protected readonly logger = new Logger(this.constructor.name);
 
   constructor(protected readonly prisma: PrismaService) {}
@@ -28,22 +30,23 @@ export abstract class IdempotentEventHandler<TEvent extends IIntegrationEvent> i
         data: {
           eventId: eventId,
           consumer: consumerName,
-        }
+        },
       });
-      
+
       this.logger.debug(`Processing event ${eventId} for the first time in ${consumerName}.`);
-      
+
       // 2. Process the actual business logic
       await this.process(event);
-      
     } catch (error: any) {
       // P2002 is Prisma's Unique Constraint Violation code
       if (error.code === 'P2002') {
-        this.logger.log(`Idempotency Check: Event ${eventId} was already processed by ${consumerName}. Skipping.`);
+        this.logger.log(
+          `Idempotency Check: Event ${eventId} was already processed by ${consumerName}. Skipping.`,
+        );
         return;
       }
 
-      // If business logic failed, we should theoretically remove the ProcessedMessage 
+      // If business logic failed, we should theoretically remove the ProcessedMessage
       // so it can be retried, or leave it if we want dead-letter queue behavior.
       // For this demo, we'll delete it to allow retry.
       try {
@@ -51,14 +54,14 @@ export abstract class IdempotentEventHandler<TEvent extends IIntegrationEvent> i
           where: {
             eventId_consumer: {
               eventId,
-              consumer: consumerName
-            }
-          }
+              consumer: consumerName,
+            },
+          },
         });
       } catch (e) {
         this.logger.error(`Failed to remove ProcessedMessage lock for ${eventId}`, e);
       }
-      
+
       throw error;
     }
   }

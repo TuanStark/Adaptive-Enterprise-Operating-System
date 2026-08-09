@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
-import { MessageRepository, MESSAGE_REPOSITORY } from '../../../domain/repositories/message.repository';
+import {
+  MessageRepository,
+  MESSAGE_REPOSITORY,
+} from '../../../domain/repositories/message.repository';
 import { MessageNotFoundError } from '../../../domain/errors/message.errors';
 
 export class ReactToMessageCommand {

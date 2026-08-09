@@ -9,9 +9,10 @@ import { PrismaService } from '@aeos/database';
 import { GetFileUrlHandler } from './application/queries/get-file-url/get-file-url.handler';
 import { GenerateSignatureHandler } from './application/queries/generate-signature/generate-signature.handler';
 import { ConfirmUploadHandler } from './application/commands/confirm-upload/confirm-upload.handler';
+import { GetFilesDetailsHandler } from './application/queries/get-files-details/get-files-details.handler';
 
 const commandHandlers = [ConfirmUploadHandler];
-const queryHandlers = [GetFileUrlHandler, GenerateSignatureHandler];
+const queryHandlers = [GetFileUrlHandler, GenerateSignatureHandler, GetFilesDetailsHandler];
 
 @Module({
   imports: [CqrsModule],
@@ -25,4 +26,4 @@ const queryHandlers = [GetFileUrlHandler, GenerateSignatureHandler];
   ],
   exports: [STORAGE_PORT],
 })
-export class FileModule { }
+export class FileModule {}

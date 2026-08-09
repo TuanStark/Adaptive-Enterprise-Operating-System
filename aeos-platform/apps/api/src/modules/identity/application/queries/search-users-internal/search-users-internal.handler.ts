@@ -1,6 +1,9 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
-import { SearchUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
+import {
+  SearchUsersInternalQuery,
+  UserInternalDto,
+} from '../../../../../common/contracts/identity.contract';
 
 @QueryHandler(SearchUsersInternalQuery)
 export class SearchUsersInternalHandler implements IQueryHandler<SearchUsersInternalQuery> {
@@ -18,7 +21,7 @@ export class SearchUsersInternalHandler implements IQueryHandler<SearchUsersInte
           { firstName: { contains: query.search, mode: 'insensitive' } },
           { lastName: { contains: query.search, mode: 'insensitive' } },
           { email: { contains: query.search, mode: 'insensitive' } },
-        ]
+        ],
       },
       select: {
         id: true,

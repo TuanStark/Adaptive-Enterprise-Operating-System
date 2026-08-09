@@ -25,14 +25,33 @@ export class Comment extends AggregateRoot<string> {
     this._content = props.content;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get taskId(): string { return this._taskId; }
-  get userId(): string { return this._userId; }
-  get content(): string { return this._content; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get taskId(): string {
+    return this._taskId;
+  }
+  get userId(): string {
+    return this._userId;
+  }
+  get content(): string {
+    return this._content;
+  }
 
-  static create(tenantId: string, taskId: string, userId: string, content: string, workspaceId?: string): Comment {
+  static create(
+    tenantId: string,
+    taskId: string,
+    userId: string,
+    content: string,
+    workspaceId?: string,
+  ): Comment {
     const comment = new Comment({
-      id: generateId(), tenantId, taskId, userId, content, createdAt: new Date(),
+      id: generateId(),
+      tenantId,
+      taskId,
+      userId,
+      content,
+      createdAt: new Date(),
     });
     if (workspaceId) {
       comment.addDomainEvent(new CommentCreatedEvent(comment.id, workspaceId));

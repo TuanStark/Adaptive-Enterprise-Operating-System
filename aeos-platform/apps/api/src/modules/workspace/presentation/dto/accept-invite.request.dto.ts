@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
 export class AcceptInviteRequestDto {
-  @IsString() 
+  @IsString()
   token!: string;
 }

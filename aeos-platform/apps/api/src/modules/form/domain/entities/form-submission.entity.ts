@@ -21,13 +21,23 @@ export class FormSubmission extends Entity<string> {
     this._data = props.data;
   }
 
-  get formId(): string { return this._formId; }
-  get submitterId(): string { return this._submitterId; }
-  get data(): Record<string, any> { return this._data; }
+  get formId(): string {
+    return this._formId;
+  }
+  get submitterId(): string {
+    return this._submitterId;
+  }
+  get data(): Record<string, any> {
+    return this._data;
+  }
 
   static create(formId: string, submitterId: string, data: Record<string, any>): FormSubmission {
     return new FormSubmission({
-      id: generateId(), formId, submitterId, data, createdAt: new Date(),
+      id: generateId(),
+      formId,
+      submitterId,
+      data,
+      createdAt: new Date(),
     });
   }
 

@@ -1,7 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, ValidationError } from '@aeos/errors';
 import { Comment } from '../../../domain/entities/comment.entity';
-import { CommentRepository, COMMENT_REPOSITORY } from '../../../domain/repositories/comment.repository';
+import {
+  CommentRepository,
+  COMMENT_REPOSITORY,
+} from '../../../domain/repositories/comment.repository';
 import { PrismaService } from '@aeos/database';
 
 export class AddCommentCommand {
@@ -20,7 +23,9 @@ export class AddCommentHandler {
     private readonly prisma: PrismaService,
   ) {}
 
-  async execute(command: AddCommentCommand): Promise<Result<{ id: string; content: string }, DomainError>> {
+  async execute(
+    command: AddCommentCommand,
+  ): Promise<Result<{ id: string; content: string }, DomainError>> {
     if (!command.content || command.content.trim().length === 0) {
       return Result.fail(new ValidationError('Comment content is required.'));
     }
@@ -29,12 +34,18 @@ export class AddCommentHandler {
       where: { id: command.taskId },
       select: { workspaceId: true },
     });
-    
+
     if (!task || !task.workspaceId) {
       return Result.fail(new ValidationError('Task or workspace not found'));
     }
 
-    const comment = Comment.create(command.tenantId, command.taskId, command.userId, command.content.trim(), task.workspaceId);
+    const comment = Comment.create(
+      command.tenantId,
+      command.taskId,
+      command.userId,
+      command.content.trim(),
+      task.workspaceId,
+    );
     await this.commentRepository.save(comment);
 
     return Result.ok({ id: comment.id, content: comment.content });

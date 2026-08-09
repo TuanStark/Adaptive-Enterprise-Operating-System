@@ -1,6 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError } from '@aeos/errors';
-import { NotificationRepository, NOTIFICATION_REPOSITORY } from '../../../domain/repositories/notification.repository';
+import {
+  NotificationRepository,
+  NOTIFICATION_REPOSITORY,
+} from '../../../domain/repositories/notification.repository';
 
 export class MarkAllAsReadCommand {
   constructor(public readonly userId: string) {}

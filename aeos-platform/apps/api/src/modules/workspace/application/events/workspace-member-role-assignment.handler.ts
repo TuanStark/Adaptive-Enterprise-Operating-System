@@ -63,11 +63,16 @@ export class WorkspaceMemberRoleAssignmentHandler implements IEventHandler<Works
             where: { id: memberRecord.id },
             data: { roleId: targetRoleId },
           });
-          this.logger.log(`Assigned roleId ${targetRoleId} to user ${memberId} in workspace ${workspaceId}`);
+          this.logger.log(
+            `Assigned roleId ${targetRoleId} to user ${memberId} in workspace ${workspaceId}`,
+          );
         }
       }
     } catch (err) {
-      this.logger.error(`Failed to assign default role for member ${memberId} in workspace ${workspaceId}:`, err);
+      this.logger.error(
+        `Failed to assign default role for member ${memberId} in workspace ${workspaceId}:`,
+        err,
+      );
     }
   }
 }

@@ -1,11 +1,12 @@
 "use client";
-
+import { FormattedText } from "./MessageList";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Message, User } from "../types";
 import { useSession } from "next-auth/react";
 import { X } from "lucide-react";
 import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
+import { MessageAttachment } from "./MessageAttachment";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePanelResize } from "@/hooks/usePanelResize";
@@ -44,7 +45,9 @@ export function ThreadPanel({
   const handleMessageReceived = useCallback((message: Message) => {
     if (message.parentMessageId === parentMessage.id) {
       setReplies((prev) => {
-        if (prev.some((m) => m.id === message.id)) return prev;
+        if (prev.some((m) => m.id === message.id)) {
+          return prev.map((m) => (m.id === message.id ? message : m));
+        }
         return [...prev, message];
       });
       // Mark as read when a new reply arrives while panel is open
@@ -98,8 +101,8 @@ export function ThreadPanel({
   }, [parentMessage.id, readThread]);
 
   const handleSendReply = useCallback(
-    (content: string) => {
-      if (!content.trim() || !channelId) return;
+    (content: string, attachments?: { id: string; url: string; name: string; type: string; size: number }[]) => {
+      if ((!content.trim() && (!attachments || attachments.length === 0)) || !channelId) return;
 
       const tempId = `temp-${Date.now()}`;
       const tempMessage: Message = {
@@ -111,6 +114,7 @@ export function ThreadPanel({
         isPinned: false,
         isEdited: false,
         reactions: [],
+        attachments: attachments || [],
         createdAt: new Date().toISOString(),
         editedAt: null,
         deletedAt: null,
@@ -118,7 +122,8 @@ export function ThreadPanel({
 
       setReplies((prev) => [...prev, tempMessage]);
 
-      sendMessage(content.trim(), parentMessage.id, (res: any) => {
+      const attachmentIds = attachments?.map(a => a.id) || [];
+      sendMessage(content.trim(), parentMessage.id, attachmentIds, (res: any) => {
         if (res?.status === 'success' && res.data?.id) {
           setReplies((prev) =>
             prev.map((m) => (m.id === tempId ? { ...m, id: res.data.id } : m))
@@ -168,8 +173,22 @@ export function ThreadPanel({
               </span>
             </div>
             <div className="text-[14px] leading-relaxed break-words whitespace-pre-wrap text-gray-800">
-              {parentMessage.content}
+              {parentMessage.content?.trim().startsWith('<') ? (
+                <div 
+                  className="prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-li:my-0 prose-a:underline prose-code:px-1 prose-code:rounded prose-code:before:content-none prose-code:after:content-none text-gray-800 prose-strong:text-gray-900 prose-a:text-blue-600 prose-code:bg-gray-100 prose-code:text-gray-800"
+                  dangerouslySetInnerHTML={{ __html: parentMessage.content }} 
+                />
+              ) : (
+                <FormattedText content={parentMessage.content || ''} />
+              )}
             </div>
+            {parentMessage.attachments && parentMessage.attachments.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1">
+                {parentMessage.attachments.map(att => (
+                  <MessageAttachment key={att.id} attachment={att} isOwner={parentMessage.senderId === currentUserId} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

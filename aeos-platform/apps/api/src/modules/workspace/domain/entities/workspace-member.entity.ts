@@ -76,7 +76,7 @@ export class WorkspaceMember extends Entity<string> {
     avatarUrl: string | null,
     title: string | null,
     department: string | null,
-    statusMessage: string | null
+    statusMessage: string | null,
   ): void {
     this._nickname = nickname;
     this._avatarUrl = avatarUrl;

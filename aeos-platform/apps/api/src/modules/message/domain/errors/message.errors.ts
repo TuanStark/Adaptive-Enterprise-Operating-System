@@ -14,7 +14,11 @@ export class ChannelNameRequiredError extends DomainError {
 
 export class ChannelMemberAlreadyExistsError extends DomainError {
   constructor(userId: string) {
-    super('CHANNEL_MEMBER_ALREADY_EXISTS', `User '${userId}' is already a member of this channel.`, 400);
+    super(
+      'CHANNEL_MEMBER_ALREADY_EXISTS',
+      `User '${userId}' is already a member of this channel.`,
+      400,
+    );
   }
 }
 
@@ -44,7 +48,11 @@ export class MessageAlreadyDeletedError extends DomainError {
 
 export class NotChannelMemberError extends DomainError {
   constructor() {
-    super('NOT_CHANNEL_MEMBER', 'You must be a member of this channel to perform this action.', 403);
+    super(
+      'NOT_CHANNEL_MEMBER',
+      'You must be a member of this channel to perform this action.',
+      403,
+    );
   }
 }
 

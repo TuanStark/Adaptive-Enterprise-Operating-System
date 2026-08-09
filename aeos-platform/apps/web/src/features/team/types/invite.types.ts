@@ -1,4 +1,4 @@
-export type InviteStatus = "idle" | "loading" | "success" | "error";
+export type InviteStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface InviteInfo {
   email: string;

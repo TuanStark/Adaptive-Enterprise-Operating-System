@@ -8,17 +8,26 @@ export class CreateTaskHandler {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepository,
-  ) { }
+  ) {}
 
-  async execute(command: CreateTaskCommand): Promise<Result<{ id: string; key: string; title: string; status: string }, DomainError>> {
+  async execute(
+    command: CreateTaskCommand,
+  ): Promise<Result<{ id: string; key: string; title: string; status: string }, DomainError>> {
     const priority = (command.priority as TaskPriority) || TaskPriority.MEDIUM;
     const type = (command.type as TaskType) || TaskType.TASK;
 
     const key = `AEOS-${Date.now().toString(36).toUpperCase().slice(-4)}`;
 
     const createResult = Task.create(
-      command.tenantId, command.workspaceId, command.projectId, key, command.title,
-      command.description, command.creatorId, type, priority,
+      command.tenantId,
+      command.workspaceId,
+      command.projectId,
+      key,
+      command.title,
+      command.description,
+      command.creatorId,
+      type,
+      priority,
     );
     if (createResult.isFail) return Result.fail(createResult.error);
 

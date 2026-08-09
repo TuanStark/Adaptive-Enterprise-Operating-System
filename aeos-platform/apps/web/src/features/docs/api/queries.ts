@@ -1,5 +1,5 @@
-import { serverApi, getSessionContext } from "@/lib/api-server";
-import { Document, DocumentDetail } from "../types";
+import { serverApi, getSessionContext } from '@/lib/api-server';
+import { Document, DocumentDetail } from '../types';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -8,17 +8,24 @@ interface PaginatedResponse<T> {
 export async function getDocuments() {
   try {
     const { workspaceId } = await getSessionContext();
-    const response = await serverApi.get<PaginatedResponse<Document>>("/documents", { workspaceId });
+    const response = await serverApi.get<PaginatedResponse<Document>>('/documents', {
+      workspaceId,
+    });
     return response.data;
   } catch (error) {
-    console.error("Failed to fetch documents:", error);
+    console.error('Failed to fetch documents:', error);
     return [];
   }
 }
 
-export const getDocument = async (id: string, workspaceId: string): Promise<DocumentDetail | null> => {
+export const getDocument = async (
+  id: string,
+  workspaceId: string,
+): Promise<DocumentDetail | null> => {
   try {
-    const document = await serverApi.get<DocumentDetail>(`/documents/${id}?workspaceId=${workspaceId}`);
+    const document = await serverApi.get<DocumentDetail>(
+      `/documents/${id}?workspaceId=${workspaceId}`,
+    );
     return document;
   } catch (error) {
     console.error(`Failed to fetch document ${id}:`, error);

@@ -14,7 +14,11 @@ export class SprintNameRequiredError extends DomainError {
 
 export class InvalidSprintStatusTransitionError extends DomainError {
   constructor(from: string, to: string) {
-    super('INVALID_SPRINT_STATUS_TRANSITION', `Cannot transition sprint from ${from} to ${to}.`, 400);
+    super(
+      'INVALID_SPRINT_STATUS_TRANSITION',
+      `Cannot transition sprint from ${from} to ${to}.`,
+      400,
+    );
   }
 }
 

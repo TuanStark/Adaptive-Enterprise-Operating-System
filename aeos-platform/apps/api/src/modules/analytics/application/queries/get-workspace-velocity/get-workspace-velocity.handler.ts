@@ -5,7 +5,7 @@ import { GetWorkspaceVelocityQuery } from './get-workspace-velocity.query';
 
 @Injectable()
 export class GetWorkspaceVelocityHandler {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async execute(query: GetWorkspaceVelocityQuery): Promise<Result<any, DomainError>> {
     const { workspaceId } = query;
@@ -15,18 +15,14 @@ export class GetWorkspaceVelocityHandler {
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
     try {
-      const createdTasksCounts = await this.prisma.$queryRaw<
-        { date: Date; count: bigint }[]
-      >`
+      const createdTasksCounts = await this.prisma.$queryRaw<{ date: Date; count: bigint }[]>`
         SELECT DATE(created_at) as date, COUNT(*) as count 
         FROM tasks 
         WHERE workspace_id = ${workspaceId}::uuid AND created_at >= ${sevenDaysAgo}
         GROUP BY DATE(created_at)
       `;
 
-      const completedTasksCounts = await this.prisma.$queryRaw<
-        { date: Date; count: bigint }[]
-      >`
+      const completedTasksCounts = await this.prisma.$queryRaw<{ date: Date; count: bigint }[]>`
         SELECT DATE(updated_at) as date, COUNT(*) as count 
         FROM tasks 
         WHERE workspace_id = ${workspaceId}::uuid AND status = 'DONE' AND updated_at >= ${sevenDaysAgo}
@@ -45,10 +41,10 @@ export class GetWorkspaceVelocityHandler {
 
         // Find the count for this specific day
         const createdCount = createdTasksCounts.find(
-          c => c.date.getDate() === d.getDate() && c.date.getMonth() === d.getMonth()
+          (c) => c.date.getDate() === d.getDate() && c.date.getMonth() === d.getMonth(),
         );
         const completedCount = completedTasksCounts.find(
-          c => c.date.getDate() === d.getDate() && c.date.getMonth() === d.getMonth()
+          (c) => c.date.getDate() === d.getDate() && c.date.getMonth() === d.getMonth(),
         );
 
         velocityData.push({

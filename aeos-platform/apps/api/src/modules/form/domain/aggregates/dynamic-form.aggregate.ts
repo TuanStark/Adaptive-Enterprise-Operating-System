@@ -38,25 +38,50 @@ export class DynamicForm extends AggregateRoot<string> {
     this._submissions = props.submissions;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get name(): string { return this._name; }
-  get description(): string | null { return this._description; }
-  get schema(): Record<string, any> { return this._schema; }
-  get isActive(): boolean { return this._isActive; }
-  get submissions(): ReadonlyArray<FormSubmission> { return this._submissions; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get name(): string {
+    return this._name;
+  }
+  get description(): string | null {
+    return this._description;
+  }
+  get schema(): Record<string, any> {
+    return this._schema;
+  }
+  get isActive(): boolean {
+    return this._isActive;
+  }
+  get submissions(): ReadonlyArray<FormSubmission> {
+    return this._submissions;
+  }
 
   static create(
-    tenantId: string, workspaceId: string, name: string,
-    description: string | null, schema: Record<string, any>
+    tenantId: string,
+    workspaceId: string,
+    name: string,
+    description: string | null,
+    schema: Record<string, any>,
   ): Result<DynamicForm, InvalidFormSchemaError> {
     if (!schema || typeof schema !== 'object') {
       return Result.fail(new InvalidFormSchemaError());
     }
 
     const form = new DynamicForm({
-      id: generateId(), tenantId, workspaceId, name, description, schema,
-      isActive: true, createdAt: new Date(), updatedAt: new Date(), submissions: [],
+      id: generateId(),
+      tenantId,
+      workspaceId,
+      name,
+      description,
+      schema,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      submissions: [],
     });
     form.addDomainEvent(new FormCreatedEvent(form.id, form.workspaceId));
     return Result.ok(form);

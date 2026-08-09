@@ -75,7 +75,11 @@ export class PrismaApprovalRepository implements ApprovalRepository {
     return this.toDomain(record);
   }
 
-  async findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: ApprovalRequest[]; total: number }> {
+  async findByWorkspaceId(
+    workspaceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: ApprovalRequest[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.approvalRequest.findMany({
         where: { workspaceId },

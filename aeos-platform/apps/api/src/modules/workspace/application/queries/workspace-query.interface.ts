@@ -19,7 +19,12 @@ export interface PaginatedRawMembersResult {
 
 export interface WorkspaceQuery {
   getUserWorkspaces(userId: string): Promise<UserWorkspaceDto[]>;
-  getWorkspaceMembers(workspaceId: string, page: number, limit: number, filterUserIds?: string[]): Promise<PaginatedRawMembersResult>;
+  getWorkspaceMembers(
+    workspaceId: string,
+    page: number,
+    limit: number,
+    filterUserIds?: string[],
+  ): Promise<PaginatedRawMembersResult>;
 }
 
 export const WORKSPACE_QUERY = Symbol('WORKSPACE_QUERY');

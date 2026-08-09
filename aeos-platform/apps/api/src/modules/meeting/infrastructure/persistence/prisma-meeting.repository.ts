@@ -34,11 +34,13 @@ export class PrismaMeetingRepository implements MeetingRepository {
 
       // Update participants
       const existing = await tx.meetingParticipant.findMany({ where: { meetingId: meeting.id } });
-      const currentIds = meeting.participants.map(p => p.id);
-      
-      const toDelete = existing.filter(e => !currentIds.includes(e.id));
+      const currentIds = meeting.participants.map((p) => p.id);
+
+      const toDelete = existing.filter((e) => !currentIds.includes(e.id));
       if (toDelete.length > 0) {
-        await tx.meetingParticipant.deleteMany({ where: { id: { in: toDelete.map(d => d.id) } } });
+        await tx.meetingParticipant.deleteMany({
+          where: { id: { in: toDelete.map((d) => d.id) } },
+        });
       }
 
       for (const p of meeting.participants) {
@@ -68,7 +70,11 @@ export class PrismaMeetingRepository implements MeetingRepository {
     return this.toDomain(record);
   }
 
-  async findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: Meeting[]; total: number }> {
+  async findByWorkspaceId(
+    workspaceId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: Meeting[]; total: number }> {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.meeting.findMany({
         where: { workspaceId },

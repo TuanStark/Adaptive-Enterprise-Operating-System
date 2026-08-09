@@ -41,10 +41,18 @@ export enum TaskType {
 }
 
 const ALL_STATUSES = [
-  TaskStatus.BACKLOG, TaskStatus.TODO, TaskStatus.IN_PROGRESS, 
-  TaskStatus.BLOCKED, TaskStatus.REVIEW, TaskStatus.TESTING,
-  TaskStatus.QA, TaskStatus.READY_FOR_RELEASE, TaskStatus.DEPLOYED,
-  TaskStatus.DONE, TaskStatus.CANCELLED, TaskStatus.ON_HOLD
+  TaskStatus.BACKLOG,
+  TaskStatus.TODO,
+  TaskStatus.IN_PROGRESS,
+  TaskStatus.BLOCKED,
+  TaskStatus.REVIEW,
+  TaskStatus.TESTING,
+  TaskStatus.QA,
+  TaskStatus.READY_FOR_RELEASE,
+  TaskStatus.DEPLOYED,
+  TaskStatus.DONE,
+  TaskStatus.CANCELLED,
+  TaskStatus.ON_HOLD,
 ];
 
 const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
@@ -155,38 +163,95 @@ export class Task extends AggregateRoot<string> {
 
   // ── Getters ──
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get projectId(): string { return this._projectId; }
-  get key(): string { return this._key; }
-  get sprintId(): string | null { return this._sprintId; }
-  get parentTaskId(): string | null { return this._parentTaskId; }
-  get title(): string { return this._title; }
-  get description(): string | null { return this._description; }
-  get type(): TaskType { return this._type; }
-  get creatorId(): string { return this._creatorId; }
-  get reporterId(): string | null { return this._reporterId; }
-  get assigneeId(): string | null { return this._assigneeId; }
-  get status(): TaskStatus { return this._status; }
-  get priority(): TaskPriority { return this._priority; }
-  get resolution(): string | null { return this._resolution; }
-  get labels(): string[] { return [...this._labels]; }
-  get storyPoints(): number | null { return this._storyPoints; }
-  get originalEstimate(): number | null { return this._originalEstimate; }
-  get remainingEstimate(): number | null { return this._remainingEstimate; }
-  get timeSpent(): number { return this._timeSpent; }
-  get boardPosition(): number { return this._boardPosition; }
-  get startDate(): Date | null { return this._startDate; }
-  get dueDate(): Date | null { return this._dueDate; }
-  get environment(): string | null { return this._environment; }
-  get fixVersionId(): string | null { return this._fixVersionId; }
-  get deletedAt(): Date | null { return this._deletedAt; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get projectId(): string {
+    return this._projectId;
+  }
+  get key(): string {
+    return this._key;
+  }
+  get sprintId(): string | null {
+    return this._sprintId;
+  }
+  get parentTaskId(): string | null {
+    return this._parentTaskId;
+  }
+  get title(): string {
+    return this._title;
+  }
+  get description(): string | null {
+    return this._description;
+  }
+  get type(): TaskType {
+    return this._type;
+  }
+  get creatorId(): string {
+    return this._creatorId;
+  }
+  get reporterId(): string | null {
+    return this._reporterId;
+  }
+  get assigneeId(): string | null {
+    return this._assigneeId;
+  }
+  get status(): TaskStatus {
+    return this._status;
+  }
+  get priority(): TaskPriority {
+    return this._priority;
+  }
+  get resolution(): string | null {
+    return this._resolution;
+  }
+  get labels(): string[] {
+    return [...this._labels];
+  }
+  get storyPoints(): number | null {
+    return this._storyPoints;
+  }
+  get originalEstimate(): number | null {
+    return this._originalEstimate;
+  }
+  get remainingEstimate(): number | null {
+    return this._remainingEstimate;
+  }
+  get timeSpent(): number {
+    return this._timeSpent;
+  }
+  get boardPosition(): number {
+    return this._boardPosition;
+  }
+  get startDate(): Date | null {
+    return this._startDate;
+  }
+  get dueDate(): Date | null {
+    return this._dueDate;
+  }
+  get environment(): string | null {
+    return this._environment;
+  }
+  get fixVersionId(): string | null {
+    return this._fixVersionId;
+  }
+  get deletedAt(): Date | null {
+    return this._deletedAt;
+  }
 
   // ── Factory Methods ──
 
   static create(
-    tenantId: string, workspaceId: string, projectId: string, key: string, title: string,
-    description: string | null, creatorId: string,
+    tenantId: string,
+    workspaceId: string,
+    projectId: string,
+    key: string,
+    title: string,
+    description: string | null,
+    creatorId: string,
     type: TaskType = TaskType.TASK,
     priority: TaskPriority = TaskPriority.MEDIUM,
   ): Result<Task, TaskTitleRequiredError> {
@@ -195,14 +260,36 @@ export class Task extends AggregateRoot<string> {
     }
     const id = generateId();
     const task = new Task({
-      id, tenantId, workspaceId, projectId, key,
-      sprintId: null, parentTaskId: null, title: title.trim(), description,
-      type, creatorId, reporterId: creatorId, assigneeId: null,
-      status: TaskStatus.BACKLOG, priority, resolution: null,
-      labels: [], storyPoints: null, originalEstimate: null,
-      remainingEstimate: null, timeSpent: 0, boardPosition: Date.now(),
-      startDate: null, dueDate: null, environment: null, fixVersionId: null,
-      version: 0, createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
+      id,
+      tenantId,
+      workspaceId,
+      projectId,
+      key,
+      sprintId: null,
+      parentTaskId: null,
+      title: title.trim(),
+      description,
+      type,
+      creatorId,
+      reporterId: creatorId,
+      assigneeId: null,
+      status: TaskStatus.BACKLOG,
+      priority,
+      resolution: null,
+      labels: [],
+      storyPoints: null,
+      originalEstimate: null,
+      remainingEstimate: null,
+      timeSpent: 0,
+      boardPosition: Date.now(),
+      startDate: null,
+      dueDate: null,
+      environment: null,
+      fixVersionId: null,
+      version: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
     });
     task.addDomainEvent(new TaskCreatedEvent(id, projectId, title.trim()));
     return Result.ok(task);
@@ -371,12 +458,12 @@ export class Task extends AggregateRoot<string> {
 
   removeLabel(label: string): void {
     const normalized = label.trim().toLowerCase();
-    this._labels = this._labels.filter(l => l !== normalized);
+    this._labels = this._labels.filter((l) => l !== normalized);
     this.touch();
   }
 
   setLabels(labels: string[]): void {
-    this._labels = labels.map(l => l.trim().toLowerCase()).filter(Boolean);
+    this._labels = labels.map((l) => l.trim().toLowerCase()).filter(Boolean);
     this.touch();
   }
 

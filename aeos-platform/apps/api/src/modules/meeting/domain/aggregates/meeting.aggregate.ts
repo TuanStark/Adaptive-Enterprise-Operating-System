@@ -42,19 +42,42 @@ export class Meeting extends AggregateRoot<string> {
     this._participants = props.participants;
   }
 
-  get tenantId(): string { return this._tenantId; }
-  get workspaceId(): string { return this._workspaceId; }
-  get title(): string { return this._title; }
-  get description(): string | null { return this._description; }
-  get startTime(): Date | null { return this._startTime; }
-  get endTime(): Date | null { return this._endTime; }
-  get meetingUrl(): string | null { return this._meetingUrl; }
-  get organizerId(): string { return this._organizerId; }
-  get participants(): ReadonlyArray<MeetingParticipant> { return this._participants; }
+  get tenantId(): string {
+    return this._tenantId;
+  }
+  get workspaceId(): string {
+    return this._workspaceId;
+  }
+  get title(): string {
+    return this._title;
+  }
+  get description(): string | null {
+    return this._description;
+  }
+  get startTime(): Date | null {
+    return this._startTime;
+  }
+  get endTime(): Date | null {
+    return this._endTime;
+  }
+  get meetingUrl(): string | null {
+    return this._meetingUrl;
+  }
+  get organizerId(): string {
+    return this._organizerId;
+  }
+  get participants(): ReadonlyArray<MeetingParticipant> {
+    return this._participants;
+  }
 
   static create(
-    tenantId: string, workspaceId: string, title: string, organizerId: string,
-    description: string | null = null, startTime: Date | null = null, endTime: Date | null = null,
+    tenantId: string,
+    workspaceId: string,
+    title: string,
+    organizerId: string,
+    description: string | null = null,
+    startTime: Date | null = null,
+    endTime: Date | null = null,
     meetingUrl: string | null = null,
   ): Result<Meeting, InvalidMeetingTimeError> {
     if (startTime && endTime && startTime >= endTime) {
@@ -83,19 +106,19 @@ export class Meeting extends AggregateRoot<string> {
   }
 
   addParticipant(userId: string): void {
-    if (!this._participants.find(p => p.userId === userId)) {
+    if (!this._participants.find((p) => p.userId === userId)) {
       this._participants.push(MeetingParticipant.create(this.id, userId, 'PENDING'));
       this.touch();
     }
   }
 
   removeParticipant(userId: string): void {
-    this._participants = this._participants.filter(p => p.userId !== userId);
+    this._participants = this._participants.filter((p) => p.userId !== userId);
     this.touch();
   }
 
   updateParticipantStatus(userId: string, status: string): void {
-    const participant = this._participants.find(p => p.userId === userId);
+    const participant = this._participants.find((p) => p.userId === userId);
     if (participant) {
       participant.changeStatus(status);
       this.touch();

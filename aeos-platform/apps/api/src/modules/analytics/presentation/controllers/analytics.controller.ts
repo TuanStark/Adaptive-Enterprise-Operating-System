@@ -21,7 +21,9 @@ export class AnalyticsController {
     if (!workspaceId) {
       throw new Error('Workspace ID is required'); // Simple validation
     }
-    const result = await this.getWorkspaceAnalyticsHandler.execute(new GetWorkspaceAnalyticsQuery(workspaceId));
+    const result = await this.getWorkspaceAnalyticsHandler.execute(
+      new GetWorkspaceAnalyticsQuery(workspaceId),
+    );
     if (result.isFail) throw result.error as DomainError;
     return result.value;
   }
@@ -32,7 +34,9 @@ export class AnalyticsController {
     if (!workspaceId) {
       throw new Error('Workspace ID is required'); // Simple validation
     }
-    const result = await this.getWorkspaceVelocityHandler.execute(new GetWorkspaceVelocityQuery(workspaceId));
+    const result = await this.getWorkspaceVelocityHandler.execute(
+      new GetWorkspaceVelocityQuery(workspaceId),
+    );
     if (result.isFail) throw result.error as DomainError;
     return result.value;
   }
@@ -43,7 +47,9 @@ export class AnalyticsController {
     if (!workspaceId) {
       throw new Error('Workspace ID is required'); // Simple validation
     }
-    const result = await this.getWorkspaceBurndownHandler.execute(new GetWorkspaceBurndownQuery(workspaceId));
+    const result = await this.getWorkspaceBurndownHandler.execute(
+      new GetWorkspaceBurndownQuery(workspaceId),
+    );
     if (result.isFail) throw result.error as DomainError;
     return result.value;
   }

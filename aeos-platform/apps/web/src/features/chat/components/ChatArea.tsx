@@ -70,7 +70,9 @@ export function ChatArea({
     }
 
     setMessages((prev) => {
-      if (prev.some((m) => m.id === message.id)) return prev;
+      if (prev.some((m) => m.id === message.id)) {
+        return prev.map((m) => (m.id === message.id ? message : m));
+      }
       return [...prev, message];
     });
   }, [activeThreadMessage?.id]);
@@ -132,8 +134,8 @@ export function ChatArea({
   });
 
   const handleSendMessage = useCallback(
-    (content: string) => {
-      if (!content.trim() || !channelId) return;
+    (content: string, attachments?: { id: string; url: string; name: string; type: string; size: number }[]) => {
+      if ((!content.trim() && (!attachments || attachments.length === 0)) || !channelId) return;
 
       // Optimistic message object for instant UI feedback
       const tempId = `temp-${Date.now()}`;
@@ -146,6 +148,7 @@ export function ChatArea({
         isPinned: false,
         isEdited: false,
         reactions: [],
+        attachments: attachments || [],
         createdAt: new Date().toISOString(),
         editedAt: null,
         deletedAt: null,
@@ -154,7 +157,8 @@ export function ChatArea({
       setMessages((prev) => [...prev, tempMessage]);
 
       // Emit via WebSocket with ack callback
-      sendMessage(content.trim(), undefined, (res: any) => {
+      const attachmentIds = attachments?.map(a => a.id) || [];
+      sendMessage(content.trim(), undefined, attachmentIds, (res: any) => {
         if (res?.status === 'success' && res.data?.id) {
           setMessages((prev) =>
             prev.map((m) => (m.id === tempId ? { ...m, id: res.data.id } : m))

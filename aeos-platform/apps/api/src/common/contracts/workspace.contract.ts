@@ -17,7 +17,10 @@ export class WorkspaceMemberAddedIntegrationEvent implements IIntegrationEvent {
     this.memberId = payload.memberId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; memberId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  memberId: string;
+  workspaceId: string;
 }
 
 export class WorkspaceMemberRemovedIntegrationEvent implements IIntegrationEvent {
@@ -28,7 +31,10 @@ export class WorkspaceMemberRemovedIntegrationEvent implements IIntegrationEvent
     this.memberId = payload.memberId;
     this.workspaceId = payload.workspaceId;
   }
-  eventId: string; occurredOn: Date; memberId: string; workspaceId: string;
+  eventId: string;
+  occurredOn: Date;
+  memberId: string;
+  workspaceId: string;
 }
 
 export class WorkspaceMemberInvitedIntegrationEvent implements IIntegrationEvent {
@@ -40,5 +46,9 @@ export class WorkspaceMemberInvitedIntegrationEvent implements IIntegrationEvent
     this.workspaceId = payload.workspaceId;
     this.inviterId = payload.inviterId;
   }
-  eventId: string; occurredOn: Date; email: string; workspaceId: string; inviterId: string;
+  eventId: string;
+  occurredOn: Date;
+  email: string;
+  workspaceId: string;
+  inviterId: string;
 }

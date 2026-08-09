@@ -3,7 +3,10 @@ import { QueryBus } from '@nestjs/cqrs';
 import { PrismaService } from '@aeos/database';
 import { GetBoardConfigQuery } from './get-board-config.query';
 import { generateId } from '@aeos/common';
-import { GetProjectWorkspaceInternalQuery, ProjectWorkspaceDto } from '../../../../../common/contracts/project.contract';
+import {
+  GetProjectWorkspaceInternalQuery,
+  ProjectWorkspaceDto,
+} from '../../../../../common/contracts/project.contract';
 
 export interface BoardColumnConfig {
   id: string;
@@ -22,7 +25,12 @@ export interface BoardConfigResult {
 
 const DEFAULT_COLUMNS: BoardColumnConfig[] = [
   { id: 'col-todo', name: 'TO DO', statuses: ['BACKLOG', 'TODO'], order: 0 },
-  { id: 'col-in-progress', name: 'IN PROGRESS', statuses: ['IN_PROGRESS', 'BLOCKED', 'REVIEW'], order: 1 },
+  {
+    id: 'col-in-progress',
+    name: 'IN PROGRESS',
+    statuses: ['IN_PROGRESS', 'BLOCKED', 'REVIEW'],
+    order: 1,
+  },
   { id: 'col-done', name: 'DONE', statuses: ['DONE', 'CANCELLED'], order: 2 },
 ];
 
@@ -42,9 +50,10 @@ export class GetBoardConfigHandler {
       // Need workspaceId for creation — look up from project if not provided
       let workspaceId = query.workspaceId ?? '';
       if (!workspaceId) {
-        const project = await this.queryBus.execute<GetProjectWorkspaceInternalQuery, ProjectWorkspaceDto | null>(
-          new GetProjectWorkspaceInternalQuery(query.projectId)
-        );
+        const project = await this.queryBus.execute<
+          GetProjectWorkspaceInternalQuery,
+          ProjectWorkspaceDto | null
+        >(new GetProjectWorkspaceInternalQuery(query.projectId));
         workspaceId = project?.workspaceId ?? '';
       }
 

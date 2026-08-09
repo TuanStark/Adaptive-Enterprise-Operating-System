@@ -1,4 +1,15 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError, ValidationError } from '@aeos/errors';
 import { CreateWorkspaceRequestDto } from '../dto/create-workspace.request.dto';
@@ -45,7 +56,7 @@ export class WorkspaceController {
     private readonly validateWorkspaceInviteHandler: ValidateWorkspaceInviteHandler,
     private readonly removeWorkspaceMemberHandler: RemoveWorkspaceMemberHandler,
     private readonly updateWorkspaceMemberProfileHandler: UpdateWorkspaceMemberProfileHandler,
-  ) { }
+  ) {}
 
   @Get('me')
   async getMyWorkspaces(@Req() req: Request) {
@@ -84,7 +95,10 @@ export class WorkspaceController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: { name?: string; description?: string; domain?: string }) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; description?: string; domain?: string },
+  ) {
     const command = new UpdateWorkspaceCommand(id, dto.name, dto.description, dto.domain);
     const result = await this.updateHandler.execute(command);
     if (result.isFail) {

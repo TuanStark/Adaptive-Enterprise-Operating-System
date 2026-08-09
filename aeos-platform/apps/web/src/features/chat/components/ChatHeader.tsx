@@ -75,6 +75,7 @@ export function ChatHeader({ channelId, channelName, memberCount, channelType = 
         {!isDirect && (
           <Dialog>
             <DialogTrigger
+              nativeButton={false}
               render={
                 <div className="hidden sm:flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-md border border-transparent hover:border-gray-200 transition-all" />
               }

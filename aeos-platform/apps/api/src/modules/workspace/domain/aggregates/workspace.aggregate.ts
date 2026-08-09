@@ -4,7 +4,10 @@ import { generateId } from '@aeos/common';
 import { WorkspaceMember } from '../entities/workspace-member.entity';
 import { WorkspaceCreatedEvent } from '../events/workspace-created.event';
 import { WorkspaceArchivedEvent } from '../events/workspace-archived.event';
-import { WorkspaceMemberAddedEvent, WorkspaceMemberRemovedEvent } from '../events/workspace-member.events';
+import {
+  WorkspaceMemberAddedEvent,
+  WorkspaceMemberRemovedEvent,
+} from '../events/workspace-member.events';
 import { WorkspaceMemberInvitedEvent } from '../events/workspace-member-invited.event';
 import {
   WorkspaceNameRequiredError,
@@ -123,7 +126,9 @@ export class Workspace extends AggregateRoot<string> {
     // Chuẩn DDD: Khi tạo Workspace, owner mặc định phải là một member.
     ws.addMember(tenantId, ownerId, null);
 
-    ws.addDomainEvent(new WorkspaceCreatedEvent(id, tenantId, organizationId, name.trim(), ownerId));
+    ws.addDomainEvent(
+      new WorkspaceCreatedEvent(id, tenantId, organizationId, name.trim(), ownerId),
+    );
     return Result.ok(ws);
   }
 
@@ -155,7 +160,10 @@ export class Workspace extends AggregateRoot<string> {
     return Result.ok(undefined);
   }
 
-  updateDetails(name: string, description: string | null): Result<void, WorkspaceNameRequiredError> {
+  updateDetails(
+    name: string,
+    description: string | null,
+  ): Result<void, WorkspaceNameRequiredError> {
     if (!name || name.trim().length === 0) {
       return Result.fail(new WorkspaceNameRequiredError());
     }
@@ -184,7 +192,7 @@ export class Workspace extends AggregateRoot<string> {
     if (this._status === WorkspaceStatus.ARCHIVED) {
       return Result.fail(new Error('Cannot invite to an archived workspace'));
     }
-    
+
     // In a real application, we would create an Invitation entity inside the Organization
     // For this example, we just emit the domain event which triggers the Outbox to send an email.
     this.addDomainEvent(new WorkspaceMemberInvitedEvent(email, this.id, inviterId));

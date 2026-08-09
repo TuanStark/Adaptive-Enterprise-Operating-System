@@ -1,7 +1,4 @@
-import {
-  Organization as PrismaOrg,
-  OrganizationMember as PrismaOrgMember,
-} from '@aeos/database';
+import { Organization as PrismaOrg, OrganizationMember as PrismaOrgMember } from '@aeos/database';
 import { Organization, OrganizationProps } from '../../domain/aggregates/organization.aggregate';
 import { OrganizationMember } from '../../domain/entities/organization-member.entity';
 
