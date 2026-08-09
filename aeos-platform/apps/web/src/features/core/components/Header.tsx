@@ -18,16 +18,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut, useSession } from "next-auth/react";
+import { useProfile } from "@/features/auth/hooks/useProfile";
 
 export function Header() {
   const toggleLocalSidebar = useAppStore((state) => state.toggleLocalSidebar);
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { profile } = useProfile();
 
-  const userName = session?.user?.name || "User";
+  // Prefer profile data, fallback to session data
+  const userName = profile 
+    ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || session?.user?.name || "User"
+    : session?.user?.name || "User";
   const userRole = session?.user?.role || "USER";
-  const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+  const avatarUrl = profile?.avatarUrl || session?.user?.image || undefined;
 
   const hasLocalSidebar = pathname.startsWith("/tasks") || pathname.startsWith("/docs") || pathname.startsWith("/chat");
 
@@ -62,6 +68,7 @@ export function Header() {
                 <p className="text-xs text-gray-500">{userRole}</p>
               </div>
               <Avatar className="h-9 w-9 border border-gray-200 shadow-sm">
+                <AvatarImage src={avatarUrl} />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </button>

@@ -34,6 +34,7 @@ export function useProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
       toast.success('Profile updated successfully');
     },
     onError: (error: any) => {

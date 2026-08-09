@@ -41,9 +41,9 @@ export class UserController {
 
   @Get('me')
   async getMe(@CurrentUser() user: any): Promise<UserResponseDto> {
-    const result = await this.queryBus.execute(new GetCurrentUserQuery(user.id));
+    const result = await this.queryBus.execute(new GetCurrentUserQuery(user.userId));
 
-    if (result.isFail()) {
+    if (result.isFail) {
       throw result.error;
     }
 
@@ -57,7 +57,7 @@ export class UserController {
   ): Promise<void> {
     const result = await this.commandBus.execute(
       new UpdateUserProfileCommand(
-        user.id,
+        user.userId,
         dto.firstName ?? null,
         dto.lastName ?? null,
         dto.avatarUrl ?? null,
@@ -67,7 +67,7 @@ export class UserController {
       )
     );
 
-    if (result.isFail()) {
+    if (result.isFail) {
       throw result.error;
     }
   }

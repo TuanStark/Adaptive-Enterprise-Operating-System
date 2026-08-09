@@ -1,4 +1,5 @@
 import { Inject } from '@nestjs/common';
+import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Result, NotFoundError } from '@aeos/errors';
 
 import { UserRepository, USER_REPOSITORY } from '../../../domain/repositories/user.repository';
@@ -6,7 +7,8 @@ import { UserResponseDto } from '../../dto/user-response.dto';
 import { UserMapper } from '../../mappers/user.mapper';
 import { GetCurrentUserQuery } from './get-current-user.query';
 
-export class GetCurrentUserHandler {
+@QueryHandler(GetCurrentUserQuery)
+export class GetCurrentUserHandler implements IQueryHandler<GetCurrentUserQuery> {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
