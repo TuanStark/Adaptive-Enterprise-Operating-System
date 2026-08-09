@@ -25,16 +25,30 @@ export function ChatLayout({
   return (
     <div className="flex h-full w-full bg-white overflow-hidden">
       <div className="flex-1 h-full min-w-0">
-        {activeChannel ? (
-          <ChatArea
-            key={activeChannel.id}
-            channelId={activeChannel.id}
-            channelName={activeChannel.name}
-            initialMessages={activeChannel.id === initialChannels[0]?.id ? initialMessages : []}
-            users={users}
-            currentUserId={currentUserId}
-          />
-        ) : (
+        {activeChannel ? (() => {
+          let displayName = activeChannel.name;
+          let targetUser = null;
+
+          if (activeChannel.type === 'DIRECT') {
+            const otherMember = activeChannel.members?.find(m => m.userId !== currentUserId);
+            const targetUserId = otherMember ? otherMember.userId : currentUserId;
+            targetUser = users[targetUserId] || null;
+            displayName = !otherMember ? `${targetUser?.name || 'Self'} (You)` : targetUser?.name || 'Unknown User';
+          }
+
+          return (
+            <ChatArea
+              key={activeChannel.id}
+              channelId={activeChannel.id}
+              channelName={displayName}
+              channelType={activeChannel.type}
+              targetUser={targetUser}
+              initialMessages={activeChannel.id === initialChannels[0]?.id ? initialMessages : []}
+              users={users}
+              currentUserId={currentUserId}
+            />
+          );
+        })() : (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <p className="text-sm">No channels available. Create one from the sidebar to start chatting!</p>
           </div>

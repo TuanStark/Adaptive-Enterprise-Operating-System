@@ -13,6 +13,8 @@ import { toast } from "sonner";
 interface ChatAreaProps {
   channelId: string;
   channelName: string;
+  channelType: 'PUBLIC' | 'PRIVATE' | 'DIRECT';
+  targetUser?: User | null;
   initialMessages: Message[];
   users: Record<string, User>;
   currentUserId: string;
@@ -21,6 +23,8 @@ interface ChatAreaProps {
 export function ChatArea({
   channelId,
   channelName,
+  channelType,
+  targetUser,
   initialMessages,
   users,
   currentUserId,
@@ -161,7 +165,12 @@ export function ChatArea({
 
   return (
     <div className="flex flex-col h-full bg-white relative flex-1 min-w-0">
-      <ChatHeader channelName={channelName} memberCount={Object.keys(users).length} />
+      <ChatHeader 
+        channelName={channelName} 
+        memberCount={Object.keys(users).length} 
+        channelType={channelType}
+        targetUser={targetUser}
+      />
 
       {isLoadingMessages ? (
         <div className="flex-1 flex items-center justify-center text-xs text-gray-400">

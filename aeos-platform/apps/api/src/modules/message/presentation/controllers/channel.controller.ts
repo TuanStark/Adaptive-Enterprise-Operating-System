@@ -5,6 +5,8 @@ import { IsString, IsOptional, MaxLength, MinLength, IsEnum } from 'class-valida
 import { CreateChannelCommand } from '../../application/commands/create-channel/create-channel.command';
 import { CreateChannelHandler } from '../../application/commands/create-channel/create-channel.handler';
 import { JoinChannelCommand, JoinChannelHandler } from '../../application/commands/join-channel/join-channel.handler';
+import { GetOrCreateDirectChannelCommand } from '../../application/commands/get-or-create-dm/get-or-create-dm.command';
+import { GetOrCreateDirectChannelHandler } from '../../application/commands/get-or-create-dm/get-or-create-dm.handler';
 import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
 import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
 import { ChatGateway } from '../gateways/chat.gateway';
@@ -17,6 +19,12 @@ class CreateChannelRequestDto {
   @IsString() @MinLength(1) @MaxLength(80) name!: string;
   @IsOptional() @IsString() type?: string;
   @IsOptional() @IsString() @MaxLength(250) description?: string;
+}
+
+class CreateDmRequestDto {
+  @IsString() tenantId!: string;
+  @IsString() workspaceId!: string;
+  @IsString() targetUserId!: string;
 }
 
 class UpdateChannelRequestDto {
@@ -39,6 +47,7 @@ export class ChannelController {
     private readonly prisma: PrismaService,
     private readonly createChannelHandler: CreateChannelHandler,
     private readonly joinChannelHandler: JoinChannelHandler,
+    private readonly getOrCreateDmHandler: GetOrCreateDirectChannelHandler,
     private readonly chatGateway: ChatGateway,
     @Inject(CHANNEL_REPOSITORY)
     private readonly channelRepository: ChannelRepository,
@@ -59,6 +68,18 @@ export class ChannelController {
     const result = await this.createChannelHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
     return { id: result.value, message: 'Channel created.' };
+  }
+
+  @Post('dm')
+  @HttpCode(HttpStatus.OK)
+  async createDirectMessage(@Body() dto: CreateDmRequestDto, @Req() req: Request) {
+    const user = (req as any).user;
+    const command = new GetOrCreateDirectChannelCommand(
+      dto.tenantId, dto.workspaceId, user.userId, dto.targetUserId
+    );
+    const result = await this.getOrCreateDmHandler.execute(command);
+    if (result.isFail) throw result.error as DomainError;
+    return { id: result.value, message: 'DM channel ready.' };
   }
 
   @Get()
@@ -103,6 +124,7 @@ export class ChannelController {
       data: data.map(ch => ({
         id: ch.id, name: ch.name, type: ch.type, description: ch.description,
         topic: ch.topic, isArchived: ch.isArchived, memberCount: ch.members.length,
+        members: ch.members.map(m => ({ userId: m.userId, role: m.role, joinedAt: m.joinedAt })),
         createdAt: ch.createdAt,
       })),
       meta: { page: p, limit: l, total, totalPages: Math.ceil(total / l) },

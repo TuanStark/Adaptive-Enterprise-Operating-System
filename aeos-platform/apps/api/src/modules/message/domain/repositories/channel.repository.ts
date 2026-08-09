@@ -5,6 +5,7 @@ export interface ChannelRepository {
   findById(id: string): Promise<Channel | null>;
   findByWorkspaceId(workspaceId: string, page: number, limit: number): Promise<{ data: Channel[]; total: number }>;
   findByMemberUserId(userId: string): Promise<Channel[]>;
+  findByNameAndWorkspaceId(name: string, workspaceId: string): Promise<Channel | null>;
 }
 
 export const CHANNEL_REPOSITORY = Symbol('CHANNEL_REPOSITORY');

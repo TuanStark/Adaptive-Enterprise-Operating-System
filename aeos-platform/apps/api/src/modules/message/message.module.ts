@@ -9,6 +9,7 @@ import { CreateChannelHandler } from './application/commands/create-channel/crea
 import { SendMessageHandler } from './application/commands/send-message/send-message.handler';
 import { JoinChannelHandler } from './application/commands/join-channel/join-channel.handler';
 import { ReactToMessageHandler } from './application/commands/react-to-message/react-to-message.handler';
+import { GetOrCreateDirectChannelHandler } from './application/commands/get-or-create-dm/get-or-create-dm.handler';
 import { ChannelController } from './presentation/controllers/channel.controller';
 import { ChatGateway } from './presentation/gateways/chat.gateway';
 import { WorkspaceArchivedEventHandler, WorkspaceMemberRemovedEventHandler } from './application/events/workspace-events.handler';
@@ -24,6 +25,7 @@ import { WorkspaceArchivedEventHandler, WorkspaceMemberRemovedEventHandler } fro
     SendMessageHandler,
     JoinChannelHandler,
     ReactToMessageHandler,
+    GetOrCreateDirectChannelHandler,
     ChatGateway,
     WorkspaceArchivedEventHandler,
     WorkspaceMemberRemovedEventHandler,

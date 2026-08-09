@@ -161,4 +161,31 @@ export class PrismaChannelRepository implements ChannelRepository {
         });
       });
   }
+
+  async findByNameAndWorkspaceId(name: string, workspaceId: string): Promise<Channel | null> {
+    const record = await this.prisma.channel.findFirst({
+      where: { name, workspaceId },
+      include: { members: true },
+    });
+
+    if (!record) return null;
+
+    return Channel.fromPersistence({
+      id: record.id,
+      tenantId: record.tenantId,
+      workspaceId: record.workspaceId || '',
+      name: record.name,
+      description: record.description,
+      type: record.type as ChannelType,
+      creatorId: record.members.find((m) => m.role === 'OWNER')?.userId || record.members[0]?.userId || '',
+      isArchived: record.isArchived,
+      topic: record.topic,
+      version: record.version,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      members: record.members.map((m) =>
+        ChannelMember.create(m.channelId, m.userId, m.role as any)
+      ),
+    });
+  }
 }

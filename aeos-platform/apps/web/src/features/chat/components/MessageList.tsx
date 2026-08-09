@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Smile, Pencil, Trash2, Check, X } from "lucide-react";
 import { Message, MessageReaction, User } from "../types";
@@ -31,6 +31,13 @@ export function MessageList({
 }: MessageListProps) {
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleStartEdit = (msg: Message) => {
     setEditingMsgId(msg.id);
@@ -98,9 +105,10 @@ export function MessageList({
         return (
           <div
             key={msg.id}
-            className="group relative flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2"
+            className={`group relative flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2 ${isOwner ? "flex-row-reverse" : "flex-row"
+              }`}
           >
-            {/* Avatar - ALWAYS DISPLAYED */}
+            {/* Avatar */}
             <div className="w-9 shrink-0 flex justify-center pt-0.5">
               <Avatar className="w-9 h-9 rounded-md">
                 <AvatarImage src={sender?.avatarUrl} />
@@ -111,9 +119,9 @@ export function MessageList({
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0">
-              {/* Sender Name & Timestamp - ALWAYS DISPLAYED */}
-              <div className="flex items-baseline gap-2 mb-1">
+            <div className={`flex-1 min-w-0 flex flex-col ${isOwner ? "items-end" : "items-start"}`}>
+              {/* Sender Name & Timestamp */}
+              <div className={`flex items-baseline gap-2 mb-1 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="font-bold text-[14px] text-gray-900 leading-none">
                   {senderDisplayName}
                 </span>
@@ -123,7 +131,7 @@ export function MessageList({
               </div>
 
               {isEditing ? (
-                <div className="mt-1 flex items-center gap-2">
+                <div className={`mt-1 flex items-center gap-2 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
                   <Input
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
@@ -142,28 +150,30 @@ export function MessageList({
                   </Button>
                 </div>
               ) : (
-                <div className="text-[14px] text-gray-800 leading-relaxed break-words whitespace-pre-wrap">
+                <div className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isOwner
+                    ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tr-sm text-right inline-block max-w-[85%]"
+                    : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[85%]"
+                  }`}>
                   {msg.content}
                   {msg.isEdited && (
-                    <span className="text-[11px] text-gray-400 italic ml-1.5">(edited)</span>
+                    <span className={`text-[11px] italic ml-1.5 ${isOwner ? "text-blue-100" : "text-gray-400"}`}>(edited)</span>
                   )}
                 </div>
               )}
 
               {/* Reaction Badges */}
               {Object.keys(reactionGroups).length > 0 && (
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-end" : "justify-start"}`}>
                   {Object.entries(reactionGroups).map(([emoji, group]) => {
                     const hasReacted = group.userIds.includes(currentUserId);
                     return (
                       <button
                         key={emoji}
                         onClick={() => handleToggleReaction(msg, emoji)}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                          hasReacted
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors cursor-pointer ${hasReacted
                             ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                             : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-                        }`}
+                          }`}
                       >
                         <span>{emoji}</span>
                         <span>{group.count}</span>
@@ -176,7 +186,8 @@ export function MessageList({
 
             {/* Hover Action Bar */}
             {!isEditing && (
-              <div className="absolute right-3 -top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5 gap-0.5 z-10 pointer-events-none group-hover:pointer-events-auto">
+              <div className={`absolute -top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5 gap-0.5 z-10 pointer-events-none group-hover:pointer-events-auto ${isOwner ? "left-3" : "right-3"
+                }`}>
                 {EMOJI_OPTIONS.map((emoji) => (
                   <button
                     key={emoji}
@@ -212,6 +223,7 @@ export function MessageList({
           </div>
         );
       })}
+      <div ref={messagesEndRef} />
     </div>
   );
 }

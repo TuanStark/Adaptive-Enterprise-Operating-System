@@ -58,19 +58,39 @@ export function ChatSidebar() {
     enabled: !!workspaceId,
   });
 
-  const filteredChannels: Channel[] = channels.filter((c: Channel) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+  const workspaceChannels: Channel[] = channels.filter((c: Channel) =>
+    c.type !== 'DIRECT' && c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const teamMembers = members.filter(
-    (m: any) => m.userId !== currentUserId && m.name?.toLowerCase().includes(search.toLowerCase())
+  const directMessages: Channel[] = channels.filter((c: Channel) =>
+    c.type === 'DIRECT' &&
+    c.members?.some(m => {
+      // search by user name if we had it, but for now just filter by type
+      return true; // We'll refine this if search applies to DMs
+    })
   );
 
-  const selectedChannelId = activeChannelId || channels[0]?.id;
+  const selectedChannelId = activeChannelId || workspaceChannels[0]?.id;
 
   const handleChannelCreated = (newChannelId: string) => {
     queryClient.invalidateQueries({ queryKey: ["channels", workspaceId] });
     router.push(`/chat?channelId=${newChannelId}`);
+  };
+
+  const handleCreateDM = async (targetUserId: string) => {
+    if (!workspaceId) return;
+    try {
+      const res = await clientApi.post(`/channels/dm`, {
+        workspaceId,
+        tenantId: session?.user?.tenantId || 'default',
+        targetUserId,
+      });
+      const data = res as any;
+      queryClient.invalidateQueries({ queryKey: ["channels", workspaceId] });
+      router.push(`/chat?channelId=${data.id}`);
+    } catch (err) {
+      console.error('Failed to create DM', err);
+    }
   };
 
   return (
@@ -131,11 +151,11 @@ export function ChatSidebar() {
               <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded animate-pulse" />
               <div className="h-6 w-3/4 bg-gray-200 dark:bg-zinc-800 rounded animate-pulse" />
             </div>
-          ) : filteredChannels.length === 0 ? (
+          ) : workspaceChannels.length === 0 ? (
             <p className="text-xs text-gray-400 italic px-2 py-1">No channels found</p>
           ) : (
             <div className="flex flex-col gap-0.5">
-              {filteredChannels.map((channel) => {
+              {workspaceChannels.map((channel) => {
                 const isActive = channel.id === selectedChannelId;
                 const Icon = channel.type === "PRIVATE" ? Lock : Hash;
 
@@ -161,22 +181,68 @@ export function ChatSidebar() {
 
         {/* Direct Messages */}
         <div>
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
-            Direct Messages
-          </p>
+          <div className="flex items-center justify-between mb-2 px-2">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              Direct Messages
+            </p>
+          </div>
           <div className="flex flex-col gap-0.5">
-            {teamMembers.length === 0 ? (
-              <p className="text-xs text-gray-400 italic px-2 py-1">No team members</p>
+            {members.length === 0 ? (
+              <p className="text-xs text-gray-400 italic px-2 py-1">No members found</p>
             ) : (
-              teamMembers.map((member: any) => (
-                <div
-                  key={member.userId || member.id}
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-200/50 rounded-md cursor-pointer transition-colors"
-                >
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="truncate">{member.name}</span>
-                </div>
-              ))
+              members
+                .filter((m: any) => m.name?.toLowerCase().includes(search.toLowerCase()))
+                .map((member: any) => {
+                  const targetUserId = member.userId || member.id;
+                  // Check if a DM channel already exists with this user
+                  const existingDm = directMessages.find((c: Channel) => {
+                    const isSelfDM = targetUserId === currentUserId;
+                    if (isSelfDM) {
+                      return c.members?.length === 1 && c.members[0].userId === currentUserId;
+                    }
+                    return c.members?.some(m => m.userId === targetUserId);
+                  });
+
+                  const isActive = existingDm?.id === selectedChannelId;
+                  const isSelf = targetUserId === currentUserId;
+                  const displayName = isSelf ? `${member.name} (You)` : member.name;
+
+                  const content = (
+                    <>
+                      <div className={cn("w-2 h-2 rounded-full shrink-0", member.isOnline ? "bg-emerald-500" : "bg-gray-300")} />
+                      <span className="truncate flex-1 text-left">{displayName}</span>
+                    </>
+                  );
+
+                  const className = cn(
+                    "flex items-center gap-2 px-2 py-1.5 text-sm rounded-md font-medium transition-colors w-full",
+                    isActive
+                      ? "bg-emerald-100/60 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 font-semibold"
+                      : "text-gray-600 dark:text-zinc-400 hover:bg-gray-200/50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-zinc-200"
+                  );
+
+                  if (existingDm) {
+                    return (
+                      <Link
+                        key={targetUserId}
+                        href={`/chat?channelId=${existingDm.id}`}
+                        className={className}
+                      >
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={targetUserId}
+                      onClick={() => handleCreateDM(targetUserId)}
+                      className={className}
+                    >
+                      {content}
+                    </button>
+                  );
+                })
             )}
           </div>
         </div>

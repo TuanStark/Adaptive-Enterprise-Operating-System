@@ -6,7 +6,7 @@ import { MessageReaction } from '../../domain/entities/message-reaction.entity';
 
 @Injectable()
 export class PrismaMessageRepository implements MessageRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async save(message: Message): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
@@ -97,9 +97,6 @@ export class PrismaMessageRepository implements MessageRepository {
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
-    // Reverse to return chronological order
-    records.reverse();
-
     const data = records.map((record) =>
       Message.fromPersistence({
         id: record.id,
@@ -144,9 +141,6 @@ export class PrismaMessageRepository implements MessageRepository {
       take: limit,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
-
-    // Reverse to return chronological order
-    records.reverse();
 
     const data = records.map((record) =>
       Message.fromPersistence({

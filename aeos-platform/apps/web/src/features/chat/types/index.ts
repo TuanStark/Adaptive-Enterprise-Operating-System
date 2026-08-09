@@ -18,6 +18,7 @@ export interface Channel {
   topic: string | null;
   isArchived: boolean;
   memberCount: number;
+  members: ChannelMember[];
   createdAt: string;
 }
 
