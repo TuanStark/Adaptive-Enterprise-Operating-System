@@ -55,6 +55,7 @@ export class PrismaChannelRepository implements ChannelRepository {
               channelId: channel.id,
               userId: m.userId,
               role: m.role as any,
+              lastReadMessageId: m.lastReadMessageId,
               joinedAt: m.joinedAt,
             })),
           });
@@ -84,9 +85,11 @@ export class PrismaChannelRepository implements ChannelRepository {
       version: record.version,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      members: record.members.map((m) =>
-        ChannelMember.create(m.channelId, m.userId, m.role as any)
-      ),
+      members: record.members.map((m) => {
+        const member = ChannelMember.create(m.channelId, m.userId, m.role as any);
+        if (m.lastReadMessageId) member.updateReadCursor(m.lastReadMessageId);
+        return member;
+      }),
     });
   }
 
@@ -123,9 +126,11 @@ export class PrismaChannelRepository implements ChannelRepository {
         version: record.version,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
-        members: record.members.map((m) =>
-          ChannelMember.create(m.channelId, m.userId, m.role as any)
-        ),
+        members: record.members.map((m) => {
+          const member = ChannelMember.create(m.channelId, m.userId, m.role as any);
+          if (m.lastReadMessageId) member.updateReadCursor(m.lastReadMessageId);
+          return member;
+        }),
       })
     );
 
@@ -155,9 +160,11 @@ export class PrismaChannelRepository implements ChannelRepository {
           version: record.version,
           createdAt: record.createdAt,
           updatedAt: record.updatedAt,
-          members: record.members.map((mem) =>
-            ChannelMember.create(mem.channelId, mem.userId, mem.role as any)
-          ),
+          members: record.members.map((mem) => {
+            const member = ChannelMember.create(mem.channelId, mem.userId, mem.role as any);
+            if (mem.lastReadMessageId) member.updateReadCursor(mem.lastReadMessageId);
+            return member;
+          }),
         });
       });
   }
@@ -183,9 +190,11 @@ export class PrismaChannelRepository implements ChannelRepository {
       version: record.version,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      members: record.members.map((m) =>
-        ChannelMember.create(m.channelId, m.userId, m.role as any)
-      ),
+      members: record.members.map((m) => {
+        const member = ChannelMember.create(m.channelId, m.userId, m.role as any);
+        if (m.lastReadMessageId) member.updateReadCursor(m.lastReadMessageId);
+        return member;
+      }),
     });
   }
 }

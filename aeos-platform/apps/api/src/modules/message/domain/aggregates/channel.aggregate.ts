@@ -163,4 +163,14 @@ export class Channel extends AggregateRoot<string> {
   isMember(userId: string): boolean {
     return this._members.some(m => m.userId === userId);
   }
+
+  updateReadCursor(userId: string, lastReadMessageId: string): Result<void, ChannelMemberNotFoundError> {
+    const member = this._members.find(m => m.userId === userId);
+    if (!member) {
+      return Result.fail(new ChannelMemberNotFoundError(userId));
+    }
+    member.updateReadCursor(lastReadMessageId);
+    this.touch();
+    return Result.ok(undefined);
+  }
 }

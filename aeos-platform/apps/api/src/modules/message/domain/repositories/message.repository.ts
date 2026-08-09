@@ -6,6 +6,8 @@ export interface MessageRepository {
   findByChannelId(channelId: string, cursor: string | null, limit: number): Promise<{ data: Message[]; nextCursor: string | null }>;
   findThreadReplies(parentMessageId: string, cursor: string | null, limit: number): Promise<{ data: Message[]; nextCursor: string | null }>;
   countThreadReplies(parentMessageId: string): Promise<number>;
+  markThreadAsRead(threadId: string, userId: string): Promise<void>;
+  getThreadReadStates(threadIds: string[], userId: string): Promise<Record<string, Date>>;
 }
 
 export const MESSAGE_REPOSITORY = Symbol('MESSAGE_REPOSITORY');

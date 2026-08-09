@@ -16,6 +16,7 @@ interface UseChatSocketOptions {
   onMessageReceived?: (message: Message) => void;
   onMessageEdited?: (data: { id: string; content: string; isEdited: boolean; editedAt: string }) => void;
   onMessageDeleted?: (data: { id: string }) => void;
+  onMessagePinned?: (data: { id: string; channelId: string; isPinned: boolean }) => void;
   onReactionUpdated?: (data: { messageId: string; reactions: MessageReaction[] }) => void;
   onTypingUpdate?: (data: { userId: string; userName: string; isTyping: boolean }) => void;
 }
@@ -27,6 +28,7 @@ export function useChatSocket({
   onMessageReceived,
   onMessageEdited,
   onMessageDeleted,
+  onMessagePinned,
   onReactionUpdated,
   onTypingUpdate,
 }: UseChatSocketOptions) {
@@ -89,6 +91,10 @@ export function useChatSocket({
 
     socket.on("message:deleted", (data: { id: string }) => {
       onMessageDeleted?.(data);
+    });
+
+    socket.on("message:pinned", (data: { id: string; channelId: string; isPinned: boolean }) => {
+      onMessagePinned?.(data);
     });
 
     socket.on("reaction:updated", (data: { messageId: string; reactions: MessageReaction[] }) => {
@@ -193,5 +199,35 @@ export function useChatSocket({
     [channelId, activeUserId],
   );
 
-  return { sendMessage, editMessage, deleteMessage, toggleReaction, startTyping, stopTyping, isConnected };
+  const pinMessage = useCallback(
+    (messageId: string, cb?: (res: any) => void) => {
+      if (cb) {
+        socketRef.current?.emit("message:pin", { channelId, messageId }, cb);
+      } else {
+        socketRef.current?.emit("message:pin", { channelId, messageId });
+      }
+    },
+    [channelId],
+  );
+
+  const unpinMessage = useCallback(
+    (messageId: string, cb?: (res: any) => void) => {
+      if (cb) {
+        socketRef.current?.emit("message:unpin", { channelId, messageId }, cb);
+      } else {
+        socketRef.current?.emit("message:unpin", { channelId, messageId });
+      }
+    },
+    [channelId],
+  );
+
+  const readThread = useCallback(
+    (threadId: string) => {
+      if (!socketRef.current) return;
+      socketRef.current.emit("thread:read", { threadId });
+    },
+    []
+  );
+
+  return { sendMessage, editMessage, deleteMessage, pinMessage, unpinMessage, toggleReaction, startTyping, stopTyping, readThread, isConnected };
 }

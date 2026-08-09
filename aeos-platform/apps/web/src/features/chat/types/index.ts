@@ -40,6 +40,9 @@ export interface Message {
   isPinned: boolean;
   isEdited: boolean;
   reactions: MessageReaction[];
+  replyCount?: number;
+  lastReplyAt?: string | null;
+  isThreadUnread?: boolean;
   createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;

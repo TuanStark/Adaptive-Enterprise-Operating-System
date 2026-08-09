@@ -162,6 +162,23 @@ export class ChannelController {
 
   // ── Membership ──
 
+  @Post(':id/read-cursor')
+  async updateReadCursor(
+    @Param('id') id: string,
+    @Body() dto: { lastReadMessageId: string },
+    @Req() req: Request
+  ) {
+    const user = (req as any).user;
+    const channel = await this.channelRepository.findById(id);
+    if (!channel) throw new Error('Channel not found');
+
+    const result = channel.updateReadCursor(user.userId, dto.lastReadMessageId);
+    if (result.isFail) throw result.error as DomainError;
+
+    await this.channelRepository.save(channel);
+    return { message: 'Read cursor updated.' };
+  }
+
   @Post(':id/members')
   @HttpCode(HttpStatus.CREATED)
   async addMember(@Param('id') id: string, @Body() dto: AddMemberRequestDto) {
@@ -187,16 +204,32 @@ export class ChannelController {
     @Param('id') channelId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Req() req?: Request,
   ) {
     const l = parseInt(limit ?? '50', 10);
+    const user = (req as any)?.user;
     const { data, nextCursor } = await this.messageRepository.findByChannelId(channelId, cursor ?? null, l);
+    
+    // Fetch read states for these messages
+    let readStates: Record<string, Date> = {};
+    if (user?.userId) {
+      const threadIds = data.filter(m => m.replyCount > 0).map(m => m.id);
+      readStates = await this.messageRepository.getThreadReadStates(threadIds, user.userId);
+    }
+
     return {
-      data: data.map(m => ({
-        id: m.id, channelId: m.channelId, senderId: m.senderId, content: m.content,
-        parentMessageId: m.parentMessageId, isPinned: m.isPinned, isEdited: m.isEdited,
-        reactions: m.reactions.map(r => ({ userId: r.userId, emoji: r.emoji })),
-        createdAt: m.createdAt, editedAt: m.editedAt, deletedAt: m.deletedAt,
-      })),
+      data: data.map(m => {
+        const lastRead = readStates[m.id];
+        const isThreadUnread = m.lastReplyAt && (!lastRead || new Date(m.lastReplyAt) > lastRead);
+
+        return {
+          id: m.id, channelId: m.channelId, senderId: m.senderId, content: m.content,
+          parentMessageId: m.parentMessageId, isPinned: m.isPinned, isEdited: m.isEdited,
+          replyCount: m.replyCount, lastReplyAt: m.lastReplyAt, isThreadUnread,
+          reactions: m.reactions.map(r => ({ userId: r.userId, emoji: r.emoji })),
+          createdAt: m.createdAt, editedAt: m.editedAt, deletedAt: m.deletedAt,
+        };
+      }),
       meta: { nextCursor },
     };
   }

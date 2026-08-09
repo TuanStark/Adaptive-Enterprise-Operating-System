@@ -15,6 +15,8 @@ export interface MessageProps {
   editedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
+  replyCount: number;
+  lastReplyAt: Date | null;
   reactions: MessageReaction[];
 }
 
@@ -27,6 +29,8 @@ export class Message extends Entity<string> {
   private _isEdited: boolean;
   private _editedAt: Date | null;
   private _deletedAt: Date | null;
+  private _replyCount: number;
+  private _lastReplyAt: Date | null;
   private _reactions: MessageReaction[];
 
   private constructor(props: MessageProps) {
@@ -39,6 +43,8 @@ export class Message extends Entity<string> {
     this._isEdited = props.isEdited;
     this._editedAt = props.editedAt;
     this._deletedAt = props.deletedAt;
+    this._replyCount = props.replyCount;
+    this._lastReplyAt = props.lastReplyAt;
     this._reactions = props.reactions;
   }
 
@@ -50,6 +56,8 @@ export class Message extends Entity<string> {
   get isEdited(): boolean { return this._isEdited; }
   get editedAt(): Date | null { return this._editedAt; }
   get deletedAt(): Date | null { return this._deletedAt; }
+  get replyCount(): number { return this._replyCount; }
+  get lastReplyAt(): Date | null { return this._lastReplyAt; }
   get reactions(): ReadonlyArray<MessageReaction> { return this._reactions; }
 
   static create(
@@ -73,6 +81,8 @@ export class Message extends Entity<string> {
       editedAt: null,
       deletedAt: null,
       createdAt: new Date(),
+      replyCount: 0,
+      lastReplyAt: null,
       reactions: [],
     });
 
@@ -110,6 +120,11 @@ export class Message extends Entity<string> {
     }
     this._deletedAt = new Date();
     return Result.ok(undefined);
+  }
+
+  updateReplyCount(count: number, lastReplyAt: Date | null): void {
+    this._replyCount = count;
+    this._lastReplyAt = lastReplyAt;
   }
 
   addReaction(userId: string, emoji: string): void {

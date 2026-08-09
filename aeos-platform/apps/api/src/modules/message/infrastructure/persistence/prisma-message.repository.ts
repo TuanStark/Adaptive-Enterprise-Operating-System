@@ -23,6 +23,8 @@ export class PrismaMessageRepository implements MessageRepository {
           editedAt: message.editedAt,
           deletedAt: message.deletedAt,
           createdAt: message.createdAt,
+          replyCount: message.replyCount,
+          lastReplyAt: message.lastReplyAt,
         },
         update: {
           content: message.content,
@@ -30,6 +32,8 @@ export class PrismaMessageRepository implements MessageRepository {
           isEdited: message.isEdited,
           editedAt: message.editedAt,
           deletedAt: message.deletedAt,
+          replyCount: message.replyCount,
+          lastReplyAt: message.lastReplyAt,
         },
       });
 
@@ -68,6 +72,8 @@ export class PrismaMessageRepository implements MessageRepository {
       editedAt: record.editedAt,
       deletedAt: record.deletedAt,
       createdAt: record.createdAt,
+      replyCount: record.replyCount,
+      lastReplyAt: record.lastReplyAt,
       reactions: record.reactions.map((r) =>
         MessageReaction.fromPersistence({
           id: r.id,
@@ -109,6 +115,8 @@ export class PrismaMessageRepository implements MessageRepository {
         editedAt: record.editedAt,
         deletedAt: record.deletedAt,
         createdAt: record.createdAt,
+        replyCount: record.replyCount,
+        lastReplyAt: record.lastReplyAt,
         reactions: record.reactions.map((r) =>
           MessageReaction.fromPersistence({
             id: r.id,
@@ -154,6 +162,8 @@ export class PrismaMessageRepository implements MessageRepository {
         editedAt: record.editedAt,
         deletedAt: record.deletedAt,
         createdAt: record.createdAt,
+        replyCount: record.replyCount,
+        lastReplyAt: record.lastReplyAt,
         reactions: record.reactions.map((r) =>
           MessageReaction.fromPersistence({
             id: r.id,
@@ -175,5 +185,41 @@ export class PrismaMessageRepository implements MessageRepository {
     return this.prisma.chatMessage.count({
       where: { parentMessageId, deletedAt: null },
     });
+  }
+
+  async markThreadAsRead(threadId: string, userId: string): Promise<void> {
+    await this.prisma.threadParticipant.upsert({
+      where: {
+        threadId_userId: {
+          threadId,
+          userId,
+        },
+      },
+      create: {
+        threadId,
+        userId,
+        lastReadAt: new Date(),
+      },
+      update: {
+        lastReadAt: new Date(),
+      },
+    });
+  }
+
+  async getThreadReadStates(threadIds: string[], userId: string): Promise<Record<string, Date>> {
+    if (threadIds.length === 0) return {};
+
+    const records = await this.prisma.threadParticipant.findMany({
+      where: {
+        userId,
+        threadId: { in: threadIds },
+      },
+    });
+
+    const result: Record<string, Date> = {};
+    for (const record of records) {
+      result[record.threadId] = record.lastReadAt;
+    }
+    return result;
   }
 }

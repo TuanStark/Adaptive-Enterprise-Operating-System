@@ -217,6 +217,52 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { status: 'success', data: { id: data.messageId } };
   }
 
+  @SubscribeMessage('message:pin')
+  async handlePinMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (!message) return { status: 'error', message: 'Message not found' };
+
+    message.pin();
+    await this.messageRepository.save(message);
+
+    this.server.to(`channel:${data.channelId}`).emit('message:pinned', {
+      id: data.messageId,
+      channelId: data.channelId,
+      isPinned: true,
+    });
+    return { status: 'success' };
+  }
+
+  @SubscribeMessage('message:unpin')
+  async handleUnpinMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (!message) return { status: 'error', message: 'Message not found' };
+
+    message.unpin();
+    await this.messageRepository.save(message);
+
+    this.server.to(`channel:${data.channelId}`).emit('message:pinned', {
+      id: data.messageId,
+      channelId: data.channelId,
+      isPinned: false,
+    });
+    return { status: 'success' };
+  }
+
   @SubscribeMessage('reaction:add')
   async handleAddReaction(
     @ConnectedSocket() client: Socket,
@@ -294,6 +340,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userName: data.userName,
       isTyping: false,
     });
+  }
+
+  @SubscribeMessage('thread:read')
+  async handleThreadRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { threadId: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    if (!userId || !data.threadId) return { status: 'error' };
+
+    await this.messageRepository.markThreadAsRead(data.threadId, userId);
+    return { status: 'success' };
   }
 
   // ── Broadcast Helpers ──

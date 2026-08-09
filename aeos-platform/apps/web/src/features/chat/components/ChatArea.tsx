@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { ChatHeader } from "./ChatHeader";
 import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
+import { ThreadPanel } from "./ThreadPanel";
 import { Message, User } from "../types";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { clientApi } from "@/lib/api-client";
@@ -18,6 +19,7 @@ interface ChatAreaProps {
   initialMessages: Message[];
   users: Record<string, User>;
   currentUserId: string;
+  channelMembers?: User[];
 }
 
 export function ChatArea({
@@ -28,10 +30,12 @@ export function ChatArea({
   initialMessages,
   users,
   currentUserId,
+  channelMembers,
 }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [activeThreadMessage, setActiveThreadMessage] = useState<Message | null>(null);
   const { data: session } = useSession();
   const workspaceId = session?.user?.workspaceId;
 
@@ -62,12 +66,42 @@ export function ChatArea({
     };
   }, [channelId]);
 
+  // Optimistically clear unread state when opening a thread
+  useEffect(() => {
+    if (activeThreadMessage?.isThreadUnread) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === activeThreadMessage.id ? { ...m, isThreadUnread: false } : m
+        )
+      );
+    }
+  }, [activeThreadMessage?.id]);
+
   const handleMessageReceived = useCallback((message: Message) => {
+    if (message.parentMessageId) {
+      // Update the parent message's replyCount and lastReplyAt
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id === message.parentMessageId) {
+            const isThreadActive = activeThreadMessage?.id === m.id;
+            return {
+              ...m,
+              replyCount: (m.replyCount || 0) + 1,
+              lastReplyAt: message.createdAt,
+              isThreadUnread: !isThreadActive, // Mark unread only if thread is not currently open
+            };
+          }
+          return m;
+        })
+      );
+      return;
+    }
+
     setMessages((prev) => {
       if (prev.some((m) => m.id === message.id)) return prev;
       return [...prev, message];
     });
-  }, []);
+  }, [activeThreadMessage?.id]);
 
   const handleMessageEdited = useCallback(
     (data: { id: string; content: string; isEdited: boolean; editedAt: string }) => {
@@ -107,13 +141,20 @@ export function ChatArea({
     []
   );
 
-  const { sendMessage, editMessage, deleteMessage, toggleReaction, startTyping, stopTyping, isConnected } = useChatSocket({
+  const handleMessagePinned = useCallback((data: { id: string; channelId: string; isPinned: boolean }) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === data.id ? { ...m, isPinned: data.isPinned } : m))
+    );
+  }, []);
+
+  const { sendMessage, editMessage, deleteMessage, pinMessage, unpinMessage, toggleReaction, startTyping, stopTyping, isConnected } = useChatSocket({
     channelId,
     workspaceId,
     userId: currentUserId,
     onMessageReceived: handleMessageReceived,
     onMessageEdited: handleMessageEdited,
     onMessageDeleted: handleMessageDeleted,
+    onMessagePinned: handleMessagePinned,
     onReactionUpdated: handleReactionUpdated,
     onTypingUpdate: handleTypingUpdate,
   });
@@ -164,13 +205,15 @@ export function ChatArea({
   }, [stopTyping, currentUserId, users]);
 
   return (
-    <div className="flex flex-col h-full bg-white relative flex-1 min-w-0">
-      <ChatHeader 
-        channelName={channelName} 
-        memberCount={Object.keys(users).length} 
-        channelType={channelType}
-        targetUser={targetUser}
-      />
+    <div className="flex h-full bg-white relative flex-1 min-w-0">
+      <div className="flex flex-col h-full flex-1 min-w-0">
+        <ChatHeader 
+          channelName={channelName} 
+          memberCount={channelMembers ? channelMembers.length : Object.keys(users).length} 
+          channelType={channelType}
+          targetUser={targetUser}
+          members={channelMembers || Object.values(users)}
+        />
 
       {isLoadingMessages ? (
         <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
@@ -217,6 +260,19 @@ export function ChatArea({
             );
             toggleReaction(messageId, emoji, isAdding);
           }}
+          onMessagePinned={(id, isPinned) => {
+            if (id.startsWith("temp-")) {
+              toast.error("Please wait for the message to be sent before pinning.");
+              return;
+            }
+            handleMessagePinned({ id, channelId, isPinned });
+            if (isPinned) {
+              pinMessage(id);
+            } else {
+              unpinMessage(id);
+            }
+          }}
+          onThreadClick={(msg) => setActiveThreadMessage(msg)}
         />
       )}
 
@@ -234,12 +290,24 @@ export function ChatArea({
         </div>
       )}
 
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        onTypingStart={handleTypingStart}
-        onTypingStop={handleTypingStop}
-        channelName={channelName}
-      />
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onTypingStart={handleTypingStart}
+          onTypingStop={handleTypingStop}
+          channelName={channelName}
+        />
+      </div>
+
+      {/* Thread Panel */}
+      {activeThreadMessage && (
+        <ThreadPanel
+          channelId={channelId}
+          parentMessage={activeThreadMessage}
+          users={users}
+          currentUserId={currentUserId}
+          onClose={() => setActiveThreadMessage(null)}
+        />
+      )}
     </div>
   );
 }

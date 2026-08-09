@@ -41,6 +41,15 @@ export class SendMessageHandler {
     if (messageResult.isFail) return Result.fail(messageResult.error);
 
     const message = messageResult.value;
+
+    if (command.parentMessageId) {
+      const parentMessage = await this.messageRepository.findById(command.parentMessageId);
+      if (parentMessage) {
+        parentMessage.updateReplyCount(parentMessage.replyCount + 1, message.createdAt);
+        await this.messageRepository.save(parentMessage);
+      }
+    }
+
     await this.messageRepository.save(message);
 
     // Domain event would be dispatched by the infrastructure layer

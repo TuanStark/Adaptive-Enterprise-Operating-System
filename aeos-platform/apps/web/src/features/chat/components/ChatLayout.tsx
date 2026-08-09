@@ -36,6 +36,8 @@ export function ChatLayout({
             displayName = !otherMember ? `${targetUser?.name || 'Self'} (You)` : targetUser?.name || 'Unknown User';
           }
 
+          const channelMembers = activeChannel.members?.map(m => users[m.userId]).filter(Boolean) || [];
+
           return (
             <ChatArea
               key={activeChannel.id}
@@ -46,6 +48,7 @@ export function ChatLayout({
               initialMessages={activeChannel.id === initialChannels[0]?.id ? initialMessages : []}
               users={users}
               currentUserId={currentUserId}
+              channelMembers={channelMembers}
             />
           );
         })() : (

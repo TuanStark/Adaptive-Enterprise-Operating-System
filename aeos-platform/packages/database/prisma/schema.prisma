@@ -178,6 +178,7 @@ model User {
   meetingParticipations MeetingParticipant[]
   channelMemberships    ChannelMember[]
   chatMessages          ChatMessage[]
+  readThreads           ThreadParticipant[]
 
   @@index([tenantId])
   @@index([email])
@@ -1093,12 +1094,15 @@ model ChatMessage {
   editedAt        DateTime? @map("edited_at")
   deletedAt       DateTime? @map("deleted_at")
   createdAt       DateTime  @default(now()) @map("created_at")
+  replyCount      Int       @default(0) @map("reply_count")
+  lastReplyAt     DateTime? @map("last_reply_at")
 
   channel       Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
   sender        User              @relation(fields: [senderId], references: [id])
   parentMessage ChatMessage?      @relation("ThreadReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies       ChatMessage[]     @relation("ThreadReplies")
   reactions     MessageReaction[]
+  threadReaders ThreadParticipant[]
 
   @@index([channelId, createdAt])
   @@index([parentMessageId])
@@ -1117,6 +1121,19 @@ model MessageReaction {
   @@unique([messageId, userId, emoji])
   @@index([messageId])
   @@map("message_reactions")
+}
+
+model ThreadParticipant {
+  threadId   String   @map("thread_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
+  thread ChatMessage @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, userId])
+  @@index([userId])
+  @@map("thread_participants")
 }
 
 model ProcessedMessage {
