@@ -12,6 +12,16 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import type { Channel } from "../types";
 import { CreateChannelDialog } from "./CreateChannelDialog";
+import { useWorkspaces } from "@/features/workspace/hooks/useWorkspaces";
+import { WorkspaceSettingsDialog } from "@/features/workspace/components/WorkspaceSettingsDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Settings, UserPlus, ChevronDown } from "lucide-react";
 
 export function ChatSidebar() {
   const router = useRouter();
@@ -21,8 +31,12 @@ export function ChatSidebar() {
   const currentUserId = session?.user?.id;
   const activeChannelId = searchParams.get("channelId");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
+
+  const { data: workspaces } = useWorkspaces();
+  const currentWorkspace = workspaces?.find(w => w.id === workspaceId);
 
   const { data: channels = [], isLoading } = useQuery({
     queryKey: ["channels", workspaceId],
@@ -62,11 +76,25 @@ export function ChatSidebar() {
   return (
     <div className="flex flex-col h-full bg-[#F7F7F8] dark:bg-zinc-900/40 border-r border-gray-200/60 dark:border-zinc-800">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-emerald-500" />
-          <span>Channels</span>
-        </h2>
+      <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between group hover:bg-gray-100/50 dark:hover:bg-zinc-800/50 transition-colors">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex-1 text-left font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2 outline-none">
+            <span className="truncate max-w-[150px]">{currentWorkspace?.name || "Channels"}</span>
+            <ChevronDown className="w-4 h-4 text-gray-500 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+              <Settings className="w-4 h-4 mr-2" />
+              Workspace Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Invite People
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button
           variant="ghost"
           size="icon"
@@ -159,6 +187,13 @@ export function ChatSidebar() {
         onClose={() => setIsCreateOpen(false)}
         onChannelCreated={handleChannelCreated}
       />
+      {workspaceId && (
+        <WorkspaceSettingsDialog
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          workspaceId={workspaceId}
+        />
+      )}
     </div>
   );
 }

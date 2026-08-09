@@ -69,7 +69,13 @@ export class PrismaMessageRepository implements MessageRepository {
       deletedAt: record.deletedAt,
       createdAt: record.createdAt,
       reactions: record.reactions.map((r) =>
-        MessageReaction.create(r.messageId, r.userId, r.emoji)
+        MessageReaction.fromPersistence({
+          id: r.id,
+          messageId: r.messageId,
+          userId: r.userId,
+          emoji: r.emoji,
+          createdAt: r.createdAt,
+        })
       ),
     });
   }
@@ -86,9 +92,13 @@ export class PrismaMessageRepository implements MessageRepository {
         deletedAt: null,
       },
       include: { reactions: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
+
+    // Reverse to return chronological order
+    records.reverse();
 
     const data = records.map((record) =>
       Message.fromPersistence({
@@ -103,7 +113,13 @@ export class PrismaMessageRepository implements MessageRepository {
         deletedAt: record.deletedAt,
         createdAt: record.createdAt,
         reactions: record.reactions.map((r) =>
-          MessageReaction.create(r.messageId, r.userId, r.emoji)
+          MessageReaction.fromPersistence({
+            id: r.id,
+            messageId: r.messageId,
+            userId: r.userId,
+            emoji: r.emoji,
+            createdAt: r.createdAt,
+          })
         ),
       })
     );
@@ -124,9 +140,13 @@ export class PrismaMessageRepository implements MessageRepository {
         deletedAt: null,
       },
       include: { reactions: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
+
+    // Reverse to return chronological order
+    records.reverse();
 
     const data = records.map((record) =>
       Message.fromPersistence({
@@ -141,7 +161,13 @@ export class PrismaMessageRepository implements MessageRepository {
         deletedAt: record.deletedAt,
         createdAt: record.createdAt,
         reactions: record.reactions.map((r) =>
-          MessageReaction.create(r.messageId, r.userId, r.emoji)
+          MessageReaction.fromPersistence({
+            id: r.id,
+            messageId: r.messageId,
+            userId: r.userId,
+            emoji: r.emoji,
+            createdAt: r.createdAt,
+          })
         ),
       })
     );

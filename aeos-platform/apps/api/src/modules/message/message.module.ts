@@ -11,6 +11,7 @@ import { JoinChannelHandler } from './application/commands/join-channel/join-cha
 import { ReactToMessageHandler } from './application/commands/react-to-message/react-to-message.handler';
 import { ChannelController } from './presentation/controllers/channel.controller';
 import { ChatGateway } from './presentation/gateways/chat.gateway';
+import { WorkspaceArchivedEventHandler, WorkspaceMemberRemovedEventHandler } from './application/events/workspace-events.handler';
 
 @Module({
   imports: [IdentityModule],
@@ -24,6 +25,8 @@ import { ChatGateway } from './presentation/gateways/chat.gateway';
     JoinChannelHandler,
     ReactToMessageHandler,
     ChatGateway,
+    WorkspaceArchivedEventHandler,
+    WorkspaceMemberRemovedEventHandler,
   ],
   exports: [CHANNEL_REPOSITORY, MESSAGE_REPOSITORY],
 })

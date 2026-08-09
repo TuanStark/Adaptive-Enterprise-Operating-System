@@ -12,6 +12,7 @@ const WS_URL = WS_BASE.endsWith("/chat") ? WS_BASE : `${WS_BASE}/chat`;
 interface UseChatSocketOptions {
   channelId: string;
   userId: string;
+  workspaceId?: string;
   onMessageReceived?: (message: Message) => void;
   onMessageEdited?: (data: { id: string; content: string; isEdited: boolean; editedAt: string }) => void;
   onMessageDeleted?: (data: { id: string }) => void;
@@ -22,6 +23,7 @@ interface UseChatSocketOptions {
 export function useChatSocket({
   channelId,
   userId,
+  workspaceId,
   onMessageReceived,
   onMessageEdited,
   onMessageDeleted,
@@ -53,12 +55,18 @@ export function useChatSocket({
       setIsConnected(true);
       console.log("[useChatSocket] Connected to Socket server. Socket ID:", socket.id);
       socket.emit("channel:join", { channelId });
+      if (workspaceId) {
+        socket.emit("workspace:join", { workspaceId });
+      }
     });
 
     if (socket.connected) {
       setIsConnected(true);
       console.log("[useChatSocket] Socket already connected. Socket ID:", socket.id);
       socket.emit("channel:join", { channelId });
+      if (workspaceId) {
+        socket.emit("workspace:join", { workspaceId });
+      }
     }
 
     socket.on("disconnect", (reason) => {
@@ -96,12 +104,27 @@ export function useChatSocket({
       onTypingUpdate?.(data);
     });
 
+    socket.on("workspace:archived", () => {
+      toast.error("This workspace has been deleted.");
+      setTimeout(() => window.location.href = "/", 2000);
+    });
+
+    socket.on("workspace:member_removed", (data: { userId: string }) => {
+      if (data.userId === activeUserId) {
+        toast.error("You have been removed from this workspace.");
+        setTimeout(() => window.location.href = "/", 2000);
+      }
+    });
+
     return () => {
       socket.emit("channel:leave", { channelId });
+      if (workspaceId) {
+        socket.emit("workspace:leave", { workspaceId });
+      }
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [channelId, activeUserId, session?.accessToken]);
+  }, [channelId, workspaceId, activeUserId, session?.accessToken]);
 
   const sendMessage = useCallback(
     (content: string, parentMessageId?: string, cb?: (res: any) => void) => {
@@ -124,14 +147,22 @@ export function useChatSocket({
 
   const editMessage = useCallback(
     (messageId: string, content: string, cb?: (res: any) => void) => {
-      socketRef.current?.emit("message:edit", { channelId, messageId, content }, cb);
+      if (cb) {
+        socketRef.current?.emit("message:edit", { channelId, messageId, content }, cb);
+      } else {
+        socketRef.current?.emit("message:edit", { channelId, messageId, content });
+      }
     },
     [channelId],
   );
 
   const deleteMessage = useCallback(
     (messageId: string, cb?: (res: any) => void) => {
-      socketRef.current?.emit("message:delete", { channelId, messageId }, cb);
+      if (cb) {
+        socketRef.current?.emit("message:delete", { channelId, messageId }, cb);
+      } else {
+        socketRef.current?.emit("message:delete", { channelId, messageId });
+      }
     },
     [channelId],
   );
@@ -139,7 +170,11 @@ export function useChatSocket({
   const toggleReaction = useCallback(
     (messageId: string, emoji: string, isAdding: boolean, cb?: (res: any) => void) => {
       const event = isAdding ? "reaction:add" : "reaction:remove";
-      socketRef.current?.emit(event, { channelId, messageId, emoji }, cb);
+      if (cb) {
+        socketRef.current?.emit(event, { channelId, messageId, emoji }, cb);
+      } else {
+        socketRef.current?.emit(event, { channelId, messageId, emoji });
+      }
     },
     [channelId],
   );

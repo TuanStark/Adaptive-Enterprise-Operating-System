@@ -50,3 +50,36 @@ export function useWorkspaceMutations() {
 
   return { create, update, archive };
 }
+
+export interface WorkspaceMember {
+  userId: string;
+  email: string;
+  name: string;
+  roleId: string;
+  roleName: string;
+  joinedAt: string;
+}
+
+export function useWorkspaceMembers(workspaceId: string) {
+  return useQuery({
+    queryKey: ["workspaces", workspaceId, "members"],
+    queryFn: () => clientApi.get<{ data: WorkspaceMember[]; total: number }>(`/workspaces/${workspaceId}/members`),
+    enabled: !!workspaceId,
+  });
+}
+
+export function useWorkspaceMemberMutations(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["workspaces", workspaceId, "members"] });
+
+  const invite = useMutation({
+    mutationFn: (email: string) => clientApi.post<{ message: string }>(`/workspaces/${workspaceId}/invites`, { email }),
+  });
+
+  const remove = useMutation({
+    mutationFn: (userId: string) => clientApi.post<{ message: string }>(`/workspaces/${workspaceId}/members/${userId}/remove`),
+    onSuccess: invalidate,
+  });
+
+  return { invite, remove };
+}

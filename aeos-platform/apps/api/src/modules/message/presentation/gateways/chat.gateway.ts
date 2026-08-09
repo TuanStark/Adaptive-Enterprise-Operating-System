@@ -102,6 +102,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'channel:left', data: { channelId: data?.channelId } };
   }
 
+  @SubscribeMessage('workspace:join')
+  handleJoinWorkspace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { workspaceId: string },
+  ) {
+    if (data?.workspaceId) {
+      client.join(`workspace:${data.workspaceId}`);
+      console.log(`[ChatGateway] Socket ${client.id} joined workspace:${data.workspaceId}`);
+    }
+    return { event: 'workspace:joined', data: { workspaceId: data?.workspaceId } };
+  }
+
+  @SubscribeMessage('workspace:leave')
+  handleLeaveWorkspace(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { workspaceId: string },
+  ) {
+    if (data?.workspaceId) {
+      client.leave(`workspace:${data.workspaceId}`);
+    }
+    return { event: 'workspace:left', data: { workspaceId: data?.workspaceId } };
+  }
+
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
@@ -145,7 +168,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
 
     console.log(`[ChatGateway] Broadcasting message ${result.value} to channel:${data.channelId}`);
-    this.server.to(`channel:${data.channelId}`).emit('message:received', messagePayload);
+    client.to(`channel:${data.channelId}`).emit('message:received', messagePayload);
 
     return { status: 'success', data: { id: result.value } };
   }
@@ -157,6 +180,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = this.connectedUsers.get(client.id)?.userId;
     if (!userId) return { status: 'error', message: 'Not authenticated' };
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
     const message = await this.messageRepository.findById(data.messageId);
     if (!message) return { status: 'error', message: 'Message not found' };
@@ -179,6 +203,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = this.connectedUsers.get(client.id)?.userId;
     if (!userId) return { status: 'error', message: 'Not authenticated' };
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
     const message = await this.messageRepository.findById(data.messageId);
     if (!message) return { status: 'error', message: 'Message not found' };
@@ -197,13 +222,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { channelId: string; messageId: string; emoji: string },
   ) {
-    const userId = this.connectedUsers.get(client.id)?.userId;
-    if (!userId) return { status: 'error', message: 'Not authenticated' };
+    console.log(`[ChatGateway] reaction:add received from ${client.id}:`, data);
+    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
+    if (!userId) {
+      console.warn(`[ChatGateway] reaction:add rejected - Not authenticated for socket ${client.id}`);
+      return { status: 'error', message: 'Not authenticated' };
+    }
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
     const result = await this.reactHandler.execute(
       new ReactToMessageCommand(data.messageId, userId, data.emoji)
     );
-    if (result.isFail) return { status: 'error', message: String(result.error) };
+    if (result.isFail) {
+      console.error(`[ChatGateway] reaction:add failed:`, result.error);
+      return { status: 'error', message: String(result.error) };
+    }
 
     const message = await this.messageRepository.findById(data.messageId);
     if (message) {
@@ -221,8 +254,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { channelId: string; messageId: string; emoji: string },
   ) {
-    const userId = this.connectedUsers.get(client.id)?.userId;
+    const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId) return { status: 'error', message: 'Not authenticated' };
+    if (!data.messageId) return { status: 'error', message: 'Message ID is required' };
 
     const message = await this.messageRepository.findById(data.messageId);
     if (!message) return { status: 'error', message: 'Message not found' };
@@ -286,6 +320,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       messageId,
       channelId,
       reactions,
+    });
+  }
+
+  broadcastWorkspaceArchived(workspaceId: string) {
+    this.server.to(`workspace:${workspaceId}`).emit('workspace:archived', {
+      workspaceId,
+    });
+  }
+
+  broadcastWorkspaceMemberRemoved(workspaceId: string, userId: string) {
+    this.server.to(`workspace:${workspaceId}`).emit('workspace:member_removed', {
+      workspaceId,
+      userId,
     });
   }
 }

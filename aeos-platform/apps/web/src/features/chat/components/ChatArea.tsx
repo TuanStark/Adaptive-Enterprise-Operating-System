@@ -7,6 +7,8 @@ import { MessageInput } from "./MessageInput";
 import { Message, User } from "../types";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { clientApi } from "@/lib/api-client";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface ChatAreaProps {
   channelId: string;
@@ -26,6 +28,8 @@ export function ChatArea({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const { data: session } = useSession();
+  const workspaceId = session?.user?.workspaceId;
 
   // Sync / fetch messages when channelId changes
   useEffect(() => {
@@ -39,7 +43,8 @@ export function ChatArea({
         .then((res: any) => {
           if (isMounted) {
             const list = Array.isArray(res) ? res : res?.data || [];
-            setMessages(list);
+            // API returns desc (latest first) for pagination, so we reverse it to render chronologically
+            setMessages([...list].reverse());
           }
         })
         .catch((err) => console.error("Failed to load channel messages:", err))
@@ -100,6 +105,7 @@ export function ChatArea({
 
   const { sendMessage, editMessage, deleteMessage, toggleReaction, startTyping, stopTyping, isConnected } = useChatSocket({
     channelId,
+    workspaceId,
     userId: currentUserId,
     onMessageReceived: handleMessageReceived,
     onMessageEdited: handleMessageEdited,
@@ -168,14 +174,26 @@ export function ChatArea({
           currentUserId={currentUserId}
           channelId={channelId}
           onMessageEdited={(id, content) => {
+            if (id.startsWith("temp-")) {
+              toast.error("Please wait for the message to be sent before editing.");
+              return;
+            }
             handleMessageEdited({ id, content, isEdited: true, editedAt: new Date().toISOString() });
             editMessage(id, content);
           }}
           onMessageDeleted={(id) => {
+            if (id.startsWith("temp-")) {
+              toast.error("Please wait for the message to be sent before deleting.");
+              return;
+            }
             handleMessageDeleted({ id });
             deleteMessage(id);
           }}
           onReactionToggled={(messageId, emoji, isAdding) => {
+            if (messageId.startsWith("temp-")) {
+              toast.error("Please wait for the message to be sent before reacting.");
+              return;
+            }
             setMessages((prev) =>
               prev.map((m) => {
                 if (m.id === messageId) {

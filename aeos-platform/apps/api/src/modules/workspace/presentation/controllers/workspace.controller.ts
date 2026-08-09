@@ -12,6 +12,8 @@ import { InviteMemberCommand } from '../../application/commands/invite-member/in
 import { InviteMemberHandler } from '../../application/commands/invite-member/invite-member.handler';
 import { AcceptWorkspaceInviteCommand } from '../../application/commands/accept-workspace-invite/accept-workspace-invite.command';
 import { AcceptWorkspaceInviteHandler } from '../../application/commands/accept-workspace-invite/accept-workspace-invite.handler';
+import { RemoveWorkspaceMemberCommand } from '../../application/commands/remove-member/remove-workspace-member.command';
+import { RemoveWorkspaceMemberHandler } from '../../application/commands/remove-member/remove-workspace-member.handler';
 import { GetUserWorkspacesQuery } from '../../application/queries/get-user-workspaces/get-user-workspaces.query';
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 import { GetWorkspaceMembersQuery } from '../../application/queries/get-workspace-members/get-workspace-members.query';
@@ -40,6 +42,7 @@ export class WorkspaceController {
     private readonly inviteMemberHandler: InviteMemberHandler,
     private readonly acceptWorkspaceInviteHandler: AcceptWorkspaceInviteHandler,
     private readonly validateWorkspaceInviteHandler: ValidateWorkspaceInviteHandler,
+    private readonly removeWorkspaceMemberHandler: RemoveWorkspaceMemberHandler,
   ) { }
 
   @Get('me')
@@ -141,5 +144,19 @@ export class WorkspaceController {
     const result = await this.acceptWorkspaceInviteHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
     return { message: 'Invitation accepted successfully' };
+  }
+
+  @Post(':id/members/:userId/remove')
+  @HttpCode(HttpStatus.OK)
+  async removeMember(
+    @Param('id') workspaceId: string,
+    @Param('userId') memberUserId: string,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    const command = new RemoveWorkspaceMemberCommand(workspaceId, memberUserId, user.userId);
+    const result = await this.removeWorkspaceMemberHandler.execute(command);
+    if (result.isFail) throw result.error as DomainError;
+    return { message: 'Member removed successfully' };
   }
 }
