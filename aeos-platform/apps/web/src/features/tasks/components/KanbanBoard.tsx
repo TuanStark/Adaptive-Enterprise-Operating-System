@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import { ALL_STATUSES } from "../types/board";
 import { useTaskMutations, useTasks } from "../hooks/useTasks";
 import { useBoardConfig, useBoardConfigMutations } from "../hooks/useBoardConfig";
 import { getLabelColor } from "../hooks/useTaskDetailPanel";
-import { generateId } from "../utils/id";
 import { useDebounce } from "@/hooks/useDebounce";
 
 // ── Icons ──
@@ -37,8 +36,6 @@ const PriorityIcon = ({ priority }: { priority?: TaskPriority }) => {
   return <Minus className="w-3.5 h-3.5 text-blue-400" />;
 };
 
-// ── Props ──
-
 interface KanbanBoardProps {
   initialTasks: Task[];
   projectId: string;
@@ -51,7 +48,6 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
   const { data: boardConfig, isLoading: configLoading } = useBoardConfig(projectId);
   const { save: saveConfig } = useBoardConfigMutations(projectId);
 
-  // ── Filter State ──
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -72,7 +68,6 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
   const tasks = tasksData?.data ?? initialTasks;
   const columns = boardConfig?.columns ?? [];
 
-  // ── UI State ──
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [addingTaskCol, setAddingTaskCol] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -82,26 +77,17 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
   const [editingColId, setEditingColId] = useState<string | null>(null);
   const [editColName, setEditColName] = useState("");
 
-  // ── Local Tasks State (for instant DND updates without flicker) ──
-  const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
-
-  useEffect(() => {
-    setLocalTasks(tasks);
-  }, [tasks]);
-
-  // ── Derived: group tasks into columns ──
   const columnTasks = useMemo(() => {
     const map: Record<string, Task[]> = {};
     for (const col of columns) {
-      map[col.id] = localTasks.filter((t) => {
+      map[col.id] = tasks.filter((t) => {
         if (!col.statuses.includes(t.status as TaskStatusValue)) return false;
         return true;
       });
     }
     return map;
-  }, [columns, localTasks]);
+  }, [columns, tasks]);
 
-  // ── Statuses already used by existing columns ──
   const usedStatuses = useMemo(() => {
     const set = new Set<string>();
     columns.forEach((c) => c.statuses.forEach((s) => set.add(s)));
@@ -110,23 +96,14 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
 
   const availableStatuses = ALL_STATUSES.filter((s) => !usedStatuses.has(s));
 
-  // ── Handlers ──
-
   const onDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;
     const { destination, draggableId } = result;
     const destCol = columns.find((c) => c.id === destination.droppableId);
     if (!destCol || destCol.statuses.length === 0) return;
 
-    // Change task status to first status of destination column
     const newStatus = destCol.statuses[0];
-    
-    // Synchronously update local state to prevent UI flicker
-    setLocalTasks((prev) => 
-      prev.map((t) => (t.id === draggableId ? { ...t, status: newStatus } : t))
-    );
 
-    // Then run mutation in background
     changeStatus.mutate({ taskId: draggableId, status: newStatus });
   }, [columns, changeStatus]);
 
@@ -311,9 +288,8 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
                                             </span>
                                           )}
                                           {task.dueDate && (
-                                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                                              new Date(task.dueDate) < new Date() ? "bg-red-100 text-red-600" : "text-gray-400"
-                                            }`}>
+                                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${new Date(task.dueDate) < new Date() ? "bg-red-100 text-red-600" : "text-gray-400"
+                                              }`}>
                                               {new Date(task.dueDate).toLocaleDateString("en", { day: "numeric", month: "short" })}
                                             </span>
                                           )}
@@ -386,11 +362,10 @@ export function KanbanBoard({ initialTasks, projectId, tenantId, workspaceId }: 
                         <button
                           key={s}
                           onClick={() => toggleNewColStatus(s)}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer border ${
-                            newColStatuses.includes(s)
-                              ? "bg-blue-100 text-blue-700 border-blue-300"
-                              : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                          }`}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer border ${newColStatuses.includes(s)
+                            ? "bg-blue-100 text-blue-700 border-blue-300"
+                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                            }`}
                         >
                           {s.replace(/_/g, " ")}
                         </button>

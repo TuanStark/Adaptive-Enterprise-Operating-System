@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { publishDocumentVersionAction } from "../actions/document-actions";
 import { uploadFileDirectly } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
@@ -17,22 +17,15 @@ interface DocumentEditorProps {
 
 export function DocumentEditor({ documentId, initialContent }: DocumentEditorProps) {
   const [content, setContent] = useState(initialContent);
+  const [lastSavedContent, setLastSavedContent] = useState(initialContent);
   const [activeTab, setActiveTab] = useState<"write" | "preview">("write");
   const [isPending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  useEffect(() => {
-    if (content !== initialContent) {
-      setHasUnsavedChanges(true);
-      setSaveStatus("idle");
-    } else {
-      setHasUnsavedChanges(false);
-    }
-  }, [content, initialContent]);
+  const hasUnsavedChanges = content !== lastSavedContent;
 
   const handleSave = () => {
-    if (content === initialContent && !hasUnsavedChanges) return;
+    if (!hasUnsavedChanges) return;
 
     setSaveStatus("saving");
     startTransition(async () => {
@@ -49,7 +42,7 @@ export function DocumentEditor({ documentId, initialContent }: DocumentEditorPro
         loading: "Saving document...",
         success: () => {
           setSaveStatus("saved");
-          setHasUnsavedChanges(false);
+          setLastSavedContent(content);
           setTimeout(() => {
             setSaveStatus("idle");
           }, 3000);

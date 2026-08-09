@@ -1,9 +1,9 @@
 "use client";
 
-import { SessionProvider, useSession, signOut } from "next-auth/react";
+import { SessionProvider } from "next-auth/react";
 import type { Session } from "next-auth";
-import { useEffect } from "react";
-import { useAuthStore } from "../store/useAuthStore";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
+import { useSyncAuthStore } from "../hooks/useSyncAuthStore";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -11,19 +11,8 @@ interface AuthProviderProps {
 }
 
 function AuthSessionGuard({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
-  const setUser = useAuthStore((s) => s.setUser);
-
-  useEffect(() => {
-    setUser(session?.user || null);
-  }, [session?.user, setUser]);
-
-  useEffect(() => {
-    if (session?.error === "RefreshTokenError") {
-      console.warn("[auth] Refresh token expired — signing out");
-      signOut({ callbackUrl: "/login" });
-    }
-  }, [session?.error]);
+  const { session } = useAuthSession();
+  useSyncAuthStore(session?.user);
 
   return <>{children}</>;
 }

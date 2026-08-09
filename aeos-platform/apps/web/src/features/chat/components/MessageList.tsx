@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Smile, Pencil, Trash2, Check, X, MoreHorizontal, Copy, Link as LinkIcon, MessageSquare, Pin } from "lucide-react";
 import { Message, MessageReaction, User } from "../types";
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAutoScrollBottom } from "@/hooks/useAutoScrollBottom";
 
 interface MessageListProps {
   messages: Message[];
@@ -45,11 +46,7 @@ export function MessageList({
   const [editContent, setEditContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
+  useAutoScrollBottom(messagesEndRef, [messages]);
 
   const handleStartEdit = (msg: Message) => {
     setEditingMsgId(msg.id);
@@ -164,7 +161,7 @@ export function MessageList({
               ) : (
                 <div className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isOwner
                   ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[100%]"
-                  : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tr-sm text-left inline-block max-w-[100%]"
+                  : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tr-sm text-right inline-block max-w-[100%]"
                   }`}>
                   {msg.isPinned && (
                     <div className={`flex items-center gap-1 mb-1 border-b pb-1 mb-1 text-[11px] font-bold ${isOwner ? "text-blue-100 border-blue-400 justify-start" : "text-amber-600 border-amber-200 justify-end"}`}>
@@ -180,7 +177,7 @@ export function MessageList({
 
               {/* Reaction Badges */}
               {Object.keys(reactionGroups).length > 0 && (
-                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-start" : "justify-end"}`}>
+                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-end" : "justify-end"}`}>
                   {Object.entries(reactionGroups).map(([emoji, group]) => {
                     const hasReacted = group.userIds.includes(currentUserId);
                     return (

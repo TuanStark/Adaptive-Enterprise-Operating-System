@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
+import { useProfileFormInit } from "@/hooks/useProfileFormInit";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,18 +24,16 @@ export function ProfileSettingsForm() {
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  // Hydration fix + sync state if query data loads
-  useEffect(() => {
-    setMounted(true);
-    if (profile) {
-      setFirstName(profile.firstName ?? "");
-      setLastName(profile.lastName ?? "");
-      setBio(profile.bio ?? "");
-      setTimezone(profile.timezone ?? "");
-      setPhone(profile.phone ?? "");
-      setAvatarUrl(profile.avatarUrl ?? "");
-    }
-  }, [profile]);
+  useProfileFormInit(
+    profile,
+    setMounted,
+    setFirstName,
+    setLastName,
+    setBio,
+    setTimezone,
+    setPhone,
+    setAvatarUrl
+  );
 
   if (!mounted) return null;
 
@@ -103,7 +102,7 @@ export function ProfileSettingsForm() {
                   {(firstName ?? "?")[0]}{(lastName ?? "?")[0]}
                 </AvatarFallback>
               </Avatar>
-              <button 
+              <button
                 className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full cursor-pointer disabled:cursor-not-allowed"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
@@ -119,12 +118,12 @@ export function ProfileSettingsForm() {
               </button>
             </div>
             <div className="space-y-2 text-center sm:text-left">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileSelect} 
-                accept="image/jpeg,image/png,image/gif" 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/jpeg,image/png,image/gif"
+                className="hidden"
               />
               <div className="flex gap-2 justify-center sm:justify-start">
                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
@@ -155,9 +154,9 @@ export function ProfileSettingsForm() {
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-400" /> First Name
               </label>
-              <Input 
-                value={firstName} 
-                onChange={(e) => setFirstName(e.target.value)} 
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 className="focus-visible:ring-indigo-500 transition-shadow"
                 placeholder="Tony"
               />
@@ -166,15 +165,15 @@ export function ProfileSettingsForm() {
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-400 opacity-0" /> Last Name
               </label>
-              <Input 
-                value={lastName} 
+              <Input
+                value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="focus-visible:ring-indigo-500 transition-shadow"
-                placeholder="Stark" 
+                placeholder="Stark"
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
@@ -191,11 +190,11 @@ export function ProfileSettingsForm() {
               <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                 <Phone className="w-4 h-4 text-slate-400" /> Phone Number
               </label>
-              <Input 
-                value={phone} 
+              <Input
+                value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="focus-visible:ring-indigo-500 transition-shadow"
-                placeholder="+1 (555) 000-0000" 
+                placeholder="+1 (555) 000-0000"
               />
             </div>
           </div>
@@ -204,19 +203,19 @@ export function ProfileSettingsForm() {
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
               <Clock className="w-4 h-4 text-slate-400" /> Timezone
             </label>
-            <Input 
-              value={timezone} 
+            <Input
+              value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               className="focus-visible:ring-indigo-500 transition-shadow"
-              placeholder="e.g. America/Los_Angeles" 
+              placeholder="e.g. America/Los_Angeles"
             />
           </div>
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
               <AlignLeft className="w-4 h-4 text-slate-400" /> Bio
             </label>
-            <textarea 
+            <textarea
               className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 transition-shadow resize-y"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -227,8 +226,8 @@ export function ProfileSettingsForm() {
       </Card>
 
       <div className="flex justify-end pt-2">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={isUpdating || isUploading}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 h-auto text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
         >

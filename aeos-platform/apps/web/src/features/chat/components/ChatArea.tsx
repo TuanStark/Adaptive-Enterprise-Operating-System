@@ -7,7 +7,7 @@ import { MessageInput } from "./MessageInput";
 import { ThreadPanel } from "./ThreadPanel";
 import { Message, User } from "../types";
 import { useChatSocket } from "../hooks/useChatSocket";
-import { clientApi } from "@/lib/api-client";
+import { useChannelMessages } from "../hooks/useChannelMessages";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -32,50 +32,22 @@ export function ChatArea({
   currentUserId,
   channelMembers,
 }: ChatAreaProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { messages, setMessages, isLoading: isLoadingMessages } = useChannelMessages(channelId, initialMessages);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [activeThreadMessage, setActiveThreadMessage] = useState<Message | null>(null);
   const { data: session } = useSession();
   const workspaceId = session?.user?.workspaceId;
 
-  // Sync / fetch messages when channelId changes
-  useEffect(() => {
-    let isMounted = true;
-    setMessages(initialMessages);
-
-    if (channelId) {
-      setIsLoadingMessages(true);
-      clientApi
-        .get<{ data: Message[] }>(`/channels/${channelId}/messages`)
-        .then((res: any) => {
-          if (isMounted) {
-            const list = Array.isArray(res) ? res : res?.data || [];
-            // API returns desc (latest first) for pagination, so we reverse it to render chronologically
-            setMessages([...list].reverse());
-          }
-        })
-        .catch((err) => console.error("Failed to load channel messages:", err))
-        .finally(() => {
-          if (isMounted) setIsLoadingMessages(false);
-        });
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [channelId]);
-
-  // Optimistically clear unread state when opening a thread
-  useEffect(() => {
-    if (activeThreadMessage?.isThreadUnread) {
+  const handleThreadClick = useCallback((msg: Message) => {
+    setActiveThreadMessage(msg);
+    if (msg.isThreadUnread) {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === activeThreadMessage.id ? { ...m, isThreadUnread: false } : m
+          m.id === msg.id ? { ...m, isThreadUnread: false } : m
         )
       );
     }
-  }, [activeThreadMessage?.id]);
+  }, [setMessages]);
 
   const handleMessageReceived = useCallback((message: Message) => {
     if (message.parentMessageId) {
@@ -207,89 +179,89 @@ export function ChatArea({
   return (
     <div className="flex h-full bg-white relative flex-1 min-w-0">
       <div className="flex flex-col h-full flex-1 min-w-0">
-        <ChatHeader 
+        <ChatHeader
           channelId={channelId}
-          channelName={channelName} 
-          memberCount={channelMembers ? channelMembers.length : Object.keys(users).length} 
+          channelName={channelName}
+          memberCount={channelMembers ? channelMembers.length : Object.keys(users).length}
           channelType={channelType}
           targetUser={targetUser}
           members={channelMembers || Object.values(users)}
         />
 
-      {isLoadingMessages ? (
-        <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
-          Loading messages...
-        </div>
-      ) : (
-        <MessageList
-          messages={messages}
-          users={users}
-          currentUserId={currentUserId}
-          channelId={channelId}
-          onMessageEdited={(id, content) => {
-            if (id.startsWith("temp-")) {
-              toast.error("Please wait for the message to be sent before editing.");
-              return;
-            }
-            handleMessageEdited({ id, content, isEdited: true, editedAt: new Date().toISOString() });
-            editMessage(id, content);
-          }}
-          onMessageDeleted={(id) => {
-            if (id.startsWith("temp-")) {
-              toast.error("Please wait for the message to be sent before deleting.");
-              return;
-            }
-            handleMessageDeleted({ id });
-            deleteMessage(id);
-          }}
-          onReactionToggled={(messageId, emoji, isAdding) => {
-            if (messageId.startsWith("temp-")) {
-              toast.error("Please wait for the message to be sent before reacting.");
-              return;
-            }
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id === messageId) {
-                  const existing = m.reactions || [];
-                  const newReactions = isAdding
-                    ? [...existing, { userId: currentUserId, emoji }]
-                    : existing.filter((r) => !(r.userId === currentUserId && r.emoji === emoji));
-                  return { ...m, reactions: newReactions };
-                }
-                return m;
-              })
-            );
-            toggleReaction(messageId, emoji, isAdding);
-          }}
-          onMessagePinned={(id, isPinned) => {
-            if (id.startsWith("temp-")) {
-              toast.error("Please wait for the message to be sent before pinning.");
-              return;
-            }
-            handleMessagePinned({ id, channelId, isPinned });
-            if (isPinned) {
-              pinMessage(id);
-            } else {
-              unpinMessage(id);
-            }
-          }}
-          onThreadClick={(msg) => setActiveThreadMessage(msg)}
-        />
-      )}
+        {isLoadingMessages ? (
+          <div className="flex-1 flex items-center justify-center text-xs text-gray-400">
+            Loading messages...
+          </div>
+        ) : (
+          <MessageList
+            messages={messages}
+            users={users}
+            currentUserId={currentUserId}
+            channelId={channelId}
+            onMessageEdited={(id, content) => {
+              if (id.startsWith("temp-")) {
+                toast.error("Please wait for the message to be sent before editing.");
+                return;
+              }
+              handleMessageEdited({ id, content, isEdited: true, editedAt: new Date().toISOString() });
+              editMessage(id, content);
+            }}
+            onMessageDeleted={(id) => {
+              if (id.startsWith("temp-")) {
+                toast.error("Please wait for the message to be sent before deleting.");
+                return;
+              }
+              handleMessageDeleted({ id });
+              deleteMessage(id);
+            }}
+            onReactionToggled={(messageId, emoji, isAdding) => {
+              if (messageId.startsWith("temp-")) {
+                toast.error("Please wait for the message to be sent before reacting.");
+                return;
+              }
+              setMessages((prev) =>
+                prev.map((m) => {
+                  if (m.id === messageId) {
+                    const existing = m.reactions || [];
+                    const newReactions = isAdding
+                      ? [...existing, { userId: currentUserId, emoji }]
+                      : existing.filter((r) => !(r.userId === currentUserId && r.emoji === emoji));
+                    return { ...m, reactions: newReactions };
+                  }
+                  return m;
+                })
+              );
+              toggleReaction(messageId, emoji, isAdding);
+            }}
+            onMessagePinned={(id, isPinned) => {
+              if (id.startsWith("temp-")) {
+                toast.error("Please wait for the message to be sent before pinning.");
+                return;
+              }
+              handleMessagePinned({ id, channelId, isPinned });
+              if (isPinned) {
+                pinMessage(id);
+              } else {
+                unpinMessage(id);
+              }
+            }}
+            onThreadClick={handleThreadClick}
+          />
+        )}
 
-      {/* Typing indicator */}
-      {typingUsers.length > 0 && (
-        <div className="px-5 py-1 text-xs text-gray-500 italic bg-white">
-          {typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
-        </div>
-      )}
+        {/* Typing indicator */}
+        {typingUsers.length > 0 && (
+          <div className="px-5 py-1 text-xs text-gray-500 italic bg-white">
+            {typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
+          </div>
+        )}
 
-      {/* Connection status */}
-      {!isConnected && (
-        <div className="px-5 py-1 text-xs text-amber-600 bg-amber-50 text-center">
-          Connecting to chat server...
-        </div>
-      )}
+        {/* Connection status */}
+        {!isConnected && (
+          <div className="px-5 py-1 text-xs text-amber-600 bg-amber-50 text-center">
+            Connecting to chat server...
+          </div>
+        )}
 
         <MessageInput
           onSendMessage={handleSendMessage}

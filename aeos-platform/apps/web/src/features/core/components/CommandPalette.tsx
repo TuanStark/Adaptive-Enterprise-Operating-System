@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useGlobalHotkey } from "@/hooks/useGlobalHotkey";
 import {
   Calculator,
   Calendar,
@@ -32,17 +33,14 @@ export function CommandPalette() {
   const setOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const router = useRouter();
 
-  React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen(!open);
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+  const toggleOpen = React.useCallback((e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey) {
+      e.preventDefault();
+      setOpen(!open);
+    }
   }, [open, setOpen]);
+
+  useGlobalHotkey("k", toggleOpen);
 
   const runCommand = React.useCallback((command: () => void) => {
     setOpen(false);

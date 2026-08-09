@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { User } from "../types";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useWorkspaceMembers } from "../../workspaces/hooks/useWorkspaceMembers";
 import { useAddChannelMember } from "../hooks/useAddChannelMember";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface ChatHeaderProps {
   channelId?: string;
@@ -32,18 +33,10 @@ export function ChatHeader({ channelId, channelName, memberCount, channelType = 
   const uniqueMembers = Array.from(new Map((members || []).map(m => [m.id, m])).values());
   const displayMemberCount = members ? uniqueMembers.length : memberCount;
 
-  // Search logic
   const { data: session } = useSession();
   const workspaceId = session?.user?.workspaceId;
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [search]);
+  const debouncedSearch = useDebounce(search, 300);
 
   const { data: workspaceMembersResponse, isLoading: isSearching } = useWorkspaceMembers({
     workspaceId,
@@ -81,7 +74,7 @@ export function ChatHeader({ channelId, channelName, memberCount, channelType = 
         {/* Member Cluster - Only show for non-DM channels */}
         {!isDirect && (
           <Dialog>
-            <DialogTrigger 
+            <DialogTrigger
               render={
                 <div className="hidden sm:flex items-center gap-1.5 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-md border border-transparent hover:border-gray-200 transition-all" />
               }

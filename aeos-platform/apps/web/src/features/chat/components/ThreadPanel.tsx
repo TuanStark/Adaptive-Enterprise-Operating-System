@@ -2,14 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Message, User } from "../types";
-import { clientApi } from "@/lib/api-client";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 import { X } from "lucide-react";
 import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePanelResize } from "@/hooks/usePanelResize";
+import { useThreadMessages } from "../hooks/useThreadMessages";
 
 interface ThreadPanelProps {
   channelId: string;
@@ -26,8 +26,7 @@ export function ThreadPanel({
   currentUserId,
   onClose,
 }: ThreadPanelProps) {
-  const [replies, setReplies] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { replies, setReplies, isLoading } = useThreadMessages(channelId, parentMessage.id);
   const [width, setWidth] = useState(350);
   const isResizingRef = useRef(false);
   const { data: session } = useSession();
@@ -38,52 +37,7 @@ export function ThreadPanel({
     e.preventDefault();
   }, []);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizingRef.current) return;
-      const newWidth = document.body.clientWidth - e.clientX;
-      if (newWidth >= 300 && newWidth <= Math.min(800, document.body.clientWidth - 300)) {
-        setWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      isResizingRef.current = false;
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, []);
-
-  // Fetch thread messages
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-    clientApi
-      .get<{ data: Message[] }>(`/channels/${channelId}/messages/${parentMessage.id}/thread`)
-      .then((res: any) => {
-        if (isMounted) {
-          const list = Array.isArray(res) ? res : res?.data || [];
-          setReplies([...list].reverse());
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load thread messages:", err);
-        toast.error("Failed to load thread");
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [channelId, parentMessage.id]);
+  usePanelResize(isResizingRef, setWidth, 300);
 
   const readThreadRef = useRef<((threadId: string) => void) | undefined>(undefined);
 
@@ -178,19 +132,19 @@ export function ThreadPanel({
   );
 
   return (
-    <div 
+    <div
       className="relative flex flex-col h-full bg-white border-l border-gray-200 shrink-0"
       style={{ width: `${width}px` }}
     >
       {/* Resizer Handle */}
-      <div 
+      <div
         className="absolute left-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-500 z-10 transition-colors"
         onMouseDown={startResizing}
       />
       {/* Header */}
       <div className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
         <h3 className="font-bold text-gray-900">Thread</h3>
-        <button 
+        <button
           onClick={onClose}
           className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 transition-colors"
         >
@@ -276,8 +230,8 @@ export function ThreadPanel({
       <div className="border-t border-gray-200">
         <MessageInput
           onSendMessage={handleSendReply}
-          onTypingStart={() => {}}
-          onTypingStop={() => {}}
+          onTypingStart={() => { }}
+          onTypingStop={() => { }}
           channelName="thread"
         />
       </div>

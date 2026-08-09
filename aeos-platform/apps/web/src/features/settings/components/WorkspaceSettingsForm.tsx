@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useWorkspaceFormInit } from "@/hooks/useWorkspaceFormInit";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,14 +23,12 @@ export function WorkspaceSettingsForm() {
   const [domain, setDomain] = useState("");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    if (currentWorkspace) {
-      setName(currentWorkspace.name || "");
-      setDescription(currentWorkspace.description || "");
-      // If domain exists in your UserWorkspace interface later, you can sync it here.
-    }
-  }, [currentWorkspace]);
+  useWorkspaceFormInit(
+    currentWorkspace as any,
+    setMounted,
+    setName,
+    setDescription
+  );
 
   if (!mounted) return null;
 

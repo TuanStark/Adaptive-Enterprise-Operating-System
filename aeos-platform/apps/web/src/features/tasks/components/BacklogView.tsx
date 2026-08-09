@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, Filter, BarChart2, Settings, MoreHorizontal, ChevronDown, ChevronRight, Plus, GitMerge } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,15 +41,8 @@ export function BacklogView({ initialTasks, projectId, tenantId, workspaceId }: 
   const sprints = sprintsData ?? [];
   const allTasks = tasksData?.data ?? Object.values(initialTasks).flat();
 
-  // Local state for optimistic drag and drop
-  const [localTasks, setLocalTasks] = useState<Task[]>(allTasks);
-
-  useEffect(() => {
-    setLocalTasks(allTasks);
-  }, [allTasks]);
-
-  const getSprintTasks = (sprintId: string) => localTasks.filter((t) => t.sprintId === sprintId);
-  const backlogTasks = localTasks.filter((t) => !t.sprintId);
+  const getSprintTasks = (sprintId: string) => allTasks.filter((t) => t.sprintId === sprintId);
+  const backlogTasks = allTasks.filter((t) => !t.sprintId);
   const activeSprints = sprints.filter((s) => s.status !== "COMPLETED");
   const completedSprints = sprints.filter((s) => s.status === "COMPLETED");
 
@@ -68,11 +61,6 @@ export function BacklogView({ initialTasks, projectId, tenantId, workspaceId }: 
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     const newSprintId = destination.droppableId === "BACKLOG" ? null : destination.droppableId;
-
-    // Optimistic UI update
-    setLocalTasks((prev) =>
-      prev.map((t) => (t.id === draggableId ? { ...t, sprintId: newSprintId } : t))
-    );
 
     moveToSprint.mutate({ taskId: draggableId, sprintId: newSprintId });
   };
