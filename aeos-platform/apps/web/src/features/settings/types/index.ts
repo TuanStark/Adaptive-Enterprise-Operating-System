@@ -15,5 +15,7 @@ export type ProfileSettings = {
   email: string;
   avatarUrl: string | null;
   bio?: string;
+  timezone?: string | null;
+  phone?: string | null;
   status: 'PENDING' | 'ACTIVE' | 'LOCKED' | 'DISABLED';
 };

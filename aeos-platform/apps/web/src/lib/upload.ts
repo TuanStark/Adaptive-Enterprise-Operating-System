@@ -1,6 +1,6 @@
 import { clientApi } from "./api-client";
 
-export async function uploadFileDirectly(file: File, folderType: string = "documents"): Promise<{ id: string } | null> {
+export async function uploadFileDirectly(file: File, folderType: string = "documents"): Promise<{ id: string; url: string } | null> {
   try {
     // 1. Lấy chữ ký từ Backend
     const signatureData = await clientApi.get<any>(`/files/signature?folder=${folderType}`);
@@ -36,7 +36,7 @@ export async function uploadFileDirectly(file: File, folderType: string = "docum
       provider: "CLOUDINARY",
     });
 
-    return { id: confirmResult.id };
+    return { id: confirmResult.id, url: cloudinaryResult.secure_url };
   } catch (error) {
     console.error("Direct upload failed:", error);
     return null;
