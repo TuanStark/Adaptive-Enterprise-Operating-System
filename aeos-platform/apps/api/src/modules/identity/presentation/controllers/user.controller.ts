@@ -4,13 +4,31 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { GetCurrentUserQuery } from '../../application/queries/get-current-user/get-current-user.query';
 import { UpdateUserProfileCommand } from '../../application/commands/update-user-profile/update-user-profile.command';
 import { UserResponseDto } from '../../application/dto/user-response.dto';
+import { IsOptional, IsString } from 'class-validator';
 
 class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
   firstName?: string | null;
+
+  @IsOptional()
+  @IsString()
   lastName?: string | null;
+
+  @IsOptional()
+  @IsString()
   avatarUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
   bio?: string | null;
+
+  @IsOptional()
+  @IsString()
   timezone?: string | null;
+
+  @IsOptional()
+  @IsString()
   phone?: string | null;
 }
 
