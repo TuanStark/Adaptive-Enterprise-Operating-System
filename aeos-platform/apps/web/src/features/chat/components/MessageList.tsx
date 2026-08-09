@@ -31,6 +31,57 @@ interface MessageListProps {
 
 const EMOJI_OPTIONS = ["👍", "❤️", "🎉", "😂", "🚀", "👀"];
 
+const InlineFormat = ({ text }: { text: string }) => {
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`|\[.*?\]\(.*?\))/g);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('*') && part.endsWith('*')) {
+          return <em key={i}>{part.slice(1, -1)}</em>;
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return <code key={i} className="bg-black/10 rounded px-1 py-0.5 text-[13px] font-mono">{part.slice(1, -1)}</code>;
+        }
+        const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch) {
+          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="underline font-medium hover:opacity-80">{linkMatch[1]}</a>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+};
+
+const FormattedText = ({ content }: { content: string }) => {
+  if (!content) return null;
+
+  const lines = content.split('\n');
+
+  return (
+    <>
+      {lines.map((line, i) => {
+        if (line.trim().startsWith('- ')) {
+          return (
+            <div key={i} className="flex items-start gap-2 mt-0.5">
+              <span className="mt-2 w-1 h-1 rounded-full bg-current shrink-0" />
+              <span><InlineFormat text={line.trim().substring(2)} /></span>
+            </div>
+          );
+        }
+        return (
+          <div key={i} className={i > 0 ? "mt-0.5" : ""}>
+            <InlineFormat text={line} />
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
 export function MessageList({
   messages,
   users,
@@ -93,7 +144,7 @@ export function MessageList({
         <div className="flex-1 h-px bg-gray-200"></div>
       </div>
 
-      {messages.map((msg) => {
+      {messages.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((msg) => {
         const sender = users[msg.senderId];
         const isOwner = msg.senderId === currentUserId;
         const isEditing = editingMsgId === msg.id;
@@ -114,7 +165,7 @@ export function MessageList({
         return (
           <div
             key={msg.id}
-            className={`group relative flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2 ${isOwner ? "flex-row" : "flex-row-reverse"
+            className={`group flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2 ${isOwner ? "flex-row-reverse" : "flex-row"
               }`}
           >
             {/* Avatar */}
@@ -128,9 +179,9 @@ export function MessageList({
             </div>
 
             {/* Content */}
-            <div className={`flex-1 min-w-0 flex flex-col ${isOwner ? "items-start" : "items-end"}`}>
+            <div className={`flex-1 min-w-0 flex flex-col ${isOwner ? "items-end" : "items-start"}`}>
               {/* Sender Name & Timestamp */}
-              <div className={`flex items-baseline gap-2 mb-1 ${isOwner ? "flex-row" : "flex-row-reverse"}`}>
+              <div className={`flex items-baseline gap-2 mb-1 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
                 <span className="font-bold text-[14px] text-gray-900 leading-none">
                   {senderDisplayName}
                 </span>
@@ -140,7 +191,7 @@ export function MessageList({
               </div>
 
               {isEditing ? (
-                <div className={`mt-1 flex items-center gap-2 ${isOwner ? "flex-row" : "flex-row-reverse"}`}>
+                <div className={`mt-1 flex items-center gap-2 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
                   <Input
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
@@ -159,25 +210,107 @@ export function MessageList({
                   </Button>
                 </div>
               ) : (
-                <div className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isOwner
-                  ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[100%]"
-                  : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tr-sm text-right inline-block max-w-[100%]"
-                  }`}>
-                  {msg.isPinned && (
-                    <div className={`flex items-center gap-1 mb-1 border-b pb-1 mb-1 text-[11px] font-bold ${isOwner ? "text-blue-100 border-blue-400 justify-start" : "text-amber-600 border-amber-200 justify-end"}`}>
-                      <Pin className="w-3 h-3" fill="currentColor" /> Pinned
-                    </div>
-                  )}
-                  {msg.content}
-                  {msg.isEdited && (
-                    <span className={`text-[11px] italic ml-1.5 ${isOwner ? "text-blue-100" : "text-gray-400"}`}>(edited)</span>
-                  )}
+                <div className="relative group/bubble max-w-[100%]">
+                  <div className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isOwner
+                    ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tr-sm text-left inline-block max-w-[100%]"
+                    : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[100%]"
+                    }`}>
+                    {msg.isPinned && (
+                      <div className={`flex items-center gap-1 mb-1 border-b pb-1 text-[11px] font-bold ${isOwner ? "text-blue-100 border-blue-400 justify-start" : "text-amber-600 border-amber-200 justify-end"}`}>
+                        <Pin className="w-3 h-3" fill="currentColor" /> Pinned
+                      </div>
+                    )}
+                    <FormattedText content={msg.content} />
+                    {msg.isEdited && (
+                      <span className={`text-[11px] italic ml-1.5 ${isOwner ? "text-blue-100" : "text-gray-400"}`}>(edited)</span>
+                    )}
+                  </div>
+
+                  {/* Hover Action Bar */}
+                  <div className={`absolute top-0 ${isOwner ? "-left-2 -translate-x-full" : "-right-2 translate-x-full"} opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5 gap-0.5 z-10 pointer-events-none group-hover:pointer-events-auto`}>
+                    {EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleToggleReaction(msg, emoji)}
+                        className="p-1 hover:bg-gray-100 rounded text-sm transition-colors cursor-pointer"
+                        title={`React ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+
+                    <div className="w-px h-3 bg-gray-200 mx-0.5" />
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                      title="Reply in thread"
+                      onClick={() => onThreadClick?.(msg)}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                    </button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition-colors cursor-pointer outline-none flex items-center justify-center"
+                        title="More Options"
+                      >
+                        <MoreHorizontal className="w-3.5 h-3.5" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align={isOwner ? "end" : "end"} className="w-48 bg-white rounded-lg shadow-md border border-gray-200 p-1">
+                        <DropdownMenuItem onClick={() => {
+                          navigator.clipboard.writeText(msg.content);
+                          toast.success("Text copied to clipboard");
+                        }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
+                          <Copy className="w-4 h-4 text-gray-500" /> Copy text
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set("msgId", msg.id);
+                          navigator.clipboard.writeText(url.toString());
+                          toast.success("Link copied to clipboard");
+                        }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
+                          <LinkIcon className="w-4 h-4 text-gray-500" /> Copy link
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="h-px bg-gray-100 my-1 -mx-1" />
+                        <DropdownMenuItem onClick={() => {
+                          if (onMessagePinned) {
+                            onMessagePinned(msg.id, !msg.isPinned);
+                          }
+                        }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
+                          <Pin className="w-4 h-4 text-gray-500" /> {msg.isPinned ? "Unpin from conversation" : "Pin to conversation"}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem onClick={async () => {
+                          try {
+                            await clientApi.post(`/channels/${channelId}/read-cursor`, { lastReadMessageId: msg.id });
+                            toast.success("Marked as unread from this message");
+                          } catch (err) {
+                            toast.error("Failed to mark unread");
+                          }
+                        }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
+                          <Check className="w-4 h-4 text-gray-500" /> Mark unread from here
+                        </DropdownMenuItem>
+
+                        {isOwner && (
+                          <>
+                            <DropdownMenuSeparator className="h-px bg-gray-100 my-1 -mx-1" />
+                            <DropdownMenuItem onClick={() => handleStartEdit(msg)} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
+                              <Pencil className="w-4 h-4 text-gray-500" /> Edit message
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(msg.id)} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-sm outline-none focus:bg-red-50 focus:text-red-600">
+                              <Trash2 className="w-4 h-4 text-red-500" /> Delete message...
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               )}
 
               {/* Reaction Badges */}
               {Object.keys(reactionGroups).length > 0 && (
-                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-end" : "justify-end"}`}>
+                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-end" : "justify-start"}`}>
                   {Object.entries(reactionGroups).map(([emoji, group]) => {
                     const hasReacted = group.userIds.includes(currentUserId);
                     return (
@@ -201,7 +334,7 @@ export function MessageList({
               {(msg.replyCount ?? 0) > 0 && (
                 <div
                   className={`mt-1.5 flex items-center gap-2 group/thread cursor-pointer p-1.5 rounded-md transition-colors ${msg.isThreadUnread ? "bg-blue-50/60 hover:bg-blue-50" : "hover:bg-gray-100"
-                    } ${isOwner ? "justify-start -ml-1.5 mr-0" : "justify-end flex-row-reverse -mr-1.5 ml-0"}`}
+                    } ${isOwner ? "justify-end flex-row-reverse -mr-1.5 ml-0" : "justify-start -ml-1.5 mr-0"}`}
                   onClick={() => onThreadClick?.(msg)}
                 >
                   <div className={`flex items-center gap-1.5 ${msg.isThreadUnread ? "text-blue-700" : "text-emerald-600 group-hover/thread:text-emerald-700"}`}>
@@ -223,88 +356,7 @@ export function MessageList({
               )}
             </div>
 
-            {/* Hover Action Bar */}
-            {!isEditing && (
-              <div className={`absolute -top-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-1 py-0.5 gap-0.5 z-10 pointer-events-none group-hover:pointer-events-auto ${isOwner ? "left-3" : "right-3"
-                }`}>
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleToggleReaction(msg, emoji)}
-                    className="p-1 hover:bg-gray-100 rounded text-sm transition-colors cursor-pointer"
-                    title={`React ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
 
-                <div className="w-px h-3 bg-gray-200 mx-0.5" />
-                <button
-                  className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                  title="Reply in thread"
-                  onClick={() => onThreadClick?.(msg)}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition-colors cursor-pointer outline-none flex items-center justify-center"
-                    title="More Options"
-                  >
-                    <MoreHorizontal className="w-3.5 h-3.5" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align={isOwner ? "start" : "end"} className="w-48 bg-white rounded-lg shadow-md border border-gray-200 p-1">
-                    <DropdownMenuItem onClick={() => {
-                      navigator.clipboard.writeText(msg.content);
-                      toast.success("Text copied to clipboard");
-                    }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
-                      <Copy className="w-4 h-4 text-gray-500" /> Copy text
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set("msgId", msg.id);
-                      navigator.clipboard.writeText(url.toString());
-                      toast.success("Link copied to clipboard");
-                    }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
-                      <LinkIcon className="w-4 h-4 text-gray-500" /> Copy link
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator className="h-px bg-gray-100 my-1 -mx-1" />
-                    <DropdownMenuItem onClick={() => {
-                      if (onMessagePinned) {
-                        onMessagePinned(msg.id, !msg.isPinned);
-                      }
-                    }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
-                      <Pin className="w-4 h-4 text-gray-500" /> {msg.isPinned ? "Unpin from conversation" : "Pin to conversation"}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={async () => {
-                      try {
-                        await clientApi.post(`/channels/${channelId}/read-cursor`, { lastReadMessageId: msg.id });
-                        toast.success("Marked as unread from this message");
-                      } catch (err) {
-                        toast.error("Failed to mark unread");
-                      }
-                    }} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
-                      <Check className="w-4 h-4 text-gray-500" /> Mark unread from here
-                    </DropdownMenuItem>
-
-                    {isOwner && (
-                      <>
-                        <DropdownMenuSeparator className="h-px bg-gray-100 my-1 -mx-1" />
-                        <DropdownMenuItem onClick={() => handleStartEdit(msg)} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-gray-100 rounded-sm outline-none focus:bg-gray-100">
-                          <Pencil className="w-4 h-4 text-gray-500" /> Edit message
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(msg.id)} className="cursor-pointer flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-sm outline-none focus:bg-red-50 focus:text-red-600">
-                          <Trash2 className="w-4 h-4 text-red-500" /> Delete message...
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
           </div>
         );
       })}
