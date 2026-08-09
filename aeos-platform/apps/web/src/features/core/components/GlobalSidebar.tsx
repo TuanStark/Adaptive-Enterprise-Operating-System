@@ -33,7 +33,7 @@ const globalNavItems = [
 export function GlobalSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session, update } = useSession();
+  const { data: session, update, status } = useSession();
   const { data: workspacesData, isLoading } = useWorkspaces();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const setActiveWorkspaceId = useAppStore((s) => s.setActiveWorkspaceId);
@@ -54,7 +54,9 @@ export function GlobalSidebar() {
   };
 
   useEffect(() => {
-    if (!isLoading && workspaces.length > 0) {
+    if (status === "loading" || isLoading) return;
+
+    if (workspaces.length > 0) {
       if (!currentWorkspaceId || !workspaces.find((w) => w.id === currentWorkspaceId)) {
         const first = workspaces[0];
         handleSwitchWorkspace(first.id, first.name || "Unknown");
@@ -62,7 +64,7 @@ export function GlobalSidebar() {
         setActiveWorkspaceId(currentWorkspaceId);
       }
     }
-  }, [workspaces, currentWorkspaceId, isLoading]);
+  }, [workspaces, currentWorkspaceId, isLoading, status]);
 
   return (
     <aside className="w-16 h-screen bg-[#1E1F22] flex flex-col items-center py-4 border-r border-[#1E1F22] z-30 shrink-0">
@@ -89,12 +91,12 @@ export function GlobalSidebar() {
               >
                 <item.icon className="w-5 h-5" />
               </div>
-              
+
               {/* Tooltip */}
               <div className="absolute left-14 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 {item.name}
               </div>
-              
+
               {/* Active Indicator */}
               {isActive && (
                 <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-md"></div>
@@ -103,7 +105,7 @@ export function GlobalSidebar() {
           );
         })}
       </div>
-      
+
       <div className="mt-auto px-2 w-full flex justify-center pb-2 relative group/workspace">
         <DropdownMenu>
           <DropdownMenuTrigger render={
@@ -115,7 +117,7 @@ export function GlobalSidebar() {
             <DropdownMenuLabel className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1 px-2">
               Workspaces
             </DropdownMenuLabel>
-            
+
             {isLoading ? (
               <DropdownMenuItem disabled className="px-2 py-2">
                 <div className="animate-pulse w-full h-4 bg-gray-200 rounded"></div>
@@ -126,7 +128,7 @@ export function GlobalSidebar() {
                   const isActive = ws.id === currentWorkspaceId;
                   const initial = ws.name?.charAt(0).toUpperCase() || "W";
                   return (
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       key={ws.id}
                       onClick={() => handleSwitchWorkspace(ws.id, ws.name || "Unknown")}
                       className={cn(
@@ -153,9 +155,9 @@ export function GlobalSidebar() {
                 No workspaces
               </DropdownMenuItem>
             )}
-            
+
             <DropdownMenuSeparator className="my-2" />
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => setIsCreateDialogOpen(true)}
               className="flex items-center gap-2 px-2 py-2 cursor-pointer rounded-lg hover:bg-gray-100 text-gray-700 font-medium transition-colors"
             >
@@ -166,7 +168,7 @@ export function GlobalSidebar() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        
+
         {/* Tooltip for Workspace Switcher */}
         <div className="absolute left-16 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover/workspace:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
           {currentWorkspace?.name || "Switch Workspace"}
