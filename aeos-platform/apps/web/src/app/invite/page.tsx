@@ -11,6 +11,22 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { AuthProvider } from "@/features/auth/components/AuthProvider";
 
+interface InviteInfo {
+  email: string;
+  workspaceId: string;
+  workspaceName?: string;
+  inviterName?: string;
+}
+
+interface UserWorkspaceDto {
+  id: string;
+  name: string | null;
+  organizationId: string | null;
+  membership?: {
+    roleName?: string | null;
+  };
+}
+
 function InviteContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -21,7 +37,7 @@ function InviteContent() {
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [inviteInfo, setInviteInfo] = useState<{ email: string; workspaceId: string } | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
   const [isValidating, setIsValidating] = useState(true);
 
   useEffect(() => {
@@ -31,10 +47,11 @@ function InviteContent() {
     }
     const validateToken = async () => {
       try {
-        const res = await clientApi.get<{ email: string; workspaceId: string }>(`/workspaces/invites/validate?token=${token}`);
+        const res = await clientApi.get<InviteInfo>(`/workspaces/invites/validate?token=${token}`);
         setInviteInfo(res);
-      } catch (err: any) {
-        setErrorMessage(err.message || "The invitation link is invalid or has expired.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "The invitation link is invalid or has expired.";
+        setErrorMessage(msg);
         setStatus("error");
       } finally {
         setIsValidating(false);
@@ -48,18 +65,43 @@ function InviteContent() {
     setStatus("loading");
     try {
       await clientApi.post("/workspaces/invites/accept", { token });
-      if (inviteInfo?.workspaceId) {
-        await update({ workspaceId: inviteInfo.workspaceId });
+      
+      // Refetch user workspaces to obtain workspace context details
+      let workspaceName = inviteInfo?.workspaceName ?? "";
+      let organizationId = "";
+      let role = "USER";
+
+      try {
+        const myWorkspaces = await clientApi.get<UserWorkspaceDto[]>("/workspaces/me");
+        const accepted = myWorkspaces.find((w) => w.id === inviteInfo?.workspaceId);
+        if (accepted) {
+          workspaceName = accepted.name ?? workspaceName;
+          organizationId = accepted.organizationId ?? "";
+          role = accepted.membership?.roleName ?? "USER";
+        }
+      } catch {
+        // Non-critical fallback to inviteInfo
       }
+
+      if (inviteInfo?.workspaceId) {
+        await update({
+          workspaceId: inviteInfo.workspaceId,
+          workspaceName,
+          organizationId,
+          role,
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       setStatus("success");
       setTimeout(() => {
-        router.push("/"); // Redirect to dashboard
-      }, 2000);
-    } catch (err: any) {
-      console.error(err);
+        router.push("/");
+      }, 1500);
+    } catch (err: unknown) {
+      console.error("[InvitePage] Accept invitation error:", err);
+      const msg = err instanceof Error ? err.message : "Failed to accept invitation. It may be invalid or expired.";
       setStatus("error");
-      setErrorMessage(err.message || "Failed to accept invitation. It may be invalid or expired.");
+      setErrorMessage(msg);
     }
   };
 
@@ -85,13 +127,23 @@ function InviteContent() {
     );
   }
 
+  const isEmailMatch = !!(
+    user?.email &&
+    inviteInfo?.email &&
+    user.email.toLowerCase().trim() === inviteInfo.email.toLowerCase().trim()
+  );
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50">
       <Card className="w-full max-w-md shadow-lg border-primary/20">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Workspace Invitation</CardTitle>
           <CardDescription className="pt-2">
-            You have been invited to join a Workspace on AEOS.
+            {inviteInfo?.workspaceName ? (
+              <>You have been invited to join <strong className="text-gray-900">{inviteInfo.workspaceName}</strong></>
+            ) : (
+              "You have been invited to join a Workspace on AEOS."
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -108,21 +160,24 @@ function InviteContent() {
           ) : (
             <>
               {inviteInfo && (
-                <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm border border-blue-100 text-center mb-4">
+                <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm border border-blue-100 text-center mb-4 space-y-1">
                   <p>You have been invited as <strong>{inviteInfo.email}</strong></p>
+                  {inviteInfo.inviterName && (
+                    <p className="text-xs text-blue-600">Invited by: {inviteInfo.inviterName}</p>
+                  )}
                 </div>
               )}
-          {user ? (
-            <div className="bg-gray-50 p-4 rounded-lg text-sm border border-gray-100">
-              <p className="text-gray-500 mb-1">You will join this workspace as:</p>
-              <p className="font-medium text-gray-900">{user.email}</p>
-            </div>
-          ) : (
-            <div className="bg-amber-50 text-amber-800 p-4 rounded-lg text-sm border border-amber-100">
-              <p className="font-medium mb-1">Authentication Required</p>
-              <p>You must be logged in to accept this invitation.</p>
-            </div>
-          )}
+              {user ? (
+                <div className="bg-gray-50 p-4 rounded-lg text-sm border border-gray-100">
+                  <p className="text-gray-500 mb-1">You will join this workspace as:</p>
+                  <p className="font-medium text-gray-900">{user.email}</p>
+                </div>
+              ) : (
+                <div className="bg-amber-50 text-amber-800 p-4 rounded-lg text-sm border border-amber-100">
+                  <p className="font-medium mb-1">Authentication Required</p>
+                  <p>You must be logged in to accept this invitation.</p>
+                </div>
+              )}
 
               {status === "error" && (
                 <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm flex items-start gap-2 border border-red-100">
@@ -140,7 +195,7 @@ function InviteContent() {
             </>
           )}
         </CardContent>
-        <CardFooter className="flex gap-3">
+        <CardFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
           {isValidating || (!inviteInfo && status === "error") ? (
             <Button className="w-full" onClick={() => router.push("/")}>
               Return to Home
@@ -156,23 +211,23 @@ function InviteContent() {
             <>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full sm:w-1/3 border-gray-300 text-gray-700 hover:bg-gray-50"
                 onClick={() => router.push("/")}
                 disabled={status === "loading" || status === "success"}
               >
                 Decline
               </Button>
               <Button
-                className="w-full bg-primary hover:bg-primary/90"
+                className="w-full sm:w-2/3 bg-primary hover:bg-primary/90 text-white font-semibold shadow-sm"
                 onClick={handleAccept}
-                disabled={status === "loading" || status === "success" || user.email !== inviteInfo?.email}
+                disabled={status === "loading" || status === "success" || !isEmailMatch}
               >
                 {status === "loading" ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Accepting...
                   </>
-                ) : user.email !== inviteInfo?.email ? (
+                ) : !isEmailMatch ? (
                   "Email Mismatch"
                 ) : (
                   "Accept Invitation"

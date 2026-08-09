@@ -5,6 +5,8 @@ import {
   ACCESS_TOKEN_EXPIRY_SECONDS,
   LOGIN_PAGE,
   ERROR_PAGE,
+  PUBLIC_ROUTES,
+  AUTH_ROUTES,
 } from "./constants";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -225,9 +227,10 @@ export const authOptions: NextAuthConfig = {
     // ── JWT Callback: Token Rotation ──
     async jwt({ token, user, trigger, session }) {
       if (trigger === "update" && session) {
-        if (session.workspaceId) token.workspaceId = session.workspaceId;
-        if (session.workspaceName) token.workspaceName = session.workspaceName;
-        if (session.organizationId) token.organizationId = session.organizationId;
+        if (session.workspaceId !== undefined) token.workspaceId = session.workspaceId;
+        if (session.workspaceName !== undefined) token.workspaceName = session.workspaceName;
+        if (session.organizationId !== undefined) token.organizationId = session.organizationId;
+        if (session.role !== undefined) token.role = session.role;
       }
 
       // Initial sign-in: seed JWT with all backend data
@@ -292,7 +295,7 @@ export const authOptions: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
-      const isPublicRoute = ["/login", "/register", "/forgot-password"].some(
+      const isPublicRoute = PUBLIC_ROUTES.some(
         (route) => pathname === route || pathname.startsWith(route + "/"),
       );
 
@@ -301,8 +304,11 @@ export const authOptions: NextAuthConfig = {
         return false;
       }
 
-      // Đã login + đang ở trang auth → redirect về dashboard
-      if (isLoggedIn && isPublicRoute) {
+      // Đã login + đang ở trang auth (login/register) → redirect về dashboard
+      const isAuthRoute = AUTH_ROUTES.some(
+        (route) => pathname === route || pathname.startsWith(route + "/"),
+      );
+      if (isLoggedIn && isAuthRoute) {
         return Response.redirect(new URL("/", nextUrl));
       }
 

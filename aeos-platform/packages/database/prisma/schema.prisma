@@ -298,6 +298,7 @@ model Workspace {
   projectComponents ProjectComponent[]
   projectVersions   ProjectVersion[]
   documents    Document[]
+  channels     Channel[]
   workflows    Workflow[]
   meetings     Meeting[]
   approvalRequests ApprovalRequest[]
@@ -1043,6 +1044,7 @@ enum ChannelMemberRole {
 model Channel {
   id          String      @id @default(uuid()) @db.Uuid
   tenantId    String      @map("tenant_id") @db.Uuid
+  workspaceId String?     @map("workspace_id") @db.Uuid
   name        String      @db.VarChar(100)
   type        ChannelType @default(PUBLIC)
   description String?
@@ -1052,11 +1054,13 @@ model Channel {
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  members  ChannelMember[]
-  messages ChatMessage[]
+  tenant    Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ChannelMember[]
+  messages  ChatMessage[]
 
   @@index([tenantId])
+  @@index([workspaceId])
   @@map("channels")
 }
 

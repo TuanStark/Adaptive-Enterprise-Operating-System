@@ -24,6 +24,7 @@ export class ChannelMember extends Entity<string> {
   get channelId(): string { return this._channelId; }
   get userId(): string { return this._userId; }
   get role(): 'OWNER' | 'ADMIN' | 'MEMBER' { return this._role; }
+  get joinedAt(): Date { return this.createdAt; }
 
   static create(channelId: string, userId: string, role: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'): ChannelMember {
     return new ChannelMember({

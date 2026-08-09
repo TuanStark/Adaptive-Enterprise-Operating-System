@@ -1,4 +1,4 @@
-export const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password"] as const;
+export const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/invite"] as const;
 export const AUTH_ROUTES = ["/login", "/register"] as const;
 export const DEFAULT_LOGIN_REDIRECT = "/";
 export const LOGIN_PAGE = "/login";

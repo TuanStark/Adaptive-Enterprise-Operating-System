@@ -10,6 +10,7 @@ import { JoinChannelCommand, JoinChannelHandler } from '../../application/comman
 import { ReactToMessageCommand, ReactToMessageHandler } from '../../application/commands/react-to-message/react-to-message.handler';
 import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
 import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
+import { ChatGateway } from '../gateways/chat.gateway';
 
 // ── Request DTOs ──
 
@@ -40,15 +41,19 @@ class ReactRequestDto {
   @IsString() emoji!: string;
 }
 
+import { PrismaService } from '@aeos/database';
+
 // ── Controller ──
 
 @Controller('channels')
 export class ChannelController {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly createChannelHandler: CreateChannelHandler,
     private readonly sendMessageHandler: SendMessageHandler,
     private readonly joinChannelHandler: JoinChannelHandler,
     private readonly reactHandler: ReactToMessageHandler,
+    private readonly chatGateway: ChatGateway,
     @Inject(CHANNEL_REPOSITORY)
     private readonly channelRepository: ChannelRepository,
     @Inject(MESSAGE_REPOSITORY)
@@ -71,10 +76,43 @@ export class ChannelController {
   }
 
   @Get()
-  async listChannels(@Query('workspaceId') workspaceId: string, @Query('page') page?: string, @Query('limit') limit?: string) {
+  async listChannels(
+    @Query('workspaceId') workspaceId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Req() req?: Request,
+  ) {
     const p = parseInt(page ?? '1', 10);
     const l = parseInt(limit ?? '50', 10);
-    const { data, total } = await this.channelRepository.findByWorkspaceId(workspaceId, p, l);
+    let { data, total } = await this.channelRepository.findByWorkspaceId(workspaceId, p, l);
+
+    if (total === 0 && workspaceId) {
+      const user = (req as any)?.user;
+      let creatorId = user?.userId;
+      if (!creatorId) {
+        const firstUser = await this.prisma.user.findFirst({ select: { id: true } });
+        creatorId = firstUser?.id;
+      }
+
+      if (creatorId) {
+        const tenantId = user?.tenantId || 'default';
+        const createCommand = new CreateChannelCommand(
+          tenantId,
+          workspaceId,
+          'general',
+          creatorId,
+          'PUBLIC',
+          'General discussion channel',
+        );
+        const createResult = await this.createChannelHandler.execute(createCommand);
+        if (createResult.isOk) {
+          const refreshed = await this.channelRepository.findByWorkspaceId(workspaceId, p, l);
+          data = refreshed.data;
+          total = refreshed.total;
+        }
+      }
+    }
+
     return {
       data: data.map(ch => ({
         id: ch.id, name: ch.name, type: ch.type, description: ch.description,
@@ -168,22 +206,40 @@ export class ChannelController {
   }
 
   @Patch(':channelId/messages/:msgId')
-  async editMessage(@Param('msgId') msgId: string, @Body() dto: SendMessageRequestDto) {
+  async editMessage(
+    @Param('channelId') channelId: string,
+    @Param('msgId') msgId: string,
+    @Body() dto: SendMessageRequestDto,
+  ) {
     const message = await this.messageRepository.findById(msgId);
     if (!message) throw new Error('Message not found');
     const result = message.edit(dto.content);
     if (result.isFail) throw result.error as DomainError;
     await this.messageRepository.save(message);
+
+    this.chatGateway.broadcastMessageEdited(
+      channelId,
+      msgId,
+      dto.content,
+      new Date().toISOString(),
+    );
+
     return { message: 'Message edited.' };
   }
 
   @Delete(':channelId/messages/:msgId')
-  async deleteMessage(@Param('msgId') msgId: string) {
+  async deleteMessage(
+    @Param('channelId') channelId: string,
+    @Param('msgId') msgId: string,
+  ) {
     const message = await this.messageRepository.findById(msgId);
     if (!message) throw new Error('Message not found');
     const result = message.softDelete();
     if (result.isFail) throw result.error as DomainError;
     await this.messageRepository.save(message);
+
+    this.chatGateway.broadcastMessageDeleted(channelId, msgId);
+
     return { message: 'Message deleted.' };
   }
 
@@ -191,20 +247,47 @@ export class ChannelController {
 
   @Post(':channelId/messages/:msgId/reactions')
   @HttpCode(HttpStatus.CREATED)
-  async addReaction(@Param('msgId') msgId: string, @Body() dto: ReactRequestDto, @Req() req: Request) {
+  async addReaction(
+    @Param('channelId') channelId: string,
+    @Param('msgId') msgId: string,
+    @Body() dto: ReactRequestDto,
+    @Req() req: Request,
+  ) {
     const user = (req as any).user;
     const result = await this.reactHandler.execute(new ReactToMessageCommand(msgId, user.userId, dto.emoji));
     if (result.isFail) throw result.error as DomainError;
+
+    const message = await this.messageRepository.findById(msgId);
+    if (message) {
+      this.chatGateway.broadcastReactionUpdated(
+        channelId,
+        msgId,
+        message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+      );
+    }
+
     return { message: 'Reaction added.' };
   }
 
   @Delete(':channelId/messages/:msgId/reactions/:emoji')
-  async removeReaction(@Param('msgId') msgId: string, @Param('emoji') emoji: string, @Req() req: Request) {
+  async removeReaction(
+    @Param('channelId') channelId: string,
+    @Param('msgId') msgId: string,
+    @Param('emoji') emoji: string,
+    @Req() req: Request,
+  ) {
     const user = (req as any).user;
     const message = await this.messageRepository.findById(msgId);
     if (!message) throw new Error('Message not found');
     message.removeReaction(user.userId, emoji);
     await this.messageRepository.save(message);
+
+    this.chatGateway.broadcastReactionUpdated(
+      channelId,
+      msgId,
+      message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+    );
+
     return { message: 'Reaction removed.' };
   }
 

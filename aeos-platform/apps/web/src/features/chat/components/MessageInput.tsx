@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Bold, Italic, Link2, List, Code, Paperclip, Smile, Send } from "lucide-react";
+import { Bold, Italic, Link2, List, Code, Paperclip, Smile, Send, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MessageInputProps {
@@ -13,12 +13,21 @@ interface MessageInputProps {
 
 export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, channelName = "general" }: MessageInputProps) {
   const [content, setContent] = useState("");
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSend = () => {
-    if (!content.trim()) return;
-    onSendMessage(content.trim());
+    if (!content.trim() && !attachedFile) return;
+
+    let finalContent = content.trim();
+    if (attachedFile) {
+      finalContent += `\n📎 [Attachment: ${attachedFile.name}]`;
+    }
+
+    onSendMessage(finalContent);
     setContent("");
+    setAttachedFile(null);
     onTypingStop?.();
   };
 
@@ -45,17 +54,36 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
     }, 2000);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAttachedFile(file);
+    }
+  };
+
   return (
     <div className="px-4 pb-6 pt-2 shrink-0 bg-white">
       <div className="border border-gray-300 rounded-lg shadow-sm focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-400 transition-all bg-white overflow-hidden">
         <div className="flex items-center gap-1 bg-gray-50/80 px-2 py-1.5 border-b border-gray-200">
-          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded"><Bold className="w-4 h-4" /></button>
-          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded"><Italic className="w-4 h-4" /></button>
+          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded" title="Bold"><Bold className="w-4 h-4" /></button>
+          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded" title="Italic"><Italic className="w-4 h-4" /></button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded"><Link2 className="w-4 h-4" /></button>
-          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded"><List className="w-4 h-4" /></button>
-          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded"><Code className="w-4 h-4" /></button>
+          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded" title="Link"><Link2 className="w-4 h-4" /></button>
+          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded" title="List"><List className="w-4 h-4" /></button>
+          <button className="p-1 text-gray-500 hover:bg-gray-200 rounded" title="Code"><Code className="w-4 h-4" /></button>
         </div>
+
+        {attachedFile && (
+          <div className="mx-2 mt-2 p-2 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-between text-xs text-gray-700">
+            <div className="flex items-center gap-2 truncate">
+              <FileText className="w-4 h-4 text-primary shrink-0" />
+              <span className="truncate font-medium">{attachedFile.name}</span>
+            </div>
+            <button onClick={() => setAttachedFile(null)} className="p-1 text-gray-400 hover:text-gray-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         <div className="p-2 min-h-[60px]">
           <textarea
@@ -68,18 +96,33 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
           />
         </div>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+
         <div className="flex items-center justify-between px-2 py-1.5 bg-white">
           <div className="flex items-center gap-1">
-            <button className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full"><PlusIcon className="w-4 h-4" /></button>
-            <button className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full"><Paperclip className="w-4 h-4" /></button>
-            <button className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full"><Smile className="w-4 h-4" /></button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+              title="Attach File"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+            <button className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors" title="Emoji">
+              <Smile className="w-4 h-4" />
+            </button>
           </div>
+
           <div className="flex items-center">
             <Button
               size="icon"
               className="h-7 w-7 rounded bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
               onClick={handleSend}
-              disabled={!content.trim()}
+              disabled={!content.trim() && !attachedFile}
             >
               <Send className="w-3.5 h-3.5" />
             </Button>
@@ -87,14 +130,5 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
         </div>
       </div>
     </div>
-  );
-}
-
-function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
   );
 }

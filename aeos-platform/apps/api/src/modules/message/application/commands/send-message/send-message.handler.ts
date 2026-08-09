@@ -4,8 +4,9 @@ import { Message } from '../../../domain/entities/message.entity';
 import { ChannelRepository, CHANNEL_REPOSITORY } from '../../../domain/repositories/channel.repository';
 import { MessageRepository, MESSAGE_REPOSITORY } from '../../../domain/repositories/message.repository';
 import { ChannelNotFoundError, NotChannelMemberError, ChannelArchivedError } from '../../../domain/errors/message.errors';
-import { MessageSentEvent } from '../../../domain/events/message.events';
 import { SendMessageCommand } from './send-message.command';
+
+import { ChannelType } from '../../../domain/aggregates/channel.aggregate';
 
 export class SendMessageHandler {
   constructor(
@@ -13,7 +14,7 @@ export class SendMessageHandler {
     private readonly channelRepository: ChannelRepository,
     @Inject(MESSAGE_REPOSITORY)
     private readonly messageRepository: MessageRepository,
-  ) {}
+  ) { }
 
   async execute(command: SendMessageCommand): Promise<Result<string, DomainError>> {
     const channel = await this.channelRepository.findById(command.channelId);
@@ -22,7 +23,12 @@ export class SendMessageHandler {
     if (channel.isArchived) return Result.fail(new ChannelArchivedError());
 
     if (!channel.isMember(command.senderId)) {
-      return Result.fail(new NotChannelMemberError());
+      if (channel.type === ChannelType.PUBLIC) {
+        channel.addMember(command.senderId);
+        await this.channelRepository.save(channel);
+      } else {
+        return Result.fail(new NotChannelMemberError());
+      }
     }
 
     const messageResult = Message.create(

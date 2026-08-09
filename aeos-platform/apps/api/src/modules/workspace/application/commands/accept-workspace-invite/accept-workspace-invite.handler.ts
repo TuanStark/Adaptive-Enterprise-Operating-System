@@ -6,6 +6,12 @@ import { WorkspaceRepository, WORKSPACE_REPOSITORY } from '../../../domain/repos
 import { AcceptWorkspaceInviteCommand } from './accept-workspace-invite.command';
 import { GetUsersInternalQuery, UserInternalDto } from '../../../../../common/contracts/identity.contract';
 
+interface AcceptInviteJwtPayload {
+  email?: string;
+  workspaceId?: string;
+  inviterId?: string;
+}
+
 @CommandHandler(AcceptWorkspaceInviteCommand)
 export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorkspaceInviteCommand> {
   constructor(
@@ -17,10 +23,10 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
   async execute(command: AcceptWorkspaceInviteCommand): Promise<Result<void, DomainError>> {
     const secret = process.env.JWT_SECRET || 'fallback-dev-secret-min-32-chars!!';
     
-    let decoded: any;
+    let decoded: AcceptInviteJwtPayload;
     try {
-      decoded = jwt.verify(command.token, secret, { issuer: 'aeos-platform' });
-    } catch (err) {
+      decoded = jwt.verify(command.token, secret, { issuer: 'aeos-platform' }) as AcceptInviteJwtPayload;
+    } catch {
       return Result.fail({
         code: 'INVALID_INVITE_TOKEN',
         message: 'The invitation link is invalid or has expired.',
@@ -30,12 +36,20 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
     }
 
     const { email: invitedEmail, workspaceId } = decoded;
+    if (!invitedEmail || !workspaceId) {
+      return Result.fail({
+        code: 'INVALID_INVITE_TOKEN',
+        message: 'The invitation link contains invalid data payload.',
+        httpStatus: 400,
+        toJSON: () => ({ code: 'INVALID_INVITE_TOKEN', message: 'The invitation link contains invalid data payload.' }),
+      });
+    }
 
-    // Verify current user's email matches the invited email
+    // Verify current user's email matches the invited email (case-insensitive)
     const users: UserInternalDto[] = await this.queryBus.execute(new GetUsersInternalQuery([command.currentUserId]));
-    const currentUser = users[0];
+    const currentUser = users?.[0];
 
-    if (!currentUser || currentUser.email !== invitedEmail) {
+    if (!currentUser || currentUser.email.toLowerCase().trim() !== invitedEmail.toLowerCase().trim()) {
       return Result.fail({
         code: 'EMAIL_MISMATCH',
         message: 'This invitation was sent to a different email address.',
@@ -63,3 +77,4 @@ export class AcceptWorkspaceInviteHandler implements ICommandHandler<AcceptWorks
     return Result.ok(undefined);
   }
 }
+

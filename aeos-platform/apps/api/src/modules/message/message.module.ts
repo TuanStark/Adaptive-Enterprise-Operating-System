@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@aeos/database';
+import { IdentityModule } from '../identity/identity.module';
 import { CHANNEL_REPOSITORY } from './domain/repositories/channel.repository';
 import { MESSAGE_REPOSITORY } from './domain/repositories/message.repository';
 import { PrismaChannelRepository } from './infrastructure/persistence/prisma-channel.repository';
@@ -12,6 +13,7 @@ import { ChannelController } from './presentation/controllers/channel.controller
 import { ChatGateway } from './presentation/gateways/chat.gateway';
 
 @Module({
+  imports: [IdentityModule],
   controllers: [ChannelController],
   providers: [
     PrismaService,
