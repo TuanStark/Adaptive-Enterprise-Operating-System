@@ -1,20 +1,13 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
 import { DocumentRepository, DOCUMENT_REPOSITORY } from '../../../domain/repositories/document.repository';
-
-export class UpdateDocumentCommand {
-  constructor(
-    public readonly documentId: string,
-    public readonly name?: string,
-    public readonly visibility?: string,
-  ) {}
-}
+import { UpdateDocumentCommand } from './update-document.command';
 
 export class UpdateDocumentHandler {
   constructor(
     @Inject(DOCUMENT_REPOSITORY)
     private readonly documentRepository: DocumentRepository,
-  ) {}
+  ) { }
 
   async execute(command: UpdateDocumentCommand): Promise<Result<void, DomainError>> {
     const document = await this.documentRepository.findById(command.documentId);

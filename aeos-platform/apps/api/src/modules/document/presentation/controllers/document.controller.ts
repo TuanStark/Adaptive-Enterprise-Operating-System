@@ -1,30 +1,18 @@
 import { Controller, Post, Get, Patch, Body, Param, Query, Req, HttpCode, HttpStatus, Inject } from '@nestjs/common';
 import { Request } from 'express';
 import { DomainError } from '@aeos/errors';
-import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
 import { CreateDocumentCommand } from '../../application/commands/create-document/create-document.command';
 import { CreateDocumentHandler } from '../../application/commands/create-document/create-document.handler';
-import { UpdateDocumentCommand, UpdateDocumentHandler } from '../../application/commands/update-document/update-document.handler';
-import { PublishDocumentVersionCommand, PublishDocumentVersionHandler } from '../../application/commands/publish-document-version/publish-document-version.handler';
+import { UpdateDocumentCommand } from '../../application/commands/update-document/update-document.command';
+import { UpdateDocumentHandler } from '../../application/commands/update-document/update-document.handler';
+import { PublishDocumentVersionCommand } from '../../application/commands/publish-document-version/publish-document-version.command';
+import { PublishDocumentVersionHandler } from '../../application/commands/publish-document-version/publish-document-version.handler';
 import { GetDocumentQuery } from '../../application/queries/get-document/get-document.query';
 import { GetDocumentHandler } from '../../application/queries/get-document/get-document.handler';
 import { DocumentRepository, DOCUMENT_REPOSITORY } from '../../domain/repositories/document.repository';
-
-class CreateDocumentRequestDto {
-  @IsString() tenantId!: string;
-  @IsString() workspaceId!: string;
-  @IsString() @MinLength(1) @MaxLength(255) name!: string;
-  @IsOptional() @IsString() visibility?: string;
-}
-
-class UpdateDocumentRequestDto {
-  @IsOptional() @IsString() @MinLength(1) @MaxLength(255) name?: string;
-  @IsOptional() @IsString() visibility?: string;
-}
-
-class PublishVersionRequestDto {
-  @IsString() fileId!: string;
-}
+import { CreateDocumentRequestDto } from '../dto/create-document.request.dto';
+import { UpdateDocumentRequestDto } from '../dto/update-document.request.dto';
+import { PublishVersionRequestDto } from '../dto/publish-version.request.dto';
 
 @Controller('documents')
 export class DocumentController {
@@ -35,7 +23,7 @@ export class DocumentController {
     private readonly getDocumentHandler: GetDocumentHandler,
     @Inject(DOCUMENT_REPOSITORY)
     private readonly documentRepository: DocumentRepository,
-  ) {}
+  ) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

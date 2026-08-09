@@ -1,19 +1,13 @@
 import { Inject } from '@nestjs/common';
 import { Result, DomainError, NotFoundError } from '@aeos/errors';
 import { DocumentRepository, DOCUMENT_REPOSITORY } from '../../../domain/repositories/document.repository';
-
-export class PublishDocumentVersionCommand {
-  constructor(
-    public readonly documentId: string,
-    public readonly fileId: string,
-  ) {}
-}
+import { PublishDocumentVersionCommand } from './publish-document-version.command';
 
 export class PublishDocumentVersionHandler {
   constructor(
     @Inject(DOCUMENT_REPOSITORY)
     private readonly documentRepository: DocumentRepository,
-  ) {}
+  ) { }
 
   async execute(command: PublishDocumentVersionCommand): Promise<Result<void, DomainError>> {
     const document = await this.documentRepository.findById(command.documentId);

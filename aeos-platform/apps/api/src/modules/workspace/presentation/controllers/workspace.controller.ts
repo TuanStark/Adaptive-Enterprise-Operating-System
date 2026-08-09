@@ -26,39 +26,10 @@ import { ValidateWorkspaceInviteHandler } from '../../application/queries/valida
 import { UpdateWorkspaceMemberProfileCommand } from '../../application/commands/update-workspace-member-profile/update-workspace-member-profile.command';
 import { UpdateWorkspaceMemberProfileHandler } from '../../application/commands/update-workspace-member-profile/update-workspace-member-profile.handler';
 import { Public } from '../../../identity/presentation/guards/public.decorator';
-import { IsString, IsEmail, MinLength, MaxLength, IsOptional } from 'class-validator';
 import { ValidateWorkspaceInviteQuery } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.query';
-
-class InviteMemberRequestDto {
-  @IsString() @IsEmail() email!: string;
-}
-
-class AcceptInviteRequestDto {
-  @IsString() token!: string;
-}
-
-class UpdateWorkspaceMemberProfileDto {
-  @IsOptional()
-  @IsString()
-  nickname?: string | null;
-
-  @IsOptional()
-  @IsString()
-  avatarUrl?: string | null;
-
-  @IsOptional()
-  @IsString()
-  title?: string | null;
-
-  @IsOptional()
-  @IsString()
-  department?: string | null;
-
-  @IsOptional()
-  @IsString()
-  statusMessage?: string | null;
-}
-
+import { InviteMemberRequestDto } from '../dto/invite-member.request.dto';
+import { AcceptInviteRequestDto } from '../dto/accept-invite.request.dto';
+import { UpdateWorkspaceMemberProfileDto } from '../dto/update-workspace-member-profile.request.dto';
 @Controller('workspaces')
 export class WorkspaceController {
   constructor(
