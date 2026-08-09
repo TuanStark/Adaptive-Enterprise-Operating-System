@@ -117,7 +117,7 @@ export function MessageList({
         return (
           <div
             key={msg.id}
-            className={`group relative flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2 ${isOwner ? "flex-row-reverse" : "flex-row"
+            className={`group relative flex gap-3 px-3 py-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors mt-2 ${isOwner ? "flex-row" : "flex-row-reverse"
               }`}
           >
             {/* Avatar */}
@@ -131,9 +131,9 @@ export function MessageList({
             </div>
 
             {/* Content */}
-            <div className={`flex-1 min-w-0 flex flex-col ${isOwner ? "items-end" : "items-start"}`}>
+            <div className={`flex-1 min-w-0 flex flex-col ${isOwner ? "items-start" : "items-end"}`}>
               {/* Sender Name & Timestamp */}
-              <div className={`flex items-baseline gap-2 mb-1 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`flex items-baseline gap-2 mb-1 ${isOwner ? "flex-row" : "flex-row-reverse"}`}>
                 <span className="font-bold text-[14px] text-gray-900 leading-none">
                   {senderDisplayName}
                 </span>
@@ -143,7 +143,7 @@ export function MessageList({
               </div>
 
               {isEditing ? (
-                <div className={`mt-1 flex items-center gap-2 ${isOwner ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`mt-1 flex items-center gap-2 ${isOwner ? "flex-row" : "flex-row-reverse"}`}>
                   <Input
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
@@ -163,11 +163,11 @@ export function MessageList({
                 </div>
               ) : (
                 <div className={`text-[14px] leading-relaxed break-words whitespace-pre-wrap ${isOwner
-                  ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tr-sm text-left inline-block max-w-[100%]"
-                  : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[100%]"
+                  ? "bg-blue-500 text-white px-3 py-2 rounded-2xl rounded-tl-sm text-left inline-block max-w-[100%]"
+                  : "bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl rounded-tr-sm text-left inline-block max-w-[100%]"
                   }`}>
                   {msg.isPinned && (
-                    <div className={`flex items-center gap-1 mb-1 border-b pb-1 mb-1 text-[11px] font-bold ${isOwner ? "text-blue-100 border-blue-400 justify-end" : "text-amber-600 border-amber-200 justify-start"}`}>
+                    <div className={`flex items-center gap-1 mb-1 border-b pb-1 mb-1 text-[11px] font-bold ${isOwner ? "text-blue-100 border-blue-400 justify-start" : "text-amber-600 border-amber-200 justify-end"}`}>
                       <Pin className="w-3 h-3" fill="currentColor" /> Pinned
                     </div>
                   )}
@@ -180,7 +180,7 @@ export function MessageList({
 
               {/* Reaction Badges */}
               {Object.keys(reactionGroups).length > 0 && (
-                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-end" : "justify-start"}`}>
+                <div className={`mt-1.5 flex flex-wrap items-center gap-1.5 ${isOwner ? "justify-start" : "justify-end"}`}>
                   {Object.entries(reactionGroups).map(([emoji, group]) => {
                     const hasReacted = group.userIds.includes(currentUserId);
                     return (
@@ -203,8 +203,8 @@ export function MessageList({
               {/* Thread Indicator */}
               {(msg.replyCount ?? 0) > 0 && (
                 <div
-                  className={`mt-1.5 flex items-center gap-2 group/thread cursor-pointer p-1.5 -ml-1.5 rounded-md transition-colors ${msg.isThreadUnread ? "bg-blue-50/60 hover:bg-blue-50" : "hover:bg-gray-100"
-                    } ${isOwner ? "justify-end flex-row-reverse -mr-1.5 ml-0" : "justify-start"}`}
+                  className={`mt-1.5 flex items-center gap-2 group/thread cursor-pointer p-1.5 rounded-md transition-colors ${msg.isThreadUnread ? "bg-blue-50/60 hover:bg-blue-50" : "hover:bg-gray-100"
+                    } ${isOwner ? "justify-start -ml-1.5 mr-0" : "justify-end flex-row-reverse -mr-1.5 ml-0"}`}
                   onClick={() => onThreadClick?.(msg)}
                 >
                   <div className={`flex items-center gap-1.5 ${msg.isThreadUnread ? "text-blue-700" : "text-emerald-600 group-hover/thread:text-emerald-700"}`}>

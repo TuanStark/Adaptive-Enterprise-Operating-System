@@ -25,6 +25,11 @@ export class WorkspacePersistenceMapper {
         workspaceId: m.workspaceId,
         userId: m.userId,
         roleId: m.roleId,
+        nickname: m.nickname,
+        avatarUrl: m.avatarUrl,
+        title: m.title,
+        department: m.department,
+        statusMessage: m.statusMessage,
         joinedAt: m.joinedAt,
       })),
     };
@@ -38,6 +43,11 @@ export class WorkspacePersistenceMapper {
         workspaceId: m.workspaceId ?? '',
         userId: m.userId ?? '',
         roleId: m.roleId,
+        nickname: m.nickname,
+        avatarUrl: m.avatarUrl,
+        title: m.title,
+        department: m.department,
+        statusMessage: m.statusMessage,
         joinedAt: m.joinedAt ?? new Date(),
       }),
     );

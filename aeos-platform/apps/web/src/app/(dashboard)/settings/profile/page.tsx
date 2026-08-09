@@ -1,21 +1,6 @@
 import { ProfileSettingsForm } from "@/features/settings/components/ProfileSettingsForm";
-import { ProfileSettings } from "@/features/settings/types";
 
-async function getProfileSettings(): Promise<ProfileSettings> {
-  return {
-    id: "user-1",
-    firstName: "Tony",
-    lastName: "Stark",
-    email: "tony@starkindustries.com",
-    avatarUrl: "https://github.com/shadcn.png",
-    bio: "Genius, billionaire, playboy, philanthropist.",
-    status: "ACTIVE",
-  };
-}
-
-export default async function ProfileSettingsPage() {
-  const settings = await getProfileSettings();
-
+export default function ProfileSettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
@@ -23,7 +8,7 @@ export default async function ProfileSettingsPage() {
         <p className="text-gray-500">Manage your personal information and preferences.</p>
       </div>
 
-      <ProfileSettingsForm initialSettings={settings} />
+      <ProfileSettingsForm />
     </div>
   );
 }

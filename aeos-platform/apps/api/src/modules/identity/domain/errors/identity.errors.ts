@@ -47,3 +47,9 @@ export class SystemTenantNotFoundError extends DomainError {
     super('SYSTEM_TENANT_NOT_FOUND', 'System tenant not found in database.', 404);
   }
 }
+
+export class UserNotFoundError extends DomainError {
+  constructor() {
+    super('USER_NOT_FOUND', 'User not found in database.', 404);
+  }
+}

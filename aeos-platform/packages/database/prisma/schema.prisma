@@ -144,6 +144,9 @@ model User {
   firstName     String?     @map("first_name") @db.VarChar(100)
   lastName      String?     @map("last_name") @db.VarChar(100)
   avatarUrl     String?     @map("avatar_url")
+  bio           String?     @db.Text
+  timezone      String?     @db.VarChar(50)
+  phone         String?     @db.VarChar(20)
   status        UserStatus?
   emailVerified Boolean?    @default(false) @map("email_verified")
   lastLoginAt   DateTime?   @map("last_login_at")
@@ -334,9 +337,14 @@ model WorkspaceMember {
   id          String    @id @default(uuid()) @db.Uuid
   tenantId    String?   @map("tenant_id") @db.Uuid
   workspaceId String?   @map("workspace_id") @db.Uuid
-  userId      String?   @map("user_id") @db.Uuid
-  roleId      String?   @map("role_id") @db.Uuid
-  joinedAt    DateTime? @map("joined_at")
+  userId        String?   @map("user_id") @db.Uuid
+  roleId        String?   @map("role_id") @db.Uuid
+  nickname      String?   @db.VarChar(100)
+  avatarUrl     String?   @map("avatar_url")
+  title         String?   @db.VarChar(100)
+  department    String?   @db.VarChar(100)
+  statusMessage String?   @map("status_message") @db.VarChar(255)
+  joinedAt      DateTime? @map("joined_at")
 
   tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)

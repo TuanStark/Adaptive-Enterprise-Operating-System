@@ -21,10 +21,12 @@ import { AuthController } from './presentation/controllers/auth.controller';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { IdentitySeeder } from './infrastructure/seeders/identity.seeder';
 import { GetSystemTenantHandler } from './application/queries/get-system-tenant/get-system-tenant.handler';
+import { UpdateUserProfileHandler } from './application/commands/update-user-profile/update-user-profile.handler';
+import { UserController } from './presentation/controllers/user.controller';
 
 @Module({
   imports: [CqrsModule],
-  controllers: [AuthController],
+  controllers: [AuthController, UserController],
   providers: [
     PrismaService,
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
@@ -40,6 +42,7 @@ import { GetSystemTenantHandler } from './application/queries/get-system-tenant/
     SearchUsersInternalHandler,
     GetUserAnalyticsInternalHandler,
     GetSystemTenantHandler,
+    UpdateUserProfileHandler,
     IdentitySeeder,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],

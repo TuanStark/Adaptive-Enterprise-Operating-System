@@ -11,6 +11,10 @@ export interface WorkspaceMemberDto {
   email: string;
   role: string;
   avatarUrl: string | null;
+  nickname: string | null;
+  title: string | null;
+  department: string | null;
+  statusMessage: string | null;
   joinedAt: string | null;
 }
 
@@ -74,13 +78,21 @@ export class GetWorkspaceMembersHandler {
       const lastName = user?.lastName ?? '';
       const displayName = [firstName, lastName].filter(Boolean).join(' ') || user?.email || 'Unknown';
 
+      // "Effective Profile" concept: fallback to User profile if WorkspaceMember profile is null
+      const effectiveAvatarUrl = m.avatarUrl ?? user?.avatarUrl ?? null;
+      const effectiveDisplayName = m.nickname ?? displayName;
+
       return {
         id: m.id,
         userId: m.userId,
-        name: displayName,
+        name: effectiveDisplayName,
         email: user?.email ?? '',
         role: m.role,
-        avatarUrl: user?.avatarUrl ?? null,
+        avatarUrl: effectiveAvatarUrl,
+        nickname: m.nickname,
+        title: m.title,
+        department: m.department,
+        statusMessage: m.statusMessage,
         joinedAt: m.joinedAt,
       };
     });

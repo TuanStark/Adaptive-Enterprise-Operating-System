@@ -26,6 +26,9 @@ export interface UserProps {
   firstName: string | null;
   lastName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
+  timezone: string | null;
+  phone: string | null;
   status: UserStatus;
   emailVerified: boolean;
   lastLoginAt: Date | null;
@@ -41,6 +44,9 @@ export class User extends AggregateRoot<string> {
   private _firstName: string | null;
   private _lastName: string | null;
   private _avatarUrl: string | null;
+  private _bio: string | null;
+  private _timezone: string | null;
+  private _phone: string | null;
   private _status: UserStatus;
   private _emailVerified: boolean;
   private _lastLoginAt: Date | null;
@@ -53,6 +59,9 @@ export class User extends AggregateRoot<string> {
     firstName: string | null,
     lastName: string | null,
     avatarUrl: string | null,
+    bio: string | null,
+    timezone: string | null,
+    phone: string | null,
     status: UserStatus,
     emailVerified: boolean,
     lastLoginAt: Date | null,
@@ -67,6 +76,9 @@ export class User extends AggregateRoot<string> {
     this._firstName = firstName;
     this._lastName = lastName;
     this._avatarUrl = avatarUrl;
+    this._bio = bio;
+    this._timezone = timezone;
+    this._phone = phone;
     this._status = status;
     this._emailVerified = emailVerified;
     this._lastLoginAt = lastLoginAt;
@@ -89,6 +101,15 @@ export class User extends AggregateRoot<string> {
   }
   get avatarUrl(): string | null {
     return this._avatarUrl;
+  }
+  get bio(): string | null {
+    return this._bio;
+  }
+  get timezone(): string | null {
+    return this._timezone;
+  }
+  get phone(): string | null {
+    return this._phone;
   }
   get status(): UserStatus {
     return this._status;
@@ -116,6 +137,9 @@ export class User extends AggregateRoot<string> {
       firstName,
       lastName,
       null,
+      null,
+      null,
+      null,
       UserStatus.PENDING,
       false,
       null,
@@ -136,6 +160,9 @@ export class User extends AggregateRoot<string> {
       props.firstName,
       props.lastName,
       props.avatarUrl,
+      props.bio,
+      props.timezone,
+      props.phone,
       props.status,
       props.emailVerified,
       props.lastLoginAt,
@@ -182,10 +209,20 @@ export class User extends AggregateRoot<string> {
     return Result.ok(undefined);
   }
 
-  updateProfile(firstName: string | null, lastName: string | null, avatarUrl: string | null): void {
+  updateProfile(
+    firstName: string | null, 
+    lastName: string | null, 
+    avatarUrl: string | null,
+    bio: string | null = null,
+    timezone: string | null = null,
+    phone: string | null = null
+  ): void {
     this._firstName = firstName;
     this._lastName = lastName;
     this._avatarUrl = avatarUrl;
+    this._bio = bio;
+    this._timezone = timezone;
+    this._phone = phone;
     this.touch();
   }
 }

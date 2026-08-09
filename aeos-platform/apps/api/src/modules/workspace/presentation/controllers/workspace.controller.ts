@@ -18,10 +18,16 @@ import { GetUserWorkspacesQuery } from '../../application/queries/get-user-works
 import { GetUserWorkspacesHandler } from '../../application/queries/get-user-workspaces/get-user-workspaces.handler';
 import { GetWorkspaceMembersQuery } from '../../application/queries/get-workspace-members/get-workspace-members.query';
 import { GetWorkspaceMembersHandler } from '../../application/queries/get-workspace-members/get-workspace-members.handler';
-import { ValidateWorkspaceInviteQuery } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.query';
+import { GetWorkspaceMemberQuery } from '../../application/queries/get-workspace-member/get-workspace-member.query';
+import { GetWorkspaceMemberHandler } from '../../application/queries/get-workspace-member/get-workspace-member.handler';
+import { GetWorkspaceQuery } from '../../application/queries/get-workspace/get-workspace.query';
+import { GetWorkspaceHandler } from '../../application/queries/get-workspace/get-workspace.handler';
 import { ValidateWorkspaceInviteHandler } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.handler';
+import { UpdateWorkspaceMemberProfileCommand } from '../../application/commands/update-workspace-member-profile/update-workspace-member-profile.command';
+import { UpdateWorkspaceMemberProfileHandler } from '../../application/commands/update-workspace-member-profile/update-workspace-member-profile.handler';
 import { Public } from '../../../identity/presentation/guards/public.decorator';
 import { IsString, IsEmail, MinLength, MaxLength, IsOptional } from 'class-validator';
+import { ValidateWorkspaceInviteQuery } from '../../application/queries/validate-workspace-invite/validate-workspace-invite.query';
 
 class InviteMemberRequestDto {
   @IsString() @IsEmail() email!: string;
@@ -29,6 +35,14 @@ class InviteMemberRequestDto {
 
 class AcceptInviteRequestDto {
   @IsString() token!: string;
+}
+
+class UpdateWorkspaceMemberProfileDto {
+  nickname?: string | null;
+  avatarUrl?: string | null;
+  title?: string | null;
+  department?: string | null;
+  statusMessage?: string | null;
 }
 
 @Controller('workspaces')
@@ -39,10 +53,13 @@ export class WorkspaceController {
     private readonly updateHandler: UpdateWorkspaceHandler,
     private readonly getUserWorkspacesHandler: GetUserWorkspacesHandler,
     private readonly getWorkspaceMembersHandler: GetWorkspaceMembersHandler,
+    private readonly getWorkspaceMemberHandler: GetWorkspaceMemberHandler,
+    private readonly getWorkspaceHandler: GetWorkspaceHandler,
     private readonly inviteMemberHandler: InviteMemberHandler,
     private readonly acceptWorkspaceInviteHandler: AcceptWorkspaceInviteHandler,
     private readonly validateWorkspaceInviteHandler: ValidateWorkspaceInviteHandler,
     private readonly removeWorkspaceMemberHandler: RemoveWorkspaceMemberHandler,
+    private readonly updateWorkspaceMemberProfileHandler: UpdateWorkspaceMemberProfileHandler,
   ) { }
 
   @Get('me')
@@ -71,6 +88,16 @@ export class WorkspaceController {
     return result.value;
   }
 
+  @Get(':id')
+  async getWorkspace(@Param('id') id: string) {
+    const query = new GetWorkspaceQuery(id);
+    const result = await this.getWorkspaceHandler.execute(query);
+    if (result.isFail) {
+      throw result.error as DomainError;
+    }
+    return result.value;
+  }
+
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: { name?: string; description?: string; domain?: string }) {
     const command = new UpdateWorkspaceCommand(id, dto.name, dto.description, dto.domain);
@@ -90,6 +117,17 @@ export class WorkspaceController {
       throw result.error as DomainError;
     }
     return { message: 'Workspace archived successfully.' };
+  }
+
+  @Get(':id/members/me')
+  async getMyMemberProfile(@Param('id') workspaceId: string, @Req() req: Request) {
+    const user = (req as any).user;
+    const query = new GetWorkspaceMemberQuery(workspaceId, user.userId);
+    const result = await this.getWorkspaceMemberHandler.execute(query);
+    if (result.isFail) {
+      throw result.error as DomainError;
+    }
+    return result.value;
   }
 
   @Get(':id/members')
@@ -158,5 +196,27 @@ export class WorkspaceController {
     const result = await this.removeWorkspaceMemberHandler.execute(command);
     if (result.isFail) throw result.error as DomainError;
     return { message: 'Member removed successfully' };
+  }
+
+  @Patch(':id/members/profile')
+  @HttpCode(HttpStatus.OK)
+  async updateMemberProfile(
+    @Param('id') workspaceId: string,
+    @Body() dto: UpdateWorkspaceMemberProfileDto,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    const command = new UpdateWorkspaceMemberProfileCommand(
+      workspaceId,
+      user.userId,
+      dto.nickname ?? null,
+      dto.avatarUrl ?? null,
+      dto.title ?? null,
+      dto.department ?? null,
+      dto.statusMessage ?? null,
+    );
+    const result = await this.updateWorkspaceMemberProfileHandler.execute(command);
+    if (result.isFail) throw result.error;
+    return { message: 'Member profile updated successfully' };
   }
 }

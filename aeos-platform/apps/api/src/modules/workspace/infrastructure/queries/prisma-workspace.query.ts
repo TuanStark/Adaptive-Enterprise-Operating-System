@@ -60,6 +60,11 @@ export class PrismaWorkspaceQuery implements WorkspaceQuery {
           id: m.id,
           userId: m.userId!, // We assume userId is not null for members here
           role: m.role?.name ?? 'MEMBER',
+          nickname: m.nickname,
+          avatarUrl: m.avatarUrl,
+          title: m.title,
+          department: m.department,
+          statusMessage: m.statusMessage,
           joinedAt: m.joinedAt?.toISOString() ?? null,
         };
       }),

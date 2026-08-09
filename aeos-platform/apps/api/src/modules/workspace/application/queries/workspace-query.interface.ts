@@ -1,10 +1,14 @@
 import { UserWorkspaceDto } from './get-user-workspaces/get-user-workspaces.handler';
-import { PaginatedMembersResult } from './get-workspace-members/get-workspace-members.handler';
 
 export interface RawWorkspaceMemberDto {
   id: string;
   userId: string;
   role: string;
+  nickname: string | null;
+  avatarUrl: string | null;
+  title: string | null;
+  department: string | null;
+  statusMessage: string | null;
   joinedAt: string | null;
 }
 

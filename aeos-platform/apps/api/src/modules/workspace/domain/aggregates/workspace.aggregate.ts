@@ -212,6 +212,11 @@ export class Workspace extends AggregateRoot<string> {
       workspaceId: this.id,
       userId,
       roleId,
+      nickname: null,
+      avatarUrl: null,
+      title: null,
+      department: null,
+      statusMessage: null,
       joinedAt: new Date(),
     });
     this._members.push(member);
@@ -237,6 +242,23 @@ export class Workspace extends AggregateRoot<string> {
       return Result.fail(new WorkspaceMemberNotFoundError(userId));
     }
     member.assignRole(roleId);
+    this.touch();
+    return Result.ok(undefined);
+  }
+
+  updateMemberProfile(
+    userId: string,
+    nickname: string | null,
+    avatarUrl: string | null,
+    title: string | null,
+    department: string | null,
+    statusMessage: string | null,
+  ): Result<void, WorkspaceMemberNotFoundError> {
+    const member = this._members.find((m) => m.userId === userId);
+    if (!member) {
+      return Result.fail(new WorkspaceMemberNotFoundError(userId));
+    }
+    member.updateProfile(nickname, avatarUrl, title, department, statusMessage);
     this.touch();
     return Result.ok(undefined);
   }

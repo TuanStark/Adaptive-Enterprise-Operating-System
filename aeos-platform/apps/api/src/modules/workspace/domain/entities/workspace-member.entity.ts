@@ -6,6 +6,11 @@ export interface WorkspaceMemberProps {
   workspaceId: string;
   userId: string;
   roleId: string | null;
+  nickname: string | null;
+  avatarUrl: string | null;
+  title: string | null;
+  department: string | null;
+  statusMessage: string | null;
   joinedAt: Date;
 }
 
@@ -14,6 +19,11 @@ export class WorkspaceMember extends Entity<string> {
   private _workspaceId: string;
   private _userId: string;
   private _roleId: string | null;
+  private _nickname: string | null;
+  private _avatarUrl: string | null;
+  private _title: string | null;
+  private _department: string | null;
+  private _statusMessage: string | null;
   private _joinedAt: Date;
 
   private constructor(props: WorkspaceMemberProps) {
@@ -22,6 +32,11 @@ export class WorkspaceMember extends Entity<string> {
     this._workspaceId = props.workspaceId;
     this._userId = props.userId;
     this._roleId = props.roleId;
+    this._nickname = props.nickname;
+    this._avatarUrl = props.avatarUrl;
+    this._title = props.title;
+    this._department = props.department;
+    this._statusMessage = props.statusMessage;
     this._joinedAt = props.joinedAt;
   }
 
@@ -37,8 +52,37 @@ export class WorkspaceMember extends Entity<string> {
   get roleId(): string | null {
     return this._roleId;
   }
+  get nickname(): string | null {
+    return this._nickname;
+  }
+  get avatarUrl(): string | null {
+    return this._avatarUrl;
+  }
+  get title(): string | null {
+    return this._title;
+  }
+  get department(): string | null {
+    return this._department;
+  }
+  get statusMessage(): string | null {
+    return this._statusMessage;
+  }
   get joinedAt(): Date {
     return this._joinedAt;
+  }
+
+  updateProfile(
+    nickname: string | null,
+    avatarUrl: string | null,
+    title: string | null,
+    department: string | null,
+    statusMessage: string | null
+  ): void {
+    this._nickname = nickname;
+    this._avatarUrl = avatarUrl;
+    this._title = title;
+    this._department = department;
+    this._statusMessage = statusMessage;
   }
 
   assignRole(roleId: string): void {
