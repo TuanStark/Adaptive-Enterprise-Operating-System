@@ -15,7 +15,7 @@ interface MessageListProps {
   channelId: string;
   onMessageEdited?: (msgId: string, newContent: string) => void;
   onMessageDeleted?: (msgId: string) => void;
-  onReactionToggled?: (msgId: string, reactions: MessageReaction[]) => void;
+  onReactionToggled?: (msgId: string, emoji: string, isAdding: boolean) => void;
 }
 
 const EMOJI_OPTIONS = ["👍", "❤️", "🎉", "😂", "🚀", "👀"];
@@ -42,48 +42,20 @@ export function MessageList({
     setEditContent("");
   };
 
-  const handleSaveEdit = async (msgId: string) => {
+  const handleSaveEdit = (msgId: string) => {
     if (!editContent.trim()) return;
-    try {
-      await clientApi.patch(`/channels/${channelId}/messages/${msgId}`, {
-        content: editContent.trim(),
-      });
-      onMessageEdited?.(msgId, editContent.trim());
-      setEditingMsgId(null);
-    } catch (err) {
-      console.error("Failed to edit message:", err);
-    }
+    onMessageEdited?.(msgId, editContent.trim());
+    setEditingMsgId(null);
   };
 
-  const handleDelete = async (msgId: string) => {
-    try {
-      await clientApi.delete(`/channels/${channelId}/messages/${msgId}`);
-      onMessageDeleted?.(msgId);
-    } catch (err) {
-      console.error("Failed to delete message:", err);
-    }
+  const handleDelete = (msgId: string) => {
+    onMessageDeleted?.(msgId);
   };
 
-  const handleToggleReaction = async (msg: Message, emoji: string) => {
+  const handleToggleReaction = (msg: Message, emoji: string) => {
     const existingReactions = msg.reactions || [];
     const hasReacted = existingReactions.some((r) => r.userId === currentUserId && r.emoji === emoji);
-
-    // Optimistic UI update!
-    const newReactions = hasReacted
-      ? existingReactions.filter((r) => !(r.userId === currentUserId && r.emoji === emoji))
-      : [...existingReactions, { userId: currentUserId, emoji }];
-
-    onReactionToggled?.(msg.id, newReactions);
-
-    try {
-      if (hasReacted) {
-        await clientApi.delete(`/channels/${channelId}/messages/${msg.id}/reactions/${encodeURIComponent(emoji)}`);
-      } else {
-        await clientApi.post(`/channels/${channelId}/messages/${msg.id}/reactions`, { emoji });
-      }
-    } catch (err) {
-      console.error("Failed to toggle reaction:", err);
-    }
+    onReactionToggled?.(msg.id, emoji, !hasReacted);
   };
 
   const formatTime = (dateStr: string) => {

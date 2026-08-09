@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Message, MessageReaction } from "../types";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3000/chat";
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3000";
+const WS_URL = WS_BASE.endsWith("/chat") ? WS_BASE : `${WS_BASE}/chat`;
 
 interface UseChatSocketOptions {
   channelId: string;
@@ -54,6 +55,12 @@ export function useChatSocket({
       socket.emit("channel:join", { channelId });
     });
 
+    if (socket.connected) {
+      setIsConnected(true);
+      console.log("[useChatSocket] Socket already connected. Socket ID:", socket.id);
+      socket.emit("channel:join", { channelId });
+    }
+
     socket.on("disconnect", (reason) => {
       setIsConnected(false);
       console.warn("[useChatSocket] Disconnected:", reason);
@@ -97,10 +104,11 @@ export function useChatSocket({
   }, [channelId, activeUserId, session?.accessToken]);
 
   const sendMessage = useCallback(
-    (content: string, parentMessageId?: string) => {
+    (content: string, parentMessageId?: string, cb?: (res: any) => void) => {
       if (!socketRef.current || !socketRef.current.connected) {
         console.warn("[useChatSocket] Cannot send message: Socket is not connected");
         toast.error("Connecting to chat server... Please try again in a moment.");
+        if (cb) cb({ status: 'error', message: 'Not connected' });
         return;
       }
 
@@ -109,7 +117,29 @@ export function useChatSocket({
         channelId,
         content,
         parentMessageId,
-      });
+      }, cb);
+    },
+    [channelId],
+  );
+
+  const editMessage = useCallback(
+    (messageId: string, content: string, cb?: (res: any) => void) => {
+      socketRef.current?.emit("message:edit", { channelId, messageId, content }, cb);
+    },
+    [channelId],
+  );
+
+  const deleteMessage = useCallback(
+    (messageId: string, cb?: (res: any) => void) => {
+      socketRef.current?.emit("message:delete", { channelId, messageId }, cb);
+    },
+    [channelId],
+  );
+
+  const toggleReaction = useCallback(
+    (messageId: string, emoji: string, isAdding: boolean, cb?: (res: any) => void) => {
+      const event = isAdding ? "reaction:add" : "reaction:remove";
+      socketRef.current?.emit(event, { channelId, messageId, emoji }, cb);
     },
     [channelId],
   );
@@ -128,5 +158,5 @@ export function useChatSocket({
     [channelId, activeUserId],
   );
 
-  return { sendMessage, startTyping, stopTyping, isConnected };
+  return { sendMessage, editMessage, deleteMessage, toggleReaction, startTyping, stopTyping, isConnected };
 }

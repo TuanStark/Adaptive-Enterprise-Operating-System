@@ -11,6 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { Inject } from '@nestjs/common';
 import { SendMessageCommand } from '../../application/commands/send-message/send-message.command';
 import { SendMessageHandler } from '../../application/commands/send-message/send-message.handler';
+import { ReactToMessageCommand, ReactToMessageHandler } from '../../application/commands/react-to-message/react-to-message.handler';
+import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
 import { JWT_TOKEN_SERVICE, JwtTokenService } from '../../../identity/infrastructure/auth/jwt-token.service';
 
 interface TypingPayload {
@@ -34,6 +36,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly sendMessageHandler: SendMessageHandler,
+    private readonly reactHandler: ReactToMessageHandler,
+    @Inject(MESSAGE_REPOSITORY)
+    private readonly messageRepository: MessageRepository,
     @Inject(JWT_TOKEN_SERVICE)
     private readonly jwtTokenService: JwtTokenService,
   ) {}
@@ -105,11 +110,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = this.connectedUsers.get(client.id)?.userId || (client.handshake.query?.userId as string);
     if (!userId) {
       console.warn(`[ChatGateway] Message reject: Not authenticated for socket ${client.id}`);
-      return { event: 'error', data: { message: 'Not authenticated' } };
+      return { status: 'error', message: 'Not authenticated' };
     }
 
     if (!data?.channelId || !data?.content) {
-      return { event: 'error', data: { message: 'Channel ID and content are required' } };
+      return { status: 'error', message: 'Channel ID and content are required' };
     }
 
     const command = new SendMessageCommand(
@@ -122,7 +127,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const result = await this.sendMessageHandler.execute(command);
     if (result.isFail) {
       console.error(`[ChatGateway] Failed to send message: ${result.error}`);
-      return { event: 'error', data: { message: String(result.error) } };
+      return { status: 'error', message: String(result.error) };
     }
 
     const messagePayload = {
@@ -141,9 +146,96 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     console.log(`[ChatGateway] Broadcasting message ${result.value} to channel:${data.channelId}`);
     this.server.to(`channel:${data.channelId}`).emit('message:received', messagePayload);
-    client.emit('message:received', messagePayload);
 
-    return { event: 'message:sent', data: { id: result.value } };
+    return { status: 'success', data: { id: result.value } };
+  }
+
+  @SubscribeMessage('message:edit')
+  async handleEditMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string; content: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (!message) return { status: 'error', message: 'Message not found' };
+
+    const result = message.edit(data.content);
+    if (result.isFail) return { status: 'error', message: String(result.error) };
+
+    await this.messageRepository.save(message);
+
+    const editedAt = new Date().toISOString();
+    this.broadcastMessageEdited(data.channelId, data.messageId, data.content, editedAt);
+
+    return { status: 'success', data: { id: data.messageId, editedAt } };
+  }
+
+  @SubscribeMessage('message:delete')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (!message) return { status: 'error', message: 'Message not found' };
+
+    const result = message.softDelete();
+    if (result.isFail) return { status: 'error', message: String(result.error) };
+
+    await this.messageRepository.save(message);
+    this.broadcastMessageDeleted(data.channelId, data.messageId);
+
+    return { status: 'success', data: { id: data.messageId } };
+  }
+
+  @SubscribeMessage('reaction:add')
+  async handleAddReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string; emoji: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+
+    const result = await this.reactHandler.execute(
+      new ReactToMessageCommand(data.messageId, userId, data.emoji)
+    );
+    if (result.isFail) return { status: 'error', message: String(result.error) };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (message) {
+      this.broadcastReactionUpdated(
+        data.channelId,
+        data.messageId,
+        message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+      );
+    }
+    return { status: 'success' };
+  }
+
+  @SubscribeMessage('reaction:remove')
+  async handleRemoveReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string; messageId: string; emoji: string },
+  ) {
+    const userId = this.connectedUsers.get(client.id)?.userId;
+    if (!userId) return { status: 'error', message: 'Not authenticated' };
+
+    const message = await this.messageRepository.findById(data.messageId);
+    if (!message) return { status: 'error', message: 'Message not found' };
+
+    message.removeReaction(userId, data.emoji);
+    await this.messageRepository.save(message);
+
+    this.broadcastReactionUpdated(
+      data.channelId,
+      data.messageId,
+      message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+    );
+    return { status: 'success' };
   }
 
   @SubscribeMessage('typing:start')

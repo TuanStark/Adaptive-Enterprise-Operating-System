@@ -4,10 +4,7 @@ import { DomainError } from '@aeos/errors';
 import { IsString, IsOptional, MaxLength, MinLength, IsEnum } from 'class-validator';
 import { CreateChannelCommand } from '../../application/commands/create-channel/create-channel.command';
 import { CreateChannelHandler } from '../../application/commands/create-channel/create-channel.handler';
-import { SendMessageCommand } from '../../application/commands/send-message/send-message.command';
-import { SendMessageHandler } from '../../application/commands/send-message/send-message.handler';
 import { JoinChannelCommand, JoinChannelHandler } from '../../application/commands/join-channel/join-channel.handler';
-import { ReactToMessageCommand, ReactToMessageHandler } from '../../application/commands/react-to-message/react-to-message.handler';
 import { ChannelRepository, CHANNEL_REPOSITORY } from '../../domain/repositories/channel.repository';
 import { MessageRepository, MESSAGE_REPOSITORY } from '../../domain/repositories/message.repository';
 import { ChatGateway } from '../gateways/chat.gateway';
@@ -28,17 +25,8 @@ class UpdateChannelRequestDto {
   @IsOptional() @IsString() @MaxLength(250) description?: string;
 }
 
-class SendMessageRequestDto {
-  @IsString() @MinLength(1) content!: string;
-  @IsOptional() @IsString() parentMessageId?: string;
-}
-
 class AddMemberRequestDto {
   @IsString() userId!: string;
-}
-
-class ReactRequestDto {
-  @IsString() emoji!: string;
 }
 
 import { PrismaService } from '@aeos/database';
@@ -50,9 +38,7 @@ export class ChannelController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly createChannelHandler: CreateChannelHandler,
-    private readonly sendMessageHandler: SendMessageHandler,
     private readonly joinChannelHandler: JoinChannelHandler,
-    private readonly reactHandler: ReactToMessageHandler,
     private readonly chatGateway: ChatGateway,
     @Inject(CHANNEL_REPOSITORY)
     private readonly channelRepository: ChannelRepository,
@@ -193,103 +179,8 @@ export class ChannelController {
     };
   }
 
-  @Post(':id/messages')
-  @HttpCode(HttpStatus.CREATED)
-  async sendMessage(@Param('id') channelId: string, @Body() dto: SendMessageRequestDto, @Req() req: Request) {
-    const user = (req as any).user;
-    const command = new SendMessageCommand(
-      channelId, user.userId, dto.content, dto.parentMessageId ?? null,
-    );
-    const result = await this.sendMessageHandler.execute(command);
-    if (result.isFail) throw result.error as DomainError;
-    return { id: result.value, message: 'Message sent.' };
-  }
-
-  @Patch(':channelId/messages/:msgId')
-  async editMessage(
-    @Param('channelId') channelId: string,
-    @Param('msgId') msgId: string,
-    @Body() dto: SendMessageRequestDto,
-  ) {
-    const message = await this.messageRepository.findById(msgId);
-    if (!message) throw new Error('Message not found');
-    const result = message.edit(dto.content);
-    if (result.isFail) throw result.error as DomainError;
-    await this.messageRepository.save(message);
-
-    this.chatGateway.broadcastMessageEdited(
-      channelId,
-      msgId,
-      dto.content,
-      new Date().toISOString(),
-    );
-
-    return { message: 'Message edited.' };
-  }
-
-  @Delete(':channelId/messages/:msgId')
-  async deleteMessage(
-    @Param('channelId') channelId: string,
-    @Param('msgId') msgId: string,
-  ) {
-    const message = await this.messageRepository.findById(msgId);
-    if (!message) throw new Error('Message not found');
-    const result = message.softDelete();
-    if (result.isFail) throw result.error as DomainError;
-    await this.messageRepository.save(message);
-
-    this.chatGateway.broadcastMessageDeleted(channelId, msgId);
-
-    return { message: 'Message deleted.' };
-  }
-
-  // ── Reactions ──
-
-  @Post(':channelId/messages/:msgId/reactions')
-  @HttpCode(HttpStatus.CREATED)
-  async addReaction(
-    @Param('channelId') channelId: string,
-    @Param('msgId') msgId: string,
-    @Body() dto: ReactRequestDto,
-    @Req() req: Request,
-  ) {
-    const user = (req as any).user;
-    const result = await this.reactHandler.execute(new ReactToMessageCommand(msgId, user.userId, dto.emoji));
-    if (result.isFail) throw result.error as DomainError;
-
-    const message = await this.messageRepository.findById(msgId);
-    if (message) {
-      this.chatGateway.broadcastReactionUpdated(
-        channelId,
-        msgId,
-        message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
-      );
-    }
-
-    return { message: 'Reaction added.' };
-  }
-
-  @Delete(':channelId/messages/:msgId/reactions/:emoji')
-  async removeReaction(
-    @Param('channelId') channelId: string,
-    @Param('msgId') msgId: string,
-    @Param('emoji') emoji: string,
-    @Req() req: Request,
-  ) {
-    const user = (req as any).user;
-    const message = await this.messageRepository.findById(msgId);
-    if (!message) throw new Error('Message not found');
-    message.removeReaction(user.userId, emoji);
-    await this.messageRepository.save(message);
-
-    this.chatGateway.broadcastReactionUpdated(
-      channelId,
-      msgId,
-      message.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
-    );
-
-    return { message: 'Reaction removed.' };
-  }
+  // Note: Mutation endpoints for messages (send, edit, delete, react)
+  // have been moved to ChatGateway (WebSocket) for real-time performance.
 
   // ── Threads ──
 

@@ -98,7 +98,7 @@ export function ChatArea({
     []
   );
 
-  const { sendMessage, startTyping, stopTyping, isConnected } = useChatSocket({
+  const { sendMessage, editMessage, deleteMessage, toggleReaction, startTyping, stopTyping, isConnected } = useChatSocket({
     channelId,
     userId: currentUserId,
     onMessageReceived: handleMessageReceived,
@@ -109,7 +109,7 @@ export function ChatArea({
   });
 
   const handleSendMessage = useCallback(
-    async (content: string) => {
+    (content: string) => {
       if (!content.trim() || !channelId) return;
 
       // Optimistic message object for instant UI feedback
@@ -130,22 +130,17 @@ export function ChatArea({
 
       setMessages((prev) => [...prev, tempMessage]);
 
-      // 1. Emit via WebSocket
-      sendMessage(content.trim());
-
-      // 2. HTTP POST fallback for 100% guaranteed DB persistence
-      try {
-        const res: any = await clientApi.post<{ id: string }>(`/channels/${channelId}/messages`, {
-          content: content.trim(),
-        });
-        if (res?.id) {
+      // Emit via WebSocket with ack callback
+      sendMessage(content.trim(), undefined, (res: any) => {
+        if (res?.status === 'success' && res.data?.id) {
           setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? { ...m, id: res.id } : m))
+            prev.map((m) => (m.id === tempId ? { ...m, id: res.data.id } : m))
           );
+        } else {
+          // Revert optimistic if failed
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
         }
-      } catch (err) {
-        console.error("[ChatArea] HTTP send message error:", err);
-      }
+      });
     },
     [channelId, currentUserId, sendMessage]
   );
@@ -172,13 +167,29 @@ export function ChatArea({
           users={users}
           currentUserId={currentUserId}
           channelId={channelId}
-          onMessageEdited={(id, content) =>
-            handleMessageEdited({ id, content, isEdited: true, editedAt: new Date().toISOString() })
-          }
-          onMessageDeleted={(id) => handleMessageDeleted({ id })}
-          onReactionToggled={(messageId, reactions) =>
-            handleReactionUpdated({ messageId, reactions })
-          }
+          onMessageEdited={(id, content) => {
+            handleMessageEdited({ id, content, isEdited: true, editedAt: new Date().toISOString() });
+            editMessage(id, content);
+          }}
+          onMessageDeleted={(id) => {
+            handleMessageDeleted({ id });
+            deleteMessage(id);
+          }}
+          onReactionToggled={(messageId, emoji, isAdding) => {
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id === messageId) {
+                  const existing = m.reactions || [];
+                  const newReactions = isAdding
+                    ? [...existing, { userId: currentUserId, emoji }]
+                    : existing.filter((r) => !(r.userId === currentUserId && r.emoji === emoji));
+                  return { ...m, reactions: newReactions };
+                }
+                return m;
+              })
+            );
+            toggleReaction(messageId, emoji, isAdding);
+          }}
         />
       )}
 
