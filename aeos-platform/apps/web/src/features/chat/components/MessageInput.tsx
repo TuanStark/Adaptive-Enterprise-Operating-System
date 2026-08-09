@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useId } from "react";
+import { useState, useRef, useId } from "react";
 import { Bold, Italic, Link2, List, Code, Paperclip, Smile, Send, X, FileText, Loader2, Image as ImageIcon } from "lucide-react";
 import { uploadFileDirectly } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Link from '@tiptap/extension-link';
-import Placeholder from '@tiptap/extension-placeholder';
+import { EditorContent } from '@tiptap/react';
+import { useMessageEditor } from "../hooks/useMessageEditor";
 
 const EMOJI_LIST = ["👍", "❤️", "😂", "🔥", "🎉", "😢", "👀", "🚀", "🙌", "✨"];
 
@@ -22,60 +20,19 @@ interface MessageInputProps {
 export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, channelName = "general" }: MessageInputProps) {
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isEmpty, setIsEmpty] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submitButtonId = `send-btn-${useId()}`;
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-      }),
-      Link.configure({
-        openOnClick: false,
-      }),
-      Placeholder.configure({
-        placeholder: `Message #${channelName}`,
-      }),
-    ],
-    content: "",
-    onUpdate: ({ editor }) => {
-      setIsEmpty(editor.isEmpty);
-      onTypingStart?.();
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {
-        onTypingStop?.();
-      }, 2000);
-    },
-    editorProps: {
-      attributes: {
-        class: 'w-full h-full min-h-[40px] outline-none text-[15px] bg-transparent prose prose-sm max-w-none prose-p:my-0 prose-ul:my-0 prose-li:my-0 prose-a:text-blue-600 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded prose-code:before:content-none prose-code:after:content-none'
-      },
-      handleKeyDown: (view, event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault();
-          document.getElementById(submitButtonId)?.click();
-          return true;
-        }
-        return false;
-      }
-    }
+  const { editor, isEmpty, setIsEmpty } = useMessageEditor({
+    channelName,
+    submitButtonId,
+    onTypingStart,
+    onTypingStop,
   });
-
-  // Re-run placeholder configuration when channelName changes
-  useEffect(() => {
-    if (editor) {
-      editor.extensionManager.extensions.filter(
-        extension => extension.name === 'placeholder'
-      )[0].options['placeholder'] = `Message #${channelName}`;
-      editor.view.dispatch(editor.state.tr);
-    }
-  }, [channelName, editor]);
 
   const handleSend = async () => {
     if (!editor) return;
-    
+
     const text = editor.getText().trim();
     if (!text && !attachedFile) return;
     if (isUploading) return;
@@ -128,7 +85,8 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
 
   return (
     <div className="px-4 pb-6 pt-2 shrink-0 bg-white">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .tiptap p.is-editor-empty:first-child::before {
           color: #9ca3af;
           content: attr(data-placeholder);
@@ -139,22 +97,22 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
       `}} />
       <div className="border border-gray-300 rounded-lg shadow-sm focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-400 transition-all bg-white overflow-hidden">
         <div className="flex items-center gap-1 bg-gray-50/80 px-2 py-1.5 border-b border-gray-200">
-          <button 
-            onClick={() => editor?.chain().focus().toggleBold().run()} 
-            className={`p-1 rounded transition-colors ${editor?.isActive('bold') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`} 
+          <button
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            className={`p-1 rounded transition-colors ${editor?.isActive('bold') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`}
             title="Bold"
           >
             <Bold className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor?.chain().focus().toggleItalic().run()} 
-            className={`p-1 rounded transition-colors ${editor?.isActive('italic') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`} 
+          <button
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            className={`p-1 rounded transition-colors ${editor?.isActive('italic') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`}
             title="Italic"
           >
             <Italic className="w-4 h-4" />
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button 
+          <button
             onClick={() => {
               const url = window.prompt('Enter URL:');
               if (url) {
@@ -162,22 +120,22 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
               } else if (url === '') {
                 editor?.chain().focus().unsetLink().run();
               }
-            }} 
-            className={`p-1 rounded transition-colors ${editor?.isActive('link') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`} 
+            }}
+            className={`p-1 rounded transition-colors ${editor?.isActive('link') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`}
             title="Link"
           >
             <Link2 className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor?.chain().focus().toggleBulletList().run()} 
-            className={`p-1 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`} 
+          <button
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            className={`p-1 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`}
             title="List"
           >
             <List className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => editor?.chain().focus().toggleCode().run()} 
-            className={`p-1 rounded transition-colors ${editor?.isActive('code') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`} 
+          <button
+            onClick={() => editor?.chain().focus().toggleCode().run()}
+            className={`p-1 rounded transition-colors ${editor?.isActive('code') ? 'bg-gray-200 text-gray-900' : 'text-gray-500 hover:bg-gray-200'}`}
             title="Code"
           >
             <Code className="w-4 h-4" />
@@ -194,8 +152,8 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, chann
               )}
               <span className="truncate font-medium">{attachedFile.name}</span>
             </div>
-            <button 
-              onClick={() => setAttachedFile(null)} 
+            <button
+              onClick={() => setAttachedFile(null)}
               className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
               disabled={isUploading}
             >
