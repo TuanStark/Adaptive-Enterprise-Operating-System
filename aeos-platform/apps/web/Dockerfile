@@ -1,15 +1,15 @@
 # ========================================================
-# Dockerfile cho Next.js Web (Standalone & Optimized)
+# Dockerfile cho Next.js Web (Extreme Zero-Fat with Distroless)
 # ========================================================
 
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
-RUN apk add --no-cache openssl libc6-compat tini
+RUN apk add --no-cache openssl libc6-compat
 
 # --------------------------------------------------------
-# 1. Deps Stage: Tối ưu Docker Layer Caching (pnpm fetch)
+# 1. Deps Stage: Tối ưu Docker Layer Caching
 # --------------------------------------------------------
 FROM base AS deps
 WORKDIR /app
@@ -22,19 +22,28 @@ RUN pnpm fetch
 FROM base AS builder
 WORKDIR /app
 COPY . .
-# Cài đặt từ virtual store đã fetch (offline mode)
-RUN pnpm install --offline --frozen-lockfile
+# Cài đặt an toàn (bỏ qua scripts để tránh lỗi ERR_PNPM_IGNORED_BUILDS)
+RUN pnpm config set ignore-scripts true
+RUN pnpm install --frozen-lockfile
+RUN pnpm config set ignore-scripts false
+# Rebuild các native modules (Sharp, v.v.)
+RUN pnpm rebuild
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js
-# Cấu hình output: 'standalone' sẽ tự động tối ưu hóa và gom file cần thiết
 RUN pnpm --filter @aeos/web build
 
+# Chown trước các file cần thiết cho user 65532 (nonroot của Distroless)
+# Next.js có thể cần ghi cache vào thư mục .next khi chạy Image Optimization
+RUN chown -R 65532:65532 /app/apps/web/.next/standalone \
+    && chown -R 65532:65532 /app/apps/web/.next/static \
+    && chown -R 65532:65532 /app/apps/web/public
+
 # --------------------------------------------------------
-# 3. Runner Stage: Production Image
+# 3. Runner Stage: Distroless
 # --------------------------------------------------------
-FROM base AS runner
+FROM gcr.io/distroless/nodejs22-debian12 AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -42,25 +51,19 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0
 
 LABEL maintainer="Tech Lead - AEOS" \
-      version="1.0" \
-      description="Production Docker Image for AEOS Next.js Web"
+      version="2.0-distroless" \
+      description="Zero-Fat Distroless Image for AEOS Next.js Web"
 
-# Tạo Non-root user
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs -G nodejs \
-    && chown -R nextjs:nodejs /app
+# Sử dụng nonroot user
+USER 65532:65532
 
 # Copy thư mục public
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
 # Copy mã nguồn standalone (Rất nhẹ, không chứa node_modules rác)
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-
-USER nextjs
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
 
-# ENTRYPOINT bằng tini chống treo zombie process
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "apps/web/server.js"]
+CMD ["apps/web/server.js"]

@@ -1,8 +1,9 @@
-node_modules
-.git
-.husky
-.next
-dist
+**/node_modules
+**/.git
+**/.husky
+**/.next
+**/dist
+**/coverage
 npm-debug.log
 yarn-debug.log
 yarn-error.log
@@ -14,4 +15,3 @@ pnpm-debug.log
 .env.production.local
 .DS_Store
 *.md
-coverage
