@@ -2,6 +2,17 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import {
+  appConfig,
+  authConfig,
+  cacheConfig,
+  databaseConfig,
+  kafkaConfig,
+  mailConfig,
+  observabilityConfig,
+  storageConfig,
+  validate,
+} from './config';
 import { HealthModule } from './health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationModule } from './modules/organization/organization.module';
@@ -26,7 +37,9 @@ import { MailModule } from './common/mail/mail.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../../.env', // Root .env file
+      envFilePath: '../../.env',
+      validate,
+      load: [appConfig, authConfig, cacheConfig, databaseConfig, kafkaConfig, mailConfig, observabilityConfig, storageConfig],
     }),
     ThrottlerModule.forRoot([
       {
@@ -73,4 +86,4 @@ import { MailModule } from './common/mail/mail.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

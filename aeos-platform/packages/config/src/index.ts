@@ -1,1 +1,1 @@
-export { envSchema, validateEnv, type EnvConfig } from './env.schema';
+export { envSchema, validateEnv, buildDatabaseUrl, type EnvConfig } from './env.schema';
