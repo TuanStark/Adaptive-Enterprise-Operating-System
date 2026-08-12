@@ -1,0 +1,74 @@
+---
+- name: Add HashiCorp Helm repo
+  kubernetes.core.helm_repository:
+    name: hashicorp
+    repo_url: https://helm.releases.hashicorp.com
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install Vault (HA Raft)
+  kubernetes.core.helm:
+    name: vault
+    chart_ref: hashicorp/vault
+    release_namespace: vault
+    create_namespace: true
+    wait: true
+    timeout: 10m0s
+    values:
+      server:
+        ha:
+          enabled: true
+          replicas: "{{ vault_ha_replicas }}"
+          raft:
+            enabled: true
+            config: |
+              ui = true
+              listener "tcp" {
+                tls_disable = 1
+                address = "[::]:8200"
+                cluster_address = "[::]:8201"
+              }
+              storage "raft" {
+                path = "/vault/data"
+              }
+              service_registration "kubernetes" {}
+        dataStorage:
+          enabled: true
+          size: 10Gi
+          storageClass: longhorn
+        auditStorage:
+          enabled: true
+          size: 5Gi
+          storageClass: longhorn
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          hosts:
+            - host: vault.{{ aeos_domain }}
+          tls:
+            - secretName: vault-tls
+              hosts:
+                - vault.{{ aeos_domain }}
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+      injector:
+        enabled: false
+      ui:
+        enabled: true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Wait for Vault pods to be running
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: vault
+    label_selectors:
+      - app.kubernetes.io/name=vault
+  register: vault_pods
+  until: >
+    vault_pods.resources | length >= vault_ha_replicas and
+    vault_pods.resources | map(attribute='status.phase') | select('equalto', 'Running') | list | length >= vault_ha_replicas
+  retries: 30
+  delay: 10
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

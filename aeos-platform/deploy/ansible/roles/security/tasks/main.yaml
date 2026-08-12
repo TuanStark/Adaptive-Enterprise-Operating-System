@@ -1,0 +1,95 @@
+---
+- name: Add Kyverno Helm repo
+  kubernetes.core.helm_repository:
+    name: kyverno
+    repo_url: https://kyverno.github.io/kyverno
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install Kyverno
+  kubernetes.core.helm:
+    name: kyverno
+    chart_ref: kyverno/kyverno
+    release_namespace: kyverno
+    create_namespace: true
+    wait: true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Apply Kyverno policy library
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../manifests/kyverno-policies.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Add Falco Helm repo
+  kubernetes.core.helm_repository:
+    name: falcosecurity
+    repo_url: https://falcosecurity.github.io/charts
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install Falco
+  kubernetes.core.helm:
+    name: falco
+    chart_ref: falcosecurity/falco
+    release_namespace: falco
+    create_namespace: true
+    wait: true
+    timeout: 10m0s
+    values:
+      falcosidekick:
+        enabled: true
+        config:
+          webhook:
+            address: ""
+      driver:
+        kind: modern_ebpf
+      customRules:
+        aeos-rules.yaml: |-
+          - rule: Shell Spawned in Container
+            desc: Detect shell execution inside container
+            condition: >
+              spawned_process and container and
+              (proc.name in (bash, sh, zsh, ash, csh, ksh))
+            output: >
+              Shell spawned in container
+              (user=%user.name container=%container.name shell=%proc.name
+               image=%container.image.repository command=%proc.cmdline)
+            priority: WARNING
+            tags: [container, shell, mitre_execution]
+
+          - rule: Read Sensitive File in Container
+            desc: Detect sensitive file access
+            condition: >
+              open_read and container and
+              (fd.name startswith /etc/shadow or fd.name startswith /etc/passwd)
+            output: >
+              Sensitive file read in container
+              (user=%user.name file=%fd.name container=%container.name
+               image=%container.image.repository)
+            priority: WARNING
+            tags: [container, filesystem, mitre_credential_access]
+
+          - rule: Unexpected Outbound Connection
+            desc: Detect non-standard outbound from AEOS
+            condition: >
+              outbound and container and
+              container.image.repository contains "aeos" and
+              not (fd.sport in (443, 587, 465, 5432, 6379))
+            output: >
+              Unexpected outbound connection from AEOS
+              (user=%user.name container=%container.name
+               connection=%fd.name image=%container.image.repository)
+            priority: NOTICE
+            tags: [container, network, mitre_exfiltration]
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Apply RBAC configuration
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../manifests/rbac.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

@@ -1,0 +1,80 @@
+---
+- name: Add ArgoCD Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ argocd_version }}"
+    release_namespace: argocd
+    create_namespace: true
+    wait: true
+    timeout: 10m0s
+    values:
+      configs:
+        params:
+          server.insecure: true
+        cm:
+          admin.enabled: true
+          resource.customizations.health.argoproj.io_Application: |
+            hs = {}
+            hs.status = "Healthy"
+            hs.message = ""
+            if obj.status ~= nil then
+              if obj.status.health ~= nil then
+                hs.status = obj.status.health.status
+                if obj.status.health.message ~= nil then
+                  hs.message = obj.status.health.message
+                end
+              end
+            end
+            return hs
+      server:
+        ingress:
+          enabled: true
+          ingressClassName: nginx
+          hosts:
+            - argocd.{{ aeos_domain }}
+          tls:
+            - secretName: argocd-tls
+              hosts:
+                - argocd.{{ aeos_domain }}
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      repoServer:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install ArgoCD Image Updater
+  kubernetes.core.helm:
+    name: argocd-image-updater
+    chart_ref: argo/argocd-image-updater
+    release_namespace: argocd
+    wait: true
+    values:
+      config:
+        registries:
+          - name: GHCR
+            prefix: ghcr.io
+            api_url: https://ghcr.io
+            credentials: pullsecret:argocd/ghcr-credentials
+            default: true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Apply App-of-Apps bootstrap
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../../argocd/app-of-apps.yaml"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

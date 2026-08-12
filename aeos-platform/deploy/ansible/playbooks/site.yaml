@@ -1,0 +1,13 @@
+---
+# Master playbook: runs ALL phases in order.
+# Usage: ansible-playbook playbooks/site.yaml
+- import_playbook: 01-preflight.yaml
+- import_playbook: 02-ha-setup.yaml
+- import_playbook: 03-control-plane.yaml
+- import_playbook: 04-workers.yaml
+- import_playbook: 05-storage.yaml
+- import_playbook: 06-vault-eso.yaml
+- import_playbook: 07-infrastructure.yaml
+- import_playbook: 08-monitoring.yaml
+- import_playbook: 09-security.yaml
+- import_playbook: 10-argocd.yaml

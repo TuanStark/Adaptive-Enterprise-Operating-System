@@ -1,0 +1,84 @@
+# K3s HA Production values
+# 3 Master + N Worker, Longhorn, Vault/ESO, CNPG 3-instance
+
+api:
+  replicaCount: 3
+  image:
+    tag: ""
+  env:
+    NODE_ENV: production
+    LOG_LEVEL: info
+    FRONTEND_URL: https://app.aeos.local
+  keda:
+    enabled: false
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPU: 70
+
+web:
+  replicaCount: 2
+  image:
+    tag: ""
+
+database:
+  external: false
+  host: aeos-postgres-rw
+  port: 5432
+  name: aeos
+  existingSecret: aeos-db-credentials
+
+redis:
+  external: false
+  host: redis-master
+  port: 6379
+  existingSecret: aeos-redis-credentials
+  tls: false
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: api.aeos.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+    - host: app.aeos.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web
+  tls:
+    - secretName: aeos-tls
+      hosts:
+        - api.aeos.local
+        - app.aeos.local
+
+secrets:
+  provider: external-secrets
+  existingSecret: aeos-secrets
+
+networkPolicy:
+  enabled: true
+
+pdb:
+  enabled: true
+  minAvailable: 2
+
+pgbouncer:
+  enabled: true
+  replicaCount: 3
+
+resourceQuota:
+  enabled: true
+  cpu: "16"
+  memory: 32Gi
+  pods: "60"

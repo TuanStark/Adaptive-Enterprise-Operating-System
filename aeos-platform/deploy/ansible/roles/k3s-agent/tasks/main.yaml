@@ -1,0 +1,32 @@
+---
+- name: Read node-token from first master
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+  delegate_to: "{{ groups['masters'][0] }}"
+  run_once: true
+
+- name: Join worker to cluster
+  ansible.builtin.shell:
+    cmd: |
+      curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" \
+        K3S_URL="https://{{ k3s_vip }}:6443" \
+        K3S_TOKEN="{{ k3s_token_raw.content | b64decode | trim }}" sh -s - agent \
+          --kubelet-arg=max-pods=110
+    creates: /usr/local/bin/k3s-agent
+  register: agent_install
+
+- name: Wait for agent to register
+  ansible.builtin.pause:
+    seconds: 15
+  when: agent_install.changed
+
+- name: Verify worker node is ready
+  ansible.builtin.command: >
+    k3s kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+  register: node_ready
+  until: node_ready.stdout == "True"
+  retries: 30
+  delay: 10
+  changed_when: false
+  delegate_to: "{{ groups['masters'][0] }}"

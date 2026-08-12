@@ -1,0 +1,28 @@
+---
+- name: Preflight checks
+  hosts: k3s_cluster
+  gather_facts: true
+  tasks:
+    - name: Verify connectivity
+      ansible.builtin.ping:
+
+    - name: Check minimum RAM (4GB)
+      ansible.builtin.assert:
+        that: ansible_memtotal_mb >= 3800
+        fail_msg: "Node {{ inventory_hostname }} has {{ ansible_memtotal_mb }}MB RAM, minimum 4GB required"
+
+    - name: Check minimum disk (30GB free)
+      ansible.builtin.assert:
+        that: item.size_available > 30000000000
+        fail_msg: "Insufficient disk space on {{ item.mount }}"
+      loop: "{{ ansible_mounts }}"
+      when: item.mount == "/"
+
+    - name: Check OS family
+      ansible.builtin.assert:
+        that: ansible_os_family in ["Debian", "RedHat"]
+        fail_msg: "Unsupported OS: {{ ansible_os_family }}"
+
+    - name: Verify Python 3
+      ansible.builtin.assert:
+        that: ansible_python_version is version('3.8', '>=')

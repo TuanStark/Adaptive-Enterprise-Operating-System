@@ -1,0 +1,13 @@
+apiVersion: v2
+name: aeos
+description: AEOS Platform - Adaptive Enterprise Operating System
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - aeos
+  - nestjs
+  - nextjs
+  - enterprise
+maintainers:
+  - name: AEOS Team

@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: aeos
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: onprem
+            url: https://192.168.1.200:6443
+            valuesFile: values-onprem-ha.yaml
+          - cluster: aws
+            url: https://eks-endpoint.ap-southeast-1.eks.amazonaws.com
+            valuesFile: values-aws-prod.yaml
+  template:
+    metadata:
+      name: "aeos-{{cluster}}"
+      namespace: argocd
+      annotations:
+        argocd-image-updater.argoproj.io/image-list: |
+          api=ghcr.io/tuanstark/aeos/api,
+          web=ghcr.io/tuanstark/aeos/web
+        argocd-image-updater.argoproj.io/api.update-strategy: semver
+        argocd-image-updater.argoproj.io/api.allow-tags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        argocd-image-updater.argoproj.io/web.update-strategy: semver
+        argocd-image-updater.argoproj.io/web.allow-tags: "regexp:^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        argocd-image-updater.argoproj.io/write-back-method: git
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: aeos-deployments
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: aeos-alerts
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/TuanStark/Adaptive-Enterprise-Operating-System.git
+        targetRevision: main
+        path: deploy/helm/aeos
+        helm:
+          valueFiles:
+            - "{{valuesFile}}"
+      destination:
+        server: "{{url}}"
+        namespace: aeos
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            maxDuration: 3m
+            factor: 2

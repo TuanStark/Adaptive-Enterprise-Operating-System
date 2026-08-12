@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aeos.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aeos.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.api.env.NODE_ENV | default "production" | quote }}
+  PORT: {{ .Values.api.port | quote }}
+  DATABASE_HOST: {{ include "aeos.databaseHost" . | quote }}
+  DATABASE_PORT: {{ .Values.database.port | quote }}
+  DATABASE_NAME: {{ .Values.database.name | quote }}
+  DATABASE_POOL_MIN: "2"
+  DATABASE_POOL_MAX: {{ if .Values.pgbouncer.enabled }}"5"{{ else }}"10"{{ end }}
+  REDIS_HOST: {{ .Values.redis.host | quote }}
+  REDIS_PORT: {{ .Values.redis.port | quote }}
+  REDIS_TLS_ENABLED: {{ .Values.redis.tls | quote }}
+  LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | default "info" | quote }}
+  METRICS_ENABLED: "true"
+  FRONTEND_URL: {{ .Values.api.env.FRONTEND_URL | default "https://app.aeos.local" | quote }}
+  {{- range $key, $value := .Values.api.env }}
+  {{- if not (has $key (list "NODE_ENV" "PORT" "LOG_LEVEL" "FRONTEND_URL")) }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}

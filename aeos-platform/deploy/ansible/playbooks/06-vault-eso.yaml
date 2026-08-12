@@ -1,0 +1,6 @@
+---
+- name: Install Vault + External Secrets Operator
+  hosts: masters[0]
+  roles:
+    - vault
+    - external-secrets

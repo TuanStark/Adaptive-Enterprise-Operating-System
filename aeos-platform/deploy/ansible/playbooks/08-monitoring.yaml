@@ -1,0 +1,5 @@
+---
+- name: Install Monitoring Stack
+  hosts: masters[0]
+  roles:
+    - monitoring

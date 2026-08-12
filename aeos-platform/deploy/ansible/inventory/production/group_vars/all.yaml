@@ -1,0 +1,119 @@
+---
+# ═══════════════════════════════════════════════════════════════════════
+# FILE NÀY LÀ GÌ?
+# ═══════════════════════════════════════════════════════════════════════
+# group_vars/all.yaml = biến dùng chung cho TẤT CẢ hosts trong inventory.
+#
+# Ansible có hệ thống variable precedence (từ thấp đến cao):
+#   1. group_vars/all.yaml        ← BẠN ĐANG Ở ĐÂY (thấp nhất trong group_vars)
+#   2. group_vars/<group>.yaml    ← ví dụ: group_vars/masters.yaml
+#   3. host_vars/<host>.yaml      ← ví dụ: host_vars/master-01.yaml
+#   4. -e "key=value" (CLI)       ← cao nhất, override tất cả
+#
+# Tại sao precedence quan trọng?
+# Ví dụ: all.yaml có k3s_version: "v1.30.3+k3s1"
+# Nhưng host_vars/master-01.yaml có k3s_version: "v1.31.0+k3s1"
+# → master-01 sẽ chạy v1.31, các host khác chạy v1.30
+# → Dùng cho canary upgrade: test version mới trên 1 node trước
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── K3s Configuration ──
+k3s_version: "v1.30.3+k3s1"
+# Pin version chính xác.
+# KHÔNG BAO GIỜ dùng "stable" hay "latest" — vì:
+# Hôm nay "stable" = v1.30.3, tuần sau = v1.30.4
+# → 2 node cài cùng script nhưng khác version → etcd incompatible → cluster split-brain
+
+k3s_vip: "192.168.1.200"
+# Virtual IP do Keepalived quản lý.
+# IP này KHÔNG thuộc về bất kỳ machine nào — nó "float" giữa 3 masters.
+# Tất cả client (kubectl, worker nodes) kết nối qua VIP này.
+# Master-01 chết → VIP chuyển sang Master-02 trong 3 giây → transparent.
+#
+# QUAN TRỌNG: VIP phải nằm NGOÀI DHCP range nhưng TRONG subnet.
+# Nếu DHCP cấp 192.168.1.200 cho laptop ai đó → IP conflict → cluster down.
+
+k3s_domain: "k3s.aeos.internal"
+# DNS name cho cluster API. Thêm vào --tls-san để cert có Subject Alternative Name.
+# Cho phép kết nối bằng domain thay vì IP → dễ thay đổi VIP sau này.
+
+k3s_cluster_token: "{{ vault_k3s_cluster_token }}"
+# {{ vault_xxx }} = Ansible Vault encrypted variable.
+# Giá trị thật nằm trong file encrypted: group_vars/vault.yaml (hoặc inline)
+# Decrypt bằng: ansible-playbook --ask-vault-pass hoặc --vault-password-file
+#
+# Token này là shared secret giữa các K3s nodes.
+# Nếu leak → attacker có thể join node giả vào cluster.
+# → Lưu trong Ansible Vault, KHÔNG bao giờ plain text.
+
+# ── MetalLB ──
+metallb_ip_range: "192.168.1.240-192.168.1.250"
+# MetalLB cần 1 dải IP để cấp cho Services type: LoadBalancer.
+# Trong cloud (AWS/GCP): LoadBalancer = provider tự tạo ELB/NLB.
+# On-premise: KHÔNG có cloud provider → MetalLB làm thay.
+#
+# Dải này phải:
+# 1. Nằm trong subnet (192.168.1.x) → reachable từ LAN
+# 2. NGOÀI DHCP range → tránh conflict
+# 3. Đủ lớn cho services cần expose (Ingress, ArgoCD, Grafana, Vault)
+# Ở đây: 11 IPs (240-250) → đủ cho production typical.
+
+metallb_bgp_enabled: false
+# L2 mode: MetalLB announce IP qua ARP → đơn giản, hoạt động trên mọi switch.
+# BGP mode: MetalLB peer với router → production-grade nhưng cần router hỗ trợ BGP.
+# Bắt đầu L2, chuyển BGP khi network team sẵn sàng.
+
+# ── Longhorn Storage ──
+longhorn_replica_count: 2
+# Mỗi volume được replicate sang 2 nodes.
+# Node chết → data vẫn có trên node còn lại → pod reschedule + mount replica → zero data loss.
+#
+# TẠI SAO 2 chứ không phải 3?
+# 3 replicas: an toàn hơn nhưng tốn 3x storage + 3x write IOPS.
+# 2 replicas: chịu 1 node failure, đủ cho cluster 3-5 nodes.
+# 5+ nodes: nên tăng lên 3 replicas.
+#
+# Công thức: replica_count < tổng số nodes có disk
+# (nếu replica_count = tổng nodes → 1 node chết → Longhorn không thể duy trì replica count → degraded)
+
+longhorn_storage_min_available_pct: 20
+# Longhorn ngừng schedule volume mới khi disk available < 20%.
+# Tránh disk full → OS crash → mất node.
+
+# ── HashiCorp Vault ──
+vault_ha_replicas: 3
+# Vault HA dùng Raft consensus (giống etcd) → cần odd number → 3 minimum.
+# 1 leader + 2 followers. Leader xử lý writes, followers replicate.
+# Leader chết → election trong 5-10 giây → follower lên thay.
+
+vault_addr: "https://vault.aeos.internal:8200"
+# URL nội bộ để app/ESO kết nối Vault.
+# Trong K8s: http://vault.vault.svc:8200 (cluster-internal, không cần TLS)
+# URL này dùng khi access từ NGOÀI cluster (admin/ops).
+
+# ── ArgoCD ──
+argocd_version: "v2.11.0"
+argocd_admin_password: "{{ vault_argocd_admin_password }}"
+# Cũng encrypt bằng Ansible Vault.
+# Sau deploy, nên tắt admin account và dùng SSO (OIDC/LDAP).
+
+# ── Certificates ──
+letsencrypt_email: "admin@aeos.com"
+# Let's Encrypt gửi email cảnh báo 30 ngày trước khi cert hết hạn.
+# cert-manager tự động renew ở ngày thứ 60 (cert có hạn 90 ngày).
+# Email này là fallback — nếu auto-renew fail → ops nhận email → manual fix.
+
+aeos_domain: "aeos.local"
+# Base domain cho tất cả services:
+#   api.aeos.local     → AEOS API
+#   app.aeos.local     → AEOS Web
+#   grafana.aeos.local → Grafana
+#   argocd.aeos.local  → ArgoCD
+#   vault.aeos.local   → Vault UI
+# Ingress routes dựa trên host header → 1 IP serve nhiều services.
+
+# ── Paths ──
+kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+# K3s lưu kubeconfig ở đây (khác kubectl default ~/.kube/config).
+# Ansible roles dùng path này để chạy kubectl/helm trên master node.
+# environment: KUBECONFIG: "{{ kubeconfig_path }}" trong mỗi task.

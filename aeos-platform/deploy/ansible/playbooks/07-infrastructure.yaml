@@ -1,0 +1,5 @@
+---
+- name: Install Infrastructure Add-ons
+  hosts: masters[0]
+  roles:
+    - infrastructure

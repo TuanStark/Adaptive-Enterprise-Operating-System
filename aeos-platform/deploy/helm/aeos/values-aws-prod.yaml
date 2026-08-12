@@ -1,0 +1,79 @@
+# AWS EKS Production values
+# EKS + RDS + ElastiCache + ALB + ACM + IRSA
+
+api:
+  replicaCount: 3
+  image:
+    tag: ""
+  env:
+    NODE_ENV: production
+    LOG_LEVEL: info
+    FRONTEND_URL: https://app.aeos.com
+    S3_USE_IRSA: "true"
+    S3_REGION: ap-southeast-1
+    S3_BUCKET: aeos-uploads-prod
+
+web:
+  replicaCount: 2
+  image:
+    tag: ""
+
+database:
+  external: true
+  host: aeos-prod.cluster-xxxx.ap-southeast-1.rds.amazonaws.com
+  port: 5432
+  name: aeos
+  existingSecret: aeos-db-credentials
+
+redis:
+  external: true
+  host: aeos-prod.xxxx.0001.apse1.cache.amazonaws.com
+  port: 6379
+  existingSecret: aeos-redis-credentials
+  tls: true
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:ACCOUNT:certificate/CERT-ID
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/readiness
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:ap-southeast-1:ACCOUNT:regional/webacl/aeos-prod/ID
+    alb.ingress.kubernetes.io/group.name: aeos-prod
+  hosts:
+    - host: api.aeos.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+    - host: app.aeos.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web
+  tls: []
+
+secrets:
+  provider: external-secrets
+  existingSecret: aeos-secrets
+
+serviceAccount:
+  create: true
+  name: aeos-api
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/aeos-api-prod
+
+networkPolicy:
+  enabled: true
+
+pdb:
+  enabled: true
+  minAvailable: 2
+
+pgbouncer:
+  enabled: true
+  replicaCount: 2

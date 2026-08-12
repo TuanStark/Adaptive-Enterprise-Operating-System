@@ -1,0 +1,5 @@
+---
+- name: Install Longhorn Distributed Storage
+  hosts: masters[0]
+  roles:
+    - longhorn

@@ -1,0 +1,6 @@
+---
+- name: Bootstrap K3s HA Control Plane
+  hosts: masters
+  serial: 1
+  roles:
+    - k3s-server

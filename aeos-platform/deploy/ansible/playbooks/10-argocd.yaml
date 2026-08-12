@@ -1,0 +1,5 @@
+---
+- name: Install ArgoCD GitOps Controller
+  hosts: masters[0]
+  roles:
+    - argocd

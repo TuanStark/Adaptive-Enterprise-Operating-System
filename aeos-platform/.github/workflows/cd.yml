@@ -1,0 +1,36 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  deploy-staging:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update image tags in Helm values
+        run: |
+          SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
+          sed -i "s/tag: .*/tag: \"${SHA}\"/" deploy/helm/aeos/values-onprem-prod.yaml
+          sed -i "s/tag: .*/tag: \"${SHA}\"/" deploy/helm/aeos/values-aws-prod.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deploy/helm/aeos/values-*.yaml
+          git commit -m "chore(deploy): update image tags to ${GITHUB_SHA::7}" || true
+          git push
+
+      # ArgoCD auto-syncs from Git — no manual deploy needed
+      # The image tag update triggers ArgoCD to sync both clusters

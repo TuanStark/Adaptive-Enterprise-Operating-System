@@ -1,0 +1,104 @@
+---
+- name: Add External Secrets Helm repo
+  kubernetes.core.helm_repository:
+    name: external-secrets
+    repo_url: https://charts.external-secrets.io
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install External Secrets Operator
+  kubernetes.core.helm:
+    name: external-secrets
+    chart_ref: external-secrets/external-secrets
+    release_namespace: external-secrets
+    create_namespace: true
+    wait: true
+    timeout: 5m0s
+    values:
+      installCRDs: true
+      webhook:
+        port: 9443
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Create ClusterSecretStore for Vault
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ClusterSecretStore
+      metadata:
+        name: vault-backend
+      spec:
+        provider:
+          vault:
+            server: "http://vault.vault.svc:8200"
+            path: secret
+            version: v2
+            auth:
+              kubernetes:
+                mountPath: kubernetes
+                role: external-secrets
+                serviceAccountRef:
+                  name: external-secrets
+                  namespace: external-secrets
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Create AEOS database ExternalSecret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      metadata:
+        name: aeos-db-credentials
+        namespace: aeos
+      spec:
+        refreshInterval: 1h
+        secretStoreRef:
+          name: vault-backend
+          kind: ClusterSecretStore
+        target:
+          name: aeos-db-credentials
+          creationPolicy: Owner
+        data:
+          - secretKey: password
+            remoteRef:
+              key: secret/aeos/prod/database
+              property: password
+          - secretKey: username
+            remoteRef:
+              key: secret/aeos/prod/database
+              property: username
+          - secretKey: database-url
+            remoteRef:
+              key: secret/aeos/prod/database
+              property: url
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Create AEOS app secrets ExternalSecret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      metadata:
+        name: aeos-secrets
+        namespace: aeos
+      spec:
+        refreshInterval: 1h
+        secretStoreRef:
+          name: vault-backend
+          kind: ClusterSecretStore
+        target:
+          name: aeos-secrets
+          creationPolicy: Owner
+        data:
+          - secretKey: jwt-secret
+            remoteRef:
+              key: secret/aeos/prod/auth
+              property: jwt-secret
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

@@ -1,0 +1,121 @@
+---
+- name: Install MetalLB
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Wait for MetalLB controller
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    namespace: metallb-system
+    name: controller
+  register: metallb_ctrl
+  until: >
+    metallb_ctrl.resources | length > 0 and
+    metallb_ctrl.resources[0].status.readyReplicas | default(0) > 0
+  retries: 30
+  delay: 10
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Configure MetalLB IP pool
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: aeos-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+          - "{{ metallb_ip_range }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Configure MetalLB L2 advertisement
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: aeos-l2
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+          - aeos-pool
+  when: not metallb_bgp_enabled
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Add Nginx Ingress Helm repo
+  kubernetes.core.helm_repository:
+    name: ingress-nginx
+    repo_url: https://kubernetes.github.io/ingress-nginx
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install Nginx Ingress Controller
+  kubernetes.core.helm:
+    name: ingress-nginx
+    chart_ref: ingress-nginx/ingress-nginx
+    release_namespace: ingress-nginx
+    create_namespace: true
+    wait: true
+    values:
+      controller:
+        metrics:
+          enabled: true
+        podAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "10254"
+        config:
+          use-forwarded-headers: "true"
+          compute-full-forwarded-for: "true"
+          proxy-body-size: "50m"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Add Jetstack Helm repo
+  kubernetes.core.helm_repository:
+    name: jetstack
+    repo_url: https://charts.jetstack.io
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Install cert-manager
+  kubernetes.core.helm:
+    name: cert-manager
+    chart_ref: jetstack/cert-manager
+    release_namespace: cert-manager
+    create_namespace: true
+    wait: true
+    values:
+      crds:
+        enabled: true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Create Let's Encrypt ClusterIssuer
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt-prod
+      spec:
+        acme:
+          server: https://acme-v02.api.letsencrypt.org/directory
+          email: "{{ letsencrypt_email }}"
+          privateKeySecretRef:
+            name: letsencrypt-prod-key
+          solvers:
+            - http01:
+                ingress:
+                  class: nginx
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

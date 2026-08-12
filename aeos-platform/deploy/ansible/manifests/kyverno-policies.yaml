@@ -1,0 +1,263 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Using 'latest' tag is not allowed."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-limits
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "CPU and memory limits are required."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-privileged-containers
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Privileged containers are not allowed."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  privileged: "false"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: allowed-registries
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Images must come from allowed registries."
+        pattern:
+          spec:
+            containers:
+              - image: "ghcr.io/* | docker.io/* | registry.k8s.io/* | quay.io/* | bitnami/* | public.ecr.aws/*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-app-label
+      match:
+        any:
+          - resources:
+              kinds: ["Deployment", "StatefulSet"]
+      validate:
+        message: "The label 'app.kubernetes.io/name' is required."
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-run-as-non-root
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Containers must run as non-root."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-host-path
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-host-path-volumes
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "HostPath volumes are forbidden."
+        pattern:
+          spec:
+            =(volumes):
+              - X(hostPath): "null"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pod-security-restricted
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: restricted-profile
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Containers must drop ALL capabilities."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  capabilities:
+                    drop: ["ALL"]
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-node-port
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-nodeport-services
+      match:
+        any:
+          - resources:
+              kinds: ["Service"]
+      validate:
+        message: "NodePort services are not allowed. Use ClusterIP + Ingress."
+        pattern:
+          spec:
+            type: "!NodePort"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-network-policy
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-netpol
+      match:
+        any:
+          - resources:
+              kinds: ["Namespace"]
+      preconditions:
+        all:
+          - key: "{{ request.object.metadata.name }}"
+            operator: NotIn
+            value: ["kube-system", "kube-public", "kube-node-lease", "default"]
+      validate:
+        message: "Every namespace should have a NetworkPolicy."
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.metadata.labels.\"network-policy/configured\" || '' }}"
+                operator: Equals
+                value: ""
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-unconfined-seccomp
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-seccomp
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Seccomp profile must be RuntimeDefault or Localhost."
+        anyPattern:
+          - spec:
+              securityContext:
+                seccompProfile:
+                  type: RuntimeDefault
+          - spec:
+              securityContext:
+                seccompProfile:
+                  type: Localhost
+          - spec:
+              containers:
+                - securityContext:
+                    seccompProfile:
+                      type: RuntimeDefault
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-pull-always
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-pull-always
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["aeos"]
+      validate:
+        message: "imagePullPolicy 'Always' is not allowed in production. Use IfNotPresent."
+        pattern:
+          spec:
+            containers:
+              - imagePullPolicy: "!Always"

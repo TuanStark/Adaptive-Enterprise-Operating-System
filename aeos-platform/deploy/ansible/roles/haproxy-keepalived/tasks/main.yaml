@@ -1,0 +1,43 @@
+---
+- name: Install HAProxy and Keepalived
+  ansible.builtin.apt:
+    name:
+      - haproxy
+      - keepalived
+    state: present
+    update_cache: true
+
+- name: Configure HAProxy
+  ansible.builtin.template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: "0644"
+    backup: true
+  notify: Restart HAProxy
+
+- name: Configure Keepalived
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    mode: "0644"
+  notify: Restart Keepalived
+
+- name: Enable and start HAProxy
+  ansible.builtin.systemd:
+    name: haproxy
+    state: started
+    enabled: true
+
+- name: Enable and start Keepalived
+  ansible.builtin.systemd:
+    name: keepalived
+    state: started
+    enabled: true
+
+- name: Wait for VIP to be available
+  ansible.builtin.wait_for:
+    host: "{{ k3s_vip }}"
+    port: 6443
+    delay: 5
+    timeout: 60
+  ignore_errors: true

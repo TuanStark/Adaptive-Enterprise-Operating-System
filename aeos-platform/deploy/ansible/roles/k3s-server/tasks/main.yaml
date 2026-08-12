@@ -1,0 +1,91 @@
+---
+- name: Install first master (cluster-init)
+  ansible.builtin.shell:
+    cmd: |
+      curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" \
+        K3S_TOKEN="{{ k3s_cluster_token }}" sh -s - server \
+          --cluster-init \
+          --tls-san "{{ k3s_vip }}" \
+          --tls-san "{{ k3s_domain }}" \
+          --disable traefik \
+          --disable servicelb \
+          --kube-apiserver-arg=audit-log-path=/var/log/k3s/audit.log \
+          --kube-apiserver-arg=audit-log-maxage=30 \
+          --kube-apiserver-arg=audit-log-maxbackup=10 \
+          --kube-apiserver-arg=audit-log-maxsize=100 \
+          --kube-apiserver-arg=enable-admission-plugins=NodeRestriction,PodSecurity \
+          --kubelet-arg=max-pods=110 \
+          --write-kubeconfig-mode=644
+    creates: /usr/local/bin/k3s
+  when: inventory_hostname == groups['masters'][0]
+
+- name: Create audit log directory
+  ansible.builtin.file:
+    path: /var/log/k3s
+    state: directory
+    mode: "0750"
+
+- name: Wait for first master API to be ready
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[groups['masters'][0]]['ansible_host'] }}"
+    port: 6443
+    delay: 10
+    timeout: 300
+  when: inventory_hostname != groups['masters'][0]
+
+- name: Read node-token from first master
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+  delegate_to: "{{ groups['masters'][0] }}"
+  run_once: true
+
+- name: Set node token fact
+  ansible.builtin.set_fact:
+    k3s_node_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+  run_once: true
+
+- name: Join remaining masters
+  ansible.builtin.shell:
+    cmd: |
+      curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" \
+        K3S_TOKEN="{{ k3s_node_token }}" sh -s - server \
+          --server "https://{{ k3s_vip }}:6443" \
+          --tls-san "{{ k3s_vip }}" \
+          --tls-san "{{ k3s_domain }}" \
+          --disable traefik \
+          --disable servicelb \
+          --kube-apiserver-arg=audit-log-path=/var/log/k3s/audit.log \
+          --kube-apiserver-arg=audit-log-maxage=30 \
+          --kube-apiserver-arg=audit-log-maxbackup=10 \
+          --kube-apiserver-arg=audit-log-maxsize=100 \
+          --kube-apiserver-arg=enable-admission-plugins=NodeRestriction,PodSecurity \
+          --kubelet-arg=max-pods=110 \
+          --write-kubeconfig-mode=644
+    creates: /usr/local/bin/k3s
+  when: inventory_hostname != groups['masters'][0]
+
+- name: Wait for all masters to be ready
+  ansible.builtin.command: k3s kubectl get nodes
+  register: nodes_result
+  until: nodes_result.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+  when: inventory_hostname == groups['masters'][0]
+
+- name: Fetch kubeconfig
+  ansible.builtin.fetch:
+    src: "{{ kubeconfig_path }}"
+    dest: "{{ playbook_dir }}/../kubeconfig-{{ k3s_domain }}"
+    flat: true
+  when: inventory_hostname == groups['masters'][0]
+
+- name: Fix kubeconfig server address to VIP
+  ansible.builtin.replace:
+    path: "{{ playbook_dir }}/../kubeconfig-{{ k3s_domain }}"
+    regexp: 'https://127.0.0.1:6443'
+    replace: "https://{{ k3s_vip }}:6443"
+  delegate_to: localhost
+  become: false
+  when: inventory_hostname == groups['masters'][0]

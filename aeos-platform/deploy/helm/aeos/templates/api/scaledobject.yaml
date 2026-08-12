@@ -1,0 +1,31 @@
+{{- if .Values.api.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "aeos.fullname" . }}-api
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aeos.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "aeos.fullname" . }}-api
+  minReplicaCount: {{ .Values.api.hpa.minReplicas }}
+  maxReplicaCount: {{ .Values.api.hpa.maxReplicas }}
+  cooldownPeriod: 300
+  pollingInterval: 30
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "{{ .Values.api.hpa.targetCPU }}"
+    {{- if .Values.api.keda.redisQueue }}
+    - type: redis
+      metadata:
+        address: {{ .Values.redis.host }}:{{ .Values.redis.port }}
+        listName: "{{ .Values.api.keda.redisQueue }}"
+        listLength: "{{ .Values.api.keda.redisQueueThreshold | default 10 }}"
+        {{- if .Values.redis.existingSecret }}
+        passwordFromEnv: REDIS_PASSWORD
+        {{- end }}
+    {{- end }}
+{{- end }}

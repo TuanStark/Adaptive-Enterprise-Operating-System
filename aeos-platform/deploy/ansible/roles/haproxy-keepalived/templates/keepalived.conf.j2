@@ -1,0 +1,33 @@
+global_defs {
+    router_id K3S_{{ inventory_hostname }}
+    enable_script_security
+}
+
+vrrp_script check_haproxy {
+    script "/usr/bin/pgrep haproxy"
+    interval 2
+    weight 2
+    fall 3
+    rise 2
+}
+
+vrrp_instance K3S_VIP {
+    state {{ keepalived_state }}
+    interface {{ ansible_default_ipv4.interface | default('eth0') }}
+    virtual_router_id 51
+    priority {{ keepalived_priority }}
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass {{ k3s_cluster_token[:8] | default('k3shaprx') }}
+    }
+
+    virtual_ipaddress {
+        {{ k3s_vip }}/24
+    }
+
+    track_script {
+        check_haproxy
+    }
+}

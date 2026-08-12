@@ -1,0 +1,48 @@
+---
+- name: Rolling upgrade K3s (zero downtime)
+  hosts: k3s_cluster
+  serial: 1
+  max_fail_percentage: 0
+  vars:
+    k3s_upgrade_version: "{{ k3s_version }}"
+  tasks:
+    - name: Get current K3s version
+      ansible.builtin.command: k3s --version
+      register: current_version
+      changed_when: false
+
+    - name: Cordon node
+      ansible.builtin.command: "k3s kubectl cordon {{ inventory_hostname }}"
+      delegate_to: "{{ groups['masters'][0] }}"
+      when: "'masters' not in group_names or inventory_hostname != groups['masters'][0]"
+
+    - name: Drain node
+      ansible.builtin.command: >
+        k3s kubectl drain {{ inventory_hostname }}
+        --ignore-daemonsets --delete-emptydir-data --timeout=120s
+      delegate_to: "{{ groups['masters'][0] }}"
+      when: "'masters' not in group_names or inventory_hostname != groups['masters'][0]"
+
+    - name: Upgrade K3s
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_upgrade_version }}" sh -
+      when: k3s_upgrade_version not in current_version.stdout
+
+    - name: Wait for node to be Ready
+      ansible.builtin.command: >
+        k3s kubectl get node {{ inventory_hostname }}
+        -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+      register: node_ready
+      until: node_ready.stdout == "True"
+      retries: 30
+      delay: 10
+      changed_when: false
+      delegate_to: "{{ groups['masters'][0] }}"
+
+    - name: Uncordon node
+      ansible.builtin.command: "k3s kubectl uncordon {{ inventory_hostname }}"
+      delegate_to: "{{ groups['masters'][0] }}"
+
+    - name: Wait for all pods to stabilize
+      ansible.builtin.pause:
+        seconds: 30
