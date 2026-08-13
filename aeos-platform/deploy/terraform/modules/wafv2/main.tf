@@ -2,18 +2,25 @@ resource "aws_wafv2_web_acl" "this" {
   name  = var.name
   scope = "REGIONAL"
 
-  default_action { allow {} }
+  default_action {
+    allow {}
+  }
 
   rule {
     name     = "RateLimit"
     priority = 0
-    action { block {} }
+
+    action {
+      block {}
+    }
+
     statement {
       rate_based_statement {
         limit              = var.rate_limit
         aggregate_key_type = "IP"
       }
     }
+
     visibility_config {
       sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
@@ -24,13 +31,18 @@ resource "aws_wafv2_web_acl" "this" {
   rule {
     name     = "AWSManagedRulesCommonRuleSet"
     priority = 1
-    override_action { none {} }
+
+    override_action {
+      none {}
+    }
+
     statement {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesCommonRuleSet"
       }
     }
+
     visibility_config {
       sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
@@ -41,13 +53,18 @@ resource "aws_wafv2_web_acl" "this" {
   rule {
     name     = "AWSManagedRulesKnownBadInputsRuleSet"
     priority = 2
-    override_action { none {} }
+
+    override_action {
+      none {}
+    }
+
     statement {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesKnownBadInputsRuleSet"
       }
     }
+
     visibility_config {
       sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
@@ -58,13 +75,18 @@ resource "aws_wafv2_web_acl" "this" {
   rule {
     name     = "AWSManagedRulesSQLiRuleSet"
     priority = 3
-    override_action { none {} }
+
+    override_action {
+      none {}
+    }
+
     statement {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesSQLiRuleSet"
       }
     }
+
     visibility_config {
       sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
@@ -75,13 +97,18 @@ resource "aws_wafv2_web_acl" "this" {
   rule {
     name     = "AWSManagedRulesLinuxRuleSet"
     priority = 4
-    override_action { none {} }
+
+    override_action {
+      none {}
+    }
+
     statement {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesLinuxRuleSet"
       }
     }
+
     visibility_config {
       sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
@@ -113,8 +140,4 @@ resource "aws_cloudwatch_log_group" "waf" {
   name              = "aws-waf-logs-${var.name}"
   retention_in_days = 30
   tags              = var.tags
-}
-
-output "web_acl_arn" {
-  value = aws_wafv2_web_acl.this.arn
 }
