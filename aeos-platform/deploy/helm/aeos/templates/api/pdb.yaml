@@ -1,4 +1,5 @@
 {{- if .Values.pdb.enabled }}
+# ── POD DISRUPTION BUDGET (PDB): BẢO VỆ SLA KHI NÂNG CẤP NODE CLUSTER ──
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -7,6 +8,8 @@ metadata:
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
 spec:
+  # Luôn đảm bảo tối thiểu có ít nhất 1 (hoặc 2) Pod API sống sót khi admin chạy lệnh 'kubectl drain node'
+  # K8s sẽ khóa việc tắt Node lại nếu việc tắt đó làm số Pod khả dụng nhỏ hơn minAvailable
   minAvailable: {{ .Values.pdb.minAvailable }}
   selector:
     matchLabels:

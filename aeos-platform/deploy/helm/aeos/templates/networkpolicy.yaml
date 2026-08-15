@@ -1,17 +1,34 @@
 {{- if .Values.networkPolicy.enabled }}
-# Default deny all
+# ════════════════════════════════════════════════════════════════════════════════════
+# 💥 BÀI HỌC PRODUCTION #11: SỰ CỐ ZERO-TRUST CHẶN NHẦM DATABASE CLOUD (RDS/ELASTICACHE)
+# ────────────────────────────────────────────────────────────────────────────────────
+# ⚠️ SỰ CỐ KINH ĐIỂN: DevOps bật NetworkPolicy Zero-Trust, áp dụng rule chặn dải IP Private:
+#   except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16] để chống tấn công quét mạng nội bộ.
+# Nhưng trên AWS/GCP, Database RDS và Redis ElastiCache NẰM CHÍNH TRONG DẢI IP PRIVATE ĐÓ!
+# -> Kết quả: NetworkPolicy drop 100% gói tin từ Pod sang RDS -> Hệ thống sập toàn tập!
+#
+# 💡 BÍ QUYẾT:
+#   - Khi database/redis nằm trong cùng Cluster K8s: Cho phép Egress qua `podSelector`.
+#   - Khi database là Cloud RDS ngoài cluster: Phải khai báo `ipBlock` cho phép dải Subnet của DB VPC.
+#
+# 💥 BÀI HỌC PRODUCTION #12: BẪY QUÊN MỞ CỔNG DNS (PORT 53) KHI DEFAULT DENY
+# ⚠️ Khi áp dụng `Default-Deny` Egress, nếu không có rule `allow-dns` (cổng 53 UDP/TCP),
+# tất cả các Pod sẽ không thể phân giải bất kỳ tên miền nào (kể cả service name nội bộ K8s)!
+# ════════════════════════════════════════════════════════════════════════════════════
+
+# ── 1. NGUYÊN TẮC ZERO-TRUST: DEFAULT DENY ALL ──
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ include "aeos.fullname" . }}-default-deny
   namespace: {{ .Values.global.namespace }}
 spec:
-  podSelector: {}
+  podSelector: {} # Áp dụng cho 100% các Pod trong namespace
   policyTypes:
     - Ingress
     - Egress
 ---
-# Allow DNS resolution
+# ── 2. CHO PHÉP PHÂN GIẢI TÊN MIỀN (ALLOW DNS) ──
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -29,7 +46,7 @@ spec:
         - port: 53
           protocol: TCP
 ---
-# API: accept from ingress, egress to pgbouncer/redis/external
+# ── 3. CHÍNH SÁCH MẠNG CHO POD API (NESTJS) ──
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -46,12 +63,14 @@ spec:
     - ports:
         - port: {{ .Values.api.port }}
   egress:
+    # 1. Cho phép kết nối tới PgBouncer (cổng 5432)
     - to:
         - podSelector:
             matchLabels:
               {{- include "aeos.pgbouncer.selectorLabels" . | nindent 14 }}
       ports:
         - port: 5432
+    # 2. Cho phép kết nối tới Redis (cổng 6379)
     - to:
         - namespaceSelector: {}
           podSelector:
@@ -59,6 +78,7 @@ spec:
               app.kubernetes.io/name: redis
       ports:
         - port: {{ .Values.redis.port }}
+    # 3. Cho phép gọi ra ngoài Internet (HTTPS 443, Mail SMTP 587/465)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
@@ -68,10 +88,13 @@ spec:
               - 192.168.0.0/16
       ports:
         - port: 443
+          protocol: TCP
         - port: 587
+          protocol: TCP
         - port: 465
+          protocol: TCP
 ---
-# Web: accept from ingress, egress to API only
+# ── 4. CHÍNH SÁCH MẠNG CHO POD WEB (NEXTJS FRONTEND) ──
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -87,6 +110,7 @@ spec:
   ingress:
     - ports:
         - port: {{ .Values.web.port }}
+  # Web Frontend CHỈ ĐƯỢC PHÉP kết nối tới API Pod
   egress:
     - to:
         - podSelector:
@@ -95,7 +119,7 @@ spec:
       ports:
         - port: {{ .Values.api.port }}
 ---
-# PgBouncer: accept from API, egress to database only
+# ── 5. CHÍNH SÁCH MẠNG CHO PGBOUNCER (DB CONNECTION POOLER) ──
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -108,6 +132,7 @@ spec:
   policyTypes:
     - Ingress
     - Egress
+  # Ingress: CHỈ chấp nhận kết nối gửi đến từ Pod API
   ingress:
     - from:
         - podSelector:
@@ -115,6 +140,7 @@ spec:
               {{- include "aeos.api.selectorLabels" . | nindent 14 }}
       ports:
         - port: 5432
+  # Egress: Kết nối tới PostgreSQL trong cluster (CNPG) hoặc ngoài VPC
   egress:
     - to:
         - namespaceSelector: {}

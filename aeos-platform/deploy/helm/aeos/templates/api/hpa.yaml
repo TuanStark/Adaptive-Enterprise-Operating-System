@@ -1,25 +1,51 @@
 {{- if .Values.api.hpa.enabled }}
+# ════════════════════════════════════════════════════════════════════════════════════
+# 💥 BÀI HỌC PRODUCTION #13: SỰ CỐ "FLAPPING / THRASHING" KHI SCALE POD LIÊN TỤC
+# ────────────────────────────────────────────────────────────────────────────────────
+# ⚠️ SỰ CỐ KINH ĐIỂN: Khi người dùng truy cập theo từng đợt sóng (Traffic Bursts),
+# HPA thấy tải cao -> Scale up lên 10 Pods. Ngay sau đó traffic ngớt -> Scale down về 2 Pods.
+# 1 phút sau traffic tăng lại -> Lại tạo Pods. Việc tạo/xóa Pod liên tục làm quá tải
+# K8s Control Plane, tốn CPU để build image/cache, và làm gián đoạn kết nối người dùng.
+#
+# 💡 BÍ QUYẾT: STABILIZATION WINDOW (ĐỘ TRỄ ỔN ĐỊNH)
+#   - scaleDown.stabilizationWindowSeconds: 300 -> Bắt buộc giữ số lượng Pod cao trong 5 phút
+#     kể cả khi tải đã giảm để phòng ngừa đợt sóng traffic tiếp theo.
+#
+# 💥 BÀI HỌC PRODUCTION #14: XUNG ĐỘT CHÍ MẠNG GIỮA HPA VÀ KEDA
+# ⚠️ Nếu bật cả `api.hpa.enabled: true` và `api.keda.enabled: true`:
+# Cả hai Controller cùng điều khiển `scaleTargetRef: aeos-api`.
+# HPA scale down vì CPU thấp, nhưng KEDA scale up vì Queue dài -> 2 Controller đánh nhau liên tục!
+# -> BẮT BUỘC chỉ bật 1 trong 2: hoặc dùng HPA thuần, hoặc để KEDA quản lý HPA.
+# ════════════════════════════════════════════════════════════════════════════════════
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  # Tên HPA duy nhất cho API
   name: {{ include "aeos.fullname" . }}-api
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
 spec:
+  # Deployment mục tiêu mà HPA sẽ điều khiển số lượng Pod
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "aeos.fullname" . }}-api
+  
+  # Giới hạn số Pod tối thiểu (2) và tối đa (10)
   minReplicas: {{ .Values.api.hpa.minReplicas }}
   maxReplicas: {{ .Values.api.hpa.maxReplicas }}
+  
+  # ── CÁC CHỈ SỐ KÍCH HOẠT SCALE (METRICS) ──
   metrics:
+    # Scale theo phần trăm sử dụng CPU so với mức CPU request
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
           averageUtilization: {{ .Values.api.hpa.targetCPU }}
+    # Scale theo phần trăm sử dụng RAM (nếu được cấu hình)
     {{- if .Values.api.hpa.targetMemory }}
     - type: Resource
       resource:
@@ -28,16 +54,24 @@ spec:
           type: Utilization
           averageUtilization: {{ .Values.api.hpa.targetMemory }}
     {{- end }}
+
+  # ── ĐIỀU KHIỂN HÀNH VI TĂNG / GIẢM POD (STABILIZATION & ANTI-FLAPPING) ──
   behavior:
+    # Hành vi Scale Down (khi tải giảm):
     scaleDown:
+      # Chờ đủ 5 phút (300s) sau khi tải giảm mới bắt đầu giảm Pod (tránh dao động liên tục)
       stabilizationWindowSeconds: 300
       policies:
+        # Chỉ giảm tối đa 1 Pod mỗi 60 giây để đảm bảo hệ thống không bị hụt tài nguyên đột ngột
         - type: Pods
           value: 1
           periodSeconds: 60
+    # Hành vi Scale Up (khi tải tăng):
     scaleUp:
+      # Theo dõi trong 60s
       stabilizationWindowSeconds: 60
       policies:
+        # Tăng tối đa 2 Pod mỗi 60 giây
         - type: Pods
           value: 2
           periodSeconds: 60

@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Tên Deployment theo chuẩn: <release-name>-<chart-name>-api
   name: {{ include "aeos.fullname" . }}-api
   namespace: {{ .Values.global.namespace }}
   labels:
@@ -11,29 +12,73 @@ spec:
   selector:
     matchLabels:
       {{- include "aeos.api.selectorLabels" . | nindent 6 }}
+  
+  # ════════════════════════════════════════════════════════════════════════════════════
+  # 💥 BÀI HỌC PRODUCTION #1: SỰ CỐ DOWNTIME KHI ROLLING UPDATE (ZERO-DOWNTIME STRATEGY)
+  # ────────────────────────────────────────────────────────────────────────────────────
+  # ⚠️ SỰ CỐ KINH ĐIỂN: Mặc định K8s có maxUnavailable=25%. Nếu bạn chỉ chạy 2 Pods, 
+  # K8s sẽ tắt ngay 1 Pod, làm giảm 50% capacity hệ thống khi deploy -> Gây nghẽn tải.
+  # 💡 BÍ QUYẾT:
+  #   - maxUnavailable: 0 -> Ép K8s KHÔNG ĐƯỢC tắt bất kỳ Pod cũ nào trước.
+  #   - maxSurge: 1       -> K8s tạo Pod mới trước, chờ pass Probes rồi mới xóa Pod cũ.
+  # ════════════════════════════════════════════════════════════════════════════════════
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
       maxSurge: 1
+
   template:
     metadata:
       labels:
         {{- include "aeos.api.selectorLabels" . | nindent 8 }}
       annotations:
+        # 💡 BÍ QUYẾT #2: K8s không tự reload Pod khi ConfigMap đổi. Mã hash SHA256 này
+        # sẽ tự thay đổi khi file configmap.yaml đổi -> Kích hoạt rollout tự động.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      # 💡 BÍ QUYẾT #3: IRSA (IAM Roles for Service Accounts) trên AWS
+      # Không bao giờ mount AWS_ACCESS_KEY_ID vào env. Gán Role ARN vào ServiceAccount
+      # để Pod tự lấy temporary token từ AWS STS (xoay vòng token mỗi 1h, an toàn 100%).
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
+
+      # ════════════════════════════════════════════════════════════════════════════════════
+      # 💥 BÀI HỌC PRODUCTION #2: LỖI 502 BAD GATEWAY BÍ ẨN KHI DEPLOY (IPTABLES LAG)
+      # ────────────────────────────────────────────────────────────────────────────────────
+      # ⚠️ SỰ CỐ KINH ĐIỂN: Khi Pod bị xóa, kube-proxy trên các Node mất từ 2-5s để gỡ IP
+      # Pod ra khỏi iptables/IPVS. Trong 2-5s đó, Ingress vẫn forward traffic vào Pod cũ.
+      # Nếu App tắt ngay khi nhận SIGTERM -> Khách hàng dính lỗi 502 Bad Gateway!
+      # 💡 BÍ QUYẾT KẾT HỢP:
+      #   1. lifecycle.preStop: "sleep 15" -> Trì hoãn tắt app 15s để iptables kịp gỡ IP.
+      #   2. terminationGracePeriodSeconds: 45 -> Cho container thêm 30s để xử lý nốt request dở.
+      # ════════════════════════════════════════════════════════════════════════════════════
       terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+
+      # ════════════════════════════════════════════════════════════════════════════════════
+      # 💥 BÀI HỌC PRODUCTION #3: SPOT INSTANCE SẬP LÀM SẬP TOÀN BỘ SERVICE
+      # ────────────────────────────────────────────────────────────────────────────────────
+      # ⚠️ SỰ CỐ KINH ĐIỂN: K8s Scheduler vô tình xếp cả 3 Pod API vào cùng 1 Worker Node.
+      # Khi Node đó bị sập phần cứng hoặc bị AWS thu hồi Spot -> 100% API chết sạch!
+      # 💡 BÍ QUYẾT: Dùng topologySpreadConstraints ép phân bổ đều qua từng Node (hostname)
+      # và từng Availability Zone (topology.kubernetes.io/zone).
+      # ════════════════════════════════════════════════════════════════════════════════════
       topologySpreadConstraints:
-        - maxSkew: 1
+        - maxSkew: 1 # Chênh lệch số lượng Pod giữa các Node không được > 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: DoNotSchedule # Ép buộc tuân thủ, không thỏa mãn thì Pending
           labelSelector:
             matchLabels:
               {{- include "aeos.api.selectorLabels" . | nindent 14 }}
+
+      # ════════════════════════════════════════════════════════════════════════════════════
+      # 💥 BÀI HỌC PRODUCTION #4: CRASHLOOP DO DATABASE RESTART CHẬM HƠN APP
+      # ────────────────────────────────────────────────────────────────────────────────────
+      # ⚠️ SỰ CỐ: Khi toàn bộ cluster reboot (cúp điện/nâng cấp), API dậy trước DB ->
+      # API không kết nối được DB -> Crash -> K8s tăng backoff timer lên 5 phút -> Chờ rất lâu.
+      # 💡 BÍ QUYẾT: InitContainer chặn lại đợi DB/Redis mở port trước mới cho app chạy.
+      # ════════════════════════════════════════════════════════════════════════════════════
       initContainers:
         - name: wait-for-db
           image: busybox:1.36
@@ -41,6 +86,7 @@ spec:
         - name: wait-for-redis
           image: busybox:1.36
           command: ['sh', '-c', 'until nc -z {{ .Values.redis.host }} {{ .Values.redis.port }}; do echo "Waiting for redis..."; sleep 2; done']
+
       containers:
         - name: api
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
@@ -49,9 +95,11 @@ spec:
             - name: http
               containerPort: {{ .Values.api.port }}
               protocol: TCP
+
           envFrom:
             - configMapRef:
                 name: {{ include "aeos.fullname" . }}-config
+
           env:
             - name: DATABASE_USER
               valueFrom:
@@ -75,12 +123,26 @@ spec:
                   name: {{ .Values.redis.existingSecret }}
                   key: {{ .Values.redis.secretPasswordKey }}
             {{- end }}
+
+          # ════════════════════════════════════════════════════════════════════════════════════
+          # 💥 BÀI HỌC PRODUCTION #5: HIỆN TƯỢNG "DEATH SPIRAL" (VÒNG XOÁY TỬ THẦN) CỦA PROBES
+          # ────────────────────────────────────────────────────────────────────────────────────
+          # ⚠️ SỰ CỐ KINH ĐIỂN: App NestJS khi tải nặng mất 20s để khởi động. Nếu chỉ có
+          # livenessProbe (period 10s, threshold 3), sau 30s K8s thấy chưa xong liền KILL app.
+          # App vừa restart lại bị kill tiếp -> Không bao giờ dậy được (Death Spiral).
+          # 💡 BÍ QUYẾT:
+          #   1. startupProbe: Cho phép thử lại 30 lần x 5s = 150s. Trong lúc này, liveness và
+          #      readiness bị VÔ HIỆU HÓA hoàn toàn để app yên tâm khởi động.
+          #   2. readinessProbe: Khi DB nghẽn -> Fail probe -> K8s chỉ ngắt traffic, KHÔNG kill Pod.
+          #   3. livenessProbe: Chỉ kill khi app thực sự bị deadlock/freeze code.
+          # ════════════════════════════════════════════════════════════════════════════════════
           startupProbe:
             httpGet:
               path: {{ .Values.api.probes.startup.path }}
               port: http
             failureThreshold: {{ .Values.api.probes.startup.failureThreshold }}
             periodSeconds: {{ .Values.api.probes.startup.periodSeconds }}
+
           livenessProbe:
             httpGet:
               path: {{ .Values.api.probes.liveness.path }}
@@ -88,6 +150,7 @@ spec:
             periodSeconds: {{ .Values.api.probes.liveness.periodSeconds }}
             failureThreshold: {{ .Values.api.probes.liveness.failureThreshold }}
             timeoutSeconds: {{ .Values.api.probes.liveness.timeoutSeconds }}
+
           readinessProbe:
             httpGet:
               path: {{ .Values.api.probes.readiness.path }}
@@ -95,12 +158,34 @@ spec:
             periodSeconds: {{ .Values.api.probes.readiness.periodSeconds }}
             failureThreshold: {{ .Values.api.probes.readiness.failureThreshold }}
             timeoutSeconds: {{ .Values.api.probes.readiness.timeoutSeconds }}
+
+          # ════════════════════════════════════════════════════════════════════════════════════
+          # 💥 BÀI HỌC PRODUCTION #6: OOMKILLED VÀ CPU CFS THROTTLING
+          # ────────────────────────────────────────────────────────────────────────────────────
+          # 💡 BÍ QUYẾT:
+          #   - Requests: Là mức cam kết tối thiểu. K8s dựa vào đây để xếp Pod vào Node.
+          #   - Limits Memory: Vượt quá sẽ bị Linux Kernel gửi tín hiệu OOMKilled (Exit 137).
+          #   - Limits CPU: Đặt quá thấp sẽ bị Linux CFS Quota bóp nghẹt (throttle) gây chậm API.
+          # ════════════════════════════════════════════════════════════════════════════════════
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
+
           lifecycle:
             preStop:
               exec:
+                # Ngủ 15s để hoàn tất xả traffic từ Ingress trước khi process Node.js nhận SIGTERM
                 command: ["/bin/sh", "-c", "sleep {{ .Values.api.preStopSleepSeconds }}"]
+
+          # ════════════════════════════════════════════════════════════════════════════════════
+          # 💥 BÀI HỌC PRODUCTION #7: PHÒNG THỦ MÃ ĐỘC VÀ CONTAINER ESCAPE
+          # ────────────────────────────────────────────────────────────────────────────────────
+          # 💡 BÍ QUYẾT BẢO MẬT (CIS KUBERNETES BENCHMARK):
+          #   - allowPrivilegeEscalation: false -> Chặn dùng sudo hoặc setuid binary để leo quyền.
+          #   - runAsNonRoot: true             -> Chặn chạy bằng root (UID 0).
+          #   - readOnlyRootFilesystem: true   -> Chặn hacker ghi file webshell/rootkit vào disk.
+          #     (Lưu ý: Phải mount emptyDir vào /tmp nếu Node.js/Prisma cần ghi file tạm!).
+          #   - capabilities.drop: ["ALL"]     -> Tước mọi quyền quản trị Linux Kernel.
+          # ════════════════════════════════════════════════════════════════════════════════════
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true

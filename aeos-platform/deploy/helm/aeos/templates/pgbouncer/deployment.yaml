@@ -1,4 +1,18 @@
 {{- if .Values.pgbouncer.enabled }}
+# ════════════════════════════════════════════════════════════════════════════════════
+# 💥 BÀI HỌC PRODUCTION #8: SỰ CỐ CẠN KIỆT CONNECTION POSTGRES KHI HPA SCALE UP
+# ────────────────────────────────────────────────────────────────────────────────────
+# ⚠️ SỰ CỐ KINH ĐIỂN: Khi có đợt traffic spike, HPA scale API từ 2 lên 20 Pods.
+# Mỗi Pod NestJS mở 20 connections -> Tổng = 400 connections vào PostgreSQL.
+# PostgreSQL dùng mô hình "Process per connection" (mỗi connection tốn ~10MB RAM).
+# -> RAM của DB bị cạn kiệt, CPU quá tải do Context Switching -> PostgreSQL CRASH!
+#
+# 💡 BÍ QUYẾT CỨU CÁNH: PGBOUNCER VỚI POOL_MODE "TRANSACTION"
+#   - 20 Pods API có thể mở 200-500 kết nối (Client Connections) tới PgBouncer.
+#   - Nhưng PgBouncer chỉ mở DUY NHẤT 20 kết nối thật (Server Connections) tới Postgres!
+#   - Kết nối DB chỉ được giữ trong thời gian 1 transaction SQL chạy (vài mili-giây)
+#     rồi ngay lập tức nhả ra cho request khác dùng -> Postgres chạy mượt mà 100%.
+# ════════════════════════════════════════════════════════════════════════════════════
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -8,6 +22,7 @@ metadata:
     {{- include "aeos.labels" . | nindent 4 }}
     app.kubernetes.io/component: pgbouncer
 spec:
+  # Chạy 2-3 replicas để đảm bảo High Availability (nếu 1 Pod PgBouncer chết, Pod khác gánh)
   replicas: {{ .Values.pgbouncer.replicaCount }}
   selector:
     matchLabels:
@@ -41,14 +56,26 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.database.existingSecret }}
                   key: {{ .Values.database.secretPasswordKey }}
+            
+            # ════════════════════════════════════════════════════════════════════════════════════
+            # ⚠️ BẪY SỰ CỐ ORM (PRISMA / TYPEORM PREPARED STATEMENTS TRAP):
+            # Trong mode 'transaction', PgBouncer không lưu session state giữa các query.
+            # Nếu dùng Prisma, chuỗi DATABASE_URL bắt buộc phải thêm tham số: `?pgbouncer=true`
+            # để Prisma tắt cơ chế prepared statements, tránh lỗi: "prepared statement already exists".
+            # ════════════════════════════════════════════════════════════════════════════════════
             - name: PGBOUNCER_POOL_MODE
               value: {{ .Values.pgbouncer.poolMode | quote }}
+            
+            # Số kết nối tối đa từ API cho phép mở vào PgBouncer (200)
             - name: PGBOUNCER_MAX_CLIENT_CONN
               value: {{ .Values.pgbouncer.maxClientConn | quote }}
+            # Số kết nối thực tế tối đa PgBouncer mở sang PostgreSQL (20)
             - name: PGBOUNCER_DEFAULT_POOL_SIZE
               value: {{ .Values.pgbouncer.defaultPoolSize | quote }}
             - name: PGBOUNCER_MIN_POOL_SIZE
               value: {{ .Values.pgbouncer.minPoolSize | quote }}
+
+          # Health check nhanh qua cổng TCP Socket
           livenessProbe:
             tcpSocket:
               port: 5432
@@ -57,6 +84,7 @@ spec:
             tcpSocket:
               port: 5432
             periodSeconds: 5
+
           resources:
             {{- toYaml .Values.pgbouncer.resources | nindent 12 }}
           securityContext:
@@ -65,6 +93,7 @@ spec:
             capabilities:
               drop: ["ALL"]
 ---
+# Service ClusterIP nội bộ để API Pods kết nối
 apiVersion: v1
 kind: Service
 metadata:

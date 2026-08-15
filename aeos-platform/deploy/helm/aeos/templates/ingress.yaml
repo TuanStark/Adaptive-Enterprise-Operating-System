@@ -1,17 +1,38 @@
 {{- if .Values.ingress.enabled }}
+# ════════════════════════════════════════════════════════════════════════════════════
+# 💥 BÀI HỌC PRODUCTION #10: SỰ CỐ SẬP WEB DO DÙNG CHUNG INGRESS TRÊN AWS ALB
+# ────────────────────────────────────────────────────────────────────────────────────
+# ⚠️ SỰ CỐ KINH ĐIỂN VỚI AWS LOAD BALANCER CONTROLLER:
+# Khi bạn đặt annotation `alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/readiness`
+# trên một file Ingress dùng chung cho cả `api.aeos.com` và `app.aeos.com` (Web Next.js):
+# AWS ALB sẽ áp dụng chung đường dẫn healthcheck đó cho TẤT CẢ Target Groups!
+# -> ALB gửi request check `/api/v1/health/readiness` sang container Web Next.js.
+# -> Container Next.js trả về HTTP 404 (vì Next.js không có route này) -> ALB coi Web bị chết!
+# -> Toàn bộ khách hàng vào `https://app.aeos.com` bị ALB trả về 502/504 Bad Gateway!
+#
+# 💡 BÍ QUYẾT: Khi triển khai trên AWS EKS, hãy TÁCH RIÊNG 2 Ingress:
+#   - Ingress API: Healthcheck path `/api/v1/health/readiness`
+#   - Ingress Web: Healthcheck path `/`
+# Hoặc dùng `alb.ingress.kubernetes.io/group.name` để gộp 2 Ingress vào chung 1 ALB vật lý!
+# ════════════════════════════════════════════════════════════════════════════════════
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  # Tên tài nguyên Ingress duy nhất cho toàn bộ hệ thống
   name: {{ include "aeos.fullname" . }}
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
+  # Annotations điều khiển hành vi của Ingress Controller (ví dụ AWS ALB parameters hoặc Nginx rate-limit)
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  # Chỉ định Ingress Controller xử lý (ví dụ: 'nginx' trên onprem hoặc 'alb' trên AWS EKS)
   ingressClassName: {{ .Values.ingress.className }}
+  
+  # ── CẤU HÌNH BẢO MẬT HTTPS (SSL/TLS TERMINATION) ──
   {{- if .Values.ingress.tls }}
   tls:
     {{- range .Values.ingress.tls }}
@@ -19,9 +40,12 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
+      # Secret chứa SSL certificate & private key (do cert-manager hoặc admin cấp)
       secretName: {{ .secretName }}
     {{- end }}
   {{- end }}
+
+  # ── CÁC QUY TẮC ĐỊNH TUYẾN DOMAIN & PATH (ROUTING RULES) ──
   rules:
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
@@ -32,6 +56,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
+                # Tự động ghép nối tới Service đích (ví dụ: <fullname>-api hoặc <fullname>-web)
                 name: {{ include "aeos.fullname" $ }}-{{ .service }}
                 port:
                   name: http

@@ -1,20 +1,46 @@
 {{- if .Values.migration.enabled }}
+# ════════════════════════════════════════════════════════════════════════════════════
+# 💥 BÀI HỌC PRODUCTION #9: SỰ CỐ "LỆCH PHA" SCHEMA DATABASE KHI TRIỂN KHAI CI/CD
+# ────────────────────────────────────────────────────────────────────────────────────
+# ⚠️ SỰ CỐ KINH ĐIỂN: CI/CD rollout code API mới trước khi Database kịp chạy migration.
+# Code mới cố gắng đọc/ghi vào column `is_verified` chưa tồn tại trong Postgres ->
+# Toàn bộ API trả về HTTP 500 lỗi truy vấn SQL hàng loạt!
+#
+# 💡 BÍ QUYẾT: SỬ DỤNG GITOPS PRESYNC & HELM PRE-UPGRADE HOOKS
+#   - ArgoCD PreSync & Helm pre-upgrade chặn toàn bộ quá trình rollout của Deployment API.
+#   - K8s chỉ tạo Pod API mới SAU KHI Job migration này hoàn tất thành công (Exit Code 0).
+#
+# ⚠️ NGUYÊN TẮC VÀNG VỀ MIGRATION DATABASE: "EXPAND AND CONTRACT" (BACKWARD COMPATIBLE)
+#   - Migration luôn phải tương thích ngược (Backward Compatible) với cả Code cũ và Code mới.
+#   - Tuyệt đối không xóa/đổi tên column ngay trong 1 lần deploy!
+#   - Quy trình 2 bước: 
+#       Bước 1: Thêm column mới (nullable/default value), deploy code mới.
+#       Bước 2 (sau vài ngày): Xóa column cũ khi code cũ không còn chạy nữa.
+# ════════════════════════════════════════════════════════════════════════════════════
 apiVersion: batch/v1
 kind: Job
 metadata:
+  # Tên Job kèm số revision bản release để mỗi lần deploy đều tạo Job mới không bị conflict tên
   name: {{ include "aeos.fullname" . }}-db-migrate-{{ .Release.Revision }}
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
     app.kubernetes.io/component: migration
   annotations:
+    # ── GITOPS & HELM HOOKS: CHẠY MIGRATION TRƯỚC KHI DEPLOY CODE ──
+    # ArgoCD PreSync: Chạy Job này trước khi đồng bộ các manifest khác
     argocd.argoproj.io/hook: PreSync
+    # Xóa Job cũ trước khi tạo Job mới trong lần sync tiếp theo
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # Helm Hook: Chạy trước khi install hoặc upgrade chart
     helm.sh/hook: pre-install,pre-upgrade
+    # Trọng số ưu tiên (-5): Số âm càng nhỏ chạy càng sớm
     helm.sh/hook-weight: "-5"
     helm.sh/hook-delete-policy: before-hook-creation
 spec:
+  # Tự động dọn dẹp và xóa Job sau 10 phút (600s) sau khi hoàn thành để tránh tích tụ rác trong cluster
   ttlSecondsAfterFinished: {{ .Values.migration.ttlSecondsAfterFinished }}
+  # Nếu migration fail, chỉ thử lại tối đa 3 lần rồi dừng (tránh vòng lặp lỗi vô tận)
   backoffLimit: {{ .Values.migration.backoffLimit }}
   template:
     metadata:
@@ -22,14 +48,24 @@ spec:
         {{- include "aeos.labels" . | nindent 8 }}
         app.kubernetes.io/component: migration
     spec:
+      # Nếu container chết, không restart lại để giữ nguyên log phục vụ debug
       restartPolicy: Never
+
+      # ════════════════════════════════════════════════════════════════════════════════
+      # ⚠️ BẪY SỰ CỐ NC -Z (FALSE POSITIVE):
+      # Lệnh 'nc -z' chỉ kiểm tra cổng 5432 có mở hay không. Nhưng khi Postgres đang
+      # khởi động hoặc trong quá trình WAL recovery, cổng mở nhưng chưa nhận câu lệnh SQL.
+      # -> Chuyên gia khuyên dùng công cụ 'pg_isready' thay vì 'nc -z'.
+      # ════════════════════════════════════════════════════════════════════════════════
       initContainers:
         - name: wait-for-db
           image: busybox:1.36
           command: ['sh', '-c', 'until nc -z {{ .Values.database.host }} {{ .Values.database.port }}; do echo "Waiting for database..."; sleep 2; done']
+
       containers:
         - name: migrate
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          # Chạy Prisma Migrate Deploy để áp dụng schema mới vào Database
           command: ["npx", "prisma", "migrate", "deploy", "--schema=./node_modules/@aeos/database/prisma/schema.prisma"]
           env:
             - name: DATABASE_URL

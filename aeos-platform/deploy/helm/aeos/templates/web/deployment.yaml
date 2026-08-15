@@ -1,12 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Tên Deployment Frontend Web: <fullname>-web
   name: {{ include "aeos.fullname" . }}-web
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
     app.kubernetes.io/component: web
 spec:
+  # Số lượng Pod chạy Next.js frontend
   replicas: {{ .Values.web.replicaCount }}
   selector:
     matchLabels:
@@ -30,8 +32,11 @@ spec:
               containerPort: {{ .Values.web.port }}
               protocol: TCP
           env:
+            # Truyền URL của API Backend để client/SSR gọi dữ liệu
             - name: NEXT_PUBLIC_API_URL
               value: {{ .Values.api.env.NEXT_PUBLIC_API_URL | default "http://aeos-api/api/v1" | quote }}
+          
+          # ── HEALTH CHECKS CHO NEXT.JS (KIỂM TRA HTTP GET ROOT /) ──
           livenessProbe:
             httpGet:
               path: {{ .Values.web.probes.liveness.path }}
@@ -44,8 +49,12 @@ spec:
               port: http
             periodSeconds: {{ .Values.web.probes.readiness.periodSeconds }}
             failureThreshold: {{ .Values.web.probes.readiness.failureThreshold }}
+
+          # Giới hạn tài nguyên CPU và Memory cho Next.js Pod
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
+
+          # Bảo mật container: Chạy non-root, khóa hệ thống file read-only
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
@@ -53,6 +62,7 @@ spec:
             capabilities:
               drop: ["ALL"]
 ---
+# ── SERVICE CLUSTERIP CHO WEB FRONTEND ──
 apiVersion: v1
 kind: Service
 metadata:
@@ -64,6 +74,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
+    # Lắng nghe port 80 và chuyển tiếp vào port 3000 của Next.js
     - port: 80
       targetPort: http
       protocol: TCP

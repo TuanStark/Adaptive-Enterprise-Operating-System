@@ -1,4 +1,5 @@
 {{- if .Values.api.keda.enabled }}
+# ── KEDA SCALEDOBJECT: AUTOSCALING THEO HÀNG ĐỢI SỰ KIỆN (EVENT-DRIVEN) ──
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
@@ -7,22 +8,30 @@ metadata:
   labels:
     {{- include "aeos.labels" . | nindent 4 }}
 spec:
+  # Deployment mục tiêu mà KEDA sẽ điều khiển
   scaleTargetRef:
     name: {{ include "aeos.fullname" . }}-api
   minReplicaCount: {{ .Values.api.hpa.minReplicas }}
   maxReplicaCount: {{ .Values.api.hpa.maxReplicas }}
+  # Thời gian chờ sau khi hết sự kiện để scale down (300s)
   cooldownPeriod: 300
+  # Chu kỳ KEDA thăm dò độ dài hàng đợi Redis (cứ 30s check 1 lần)
   pollingInterval: 30
+  
+  # ── CÁC NGUỒN TRIGGER SCALE ──
   triggers:
+    # 1. Scale theo tải CPU
     - type: cpu
       metricType: Utilization
       metadata:
         value: "{{ .Values.api.hpa.targetCPU }}"
+    # 2. Scale theo độ dài hàng đợi Redis (Queue Length)
     {{- if .Values.api.keda.redisQueue }}
     - type: redis
       metadata:
         address: {{ .Values.redis.host }}:{{ .Values.redis.port }}
         listName: "{{ .Values.api.keda.redisQueue }}"
+        # Cứ mỗi 10 messages tồn đọng trong Redis List -> Scale thêm 1 Pod
         listLength: "{{ .Values.api.keda.redisQueueThreshold | default 10 }}"
         {{- if .Values.redis.existingSecret }}
         passwordFromEnv: REDIS_PASSWORD
